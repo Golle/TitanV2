@@ -1,0 +1,42 @@
+on: 
+  push:
+    paths:
+      - src/**
+      - tests/**
+      - samples/**
+  workflow_dispatch:
+
+jobs:
+  build-engine:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  #, [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install .NET 8.0.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Build Engine
+      run: dotnet build src/Titan -c Release
+
+    - name: Test Engine
+      run: dotnet test -c Release
+
+  build-sandbox:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install .NET 8.0.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Package Sandbox
+      run: dotnet publish samples\Titan.Sandbox -c Release -o release/ -r win-x64 --self-contained true -p:PublishAOT=true -p:DebugType=None -p:DebugSymbols=false
