@@ -8,15 +8,15 @@ public record struct FileSystemArgs(string AppDataName, string EnginePath, strin
 
 internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileApi
 {
-    private readonly TitanFileApi<TFileApi>[] _fileApis = new TitanFileApi<TFileApi>[(int)FilePathType.Count];
+    private readonly FileApi<TFileApi>[] _fileApis = new FileApi<TFileApi>[(int)FilePathType.Count];
     
     public bool Init(FileSystemArgs args)
     {
-        _fileApis[(int)FilePathType.AppData] = new TitanFileApi<TFileApi>(PathResolver.GetAppDataPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Temp] = new TitanFileApi<TFileApi>(PathResolver.GetTempPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Logs] = new TitanFileApi<TFileApi>(PathResolver.GetLogsPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Content] = new TitanFileApi<TFileApi>(args.ContentPath, true);
-        _fileApis[(int)FilePathType.Engine] = new TitanFileApi<TFileApi>(args.EnginePath, true);
+        _fileApis[(int)FilePathType.AppData] = new FileApi<TFileApi>(PathResolver.GetAppDataPath(args.AppDataName), false);
+        _fileApis[(int)FilePathType.Temp] = new FileApi<TFileApi>(PathResolver.GetTempPath(args.AppDataName), false);
+        _fileApis[(int)FilePathType.Logs] = new FileApi<TFileApi>(PathResolver.GetLogsPath(args.AppDataName), false);
+        _fileApis[(int)FilePathType.Content] = new FileApi<TFileApi>(args.ContentPath, true);
+        _fileApis[(int)FilePathType.Engine] = new FileApi<TFileApi>(args.EnginePath, true);
 
         for (var i = 0; i < _fileApis.Length; ++i)
         {
@@ -38,7 +38,7 @@ internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileAp
         }
         catch (Exception e)
         {
-            Logger.Error<TitanFileApi<TFileApi>>($"Failed to create the directory with {e.GetType()}. Message = {e.Message} Path = {path}");
+            Logger.Error<FileApi<TFileApi>>($"Failed to create the directory with {e.GetType()}. Message = {e.Message} Path = {path}");
             return false;
         }
         return true;

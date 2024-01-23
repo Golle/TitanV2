@@ -3,7 +3,7 @@ using Titan.Core.Logging;
 
 namespace Titan.Core.IO;
 
-internal readonly struct TitanFileApi<TFileApi>(string basePath, bool readOnly) : IFileApi
+internal readonly struct FileApi<TFileApi>(string basePath, bool readOnly) : IFileApi
     where TFileApi : INativeFileApi
 {
     public readonly bool IsReadOnly = readOnly;
@@ -26,7 +26,7 @@ internal readonly struct TitanFileApi<TFileApi>(string basePath, bool readOnly) 
     {
         if (IsReadOnly)
         {
-            Logger.Error<TitanFileApi<TFileApi>>($"Trying to {nameof(Write)} on a handle that is read only");
+            Logger.Error<FileApi<TFileApi>>($"Trying to {nameof(Write)} on a handle that is read only");
             return -1;
         }
         return TFileApi.Write(handle, content);
