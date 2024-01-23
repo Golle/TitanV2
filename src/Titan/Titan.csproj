@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Titan.Platform\Titan.Platform.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\IO\" />
+  </ItemGroup>
 </Project>

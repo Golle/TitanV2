@@ -1,3 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <IsTrimmable>True</IsTrimmable>
+    <NoWarn>1701;1702;CS0169;CS0649</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <IsTrimmable>True</IsTrimmable>
+    <NoWarn>1701;1702;CS0169;CS0649;CA1401</NoWarn>
+  </PropertyGroup>
 </Project>
