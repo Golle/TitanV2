@@ -1,14 +1,36 @@
-  <Project>
-    <PropertyGroup>
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-      <TargetFramework>net8.0</TargetFramework>
-      <ImplicitUsings>enable</ImplicitUsings>
-      <PlatformTarget>x64</PlatformTarget>
-      <Nullable>enable</Nullable>
-      <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
-      <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-      <InvariantGlobalization>true</InvariantGlobalization>
-      <LangVersion>preview</LangVersion>
-      
-    </PropertyGroup>
-  </Project>
+<Project>
+  <PropertyGroup>
+    <LogLevel>Trace</LogLevel>
+  </PropertyGroup>
+
+<!-- General .NET Settings -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <!-- Log level constants -->
+  <PropertyGroup Condition="$(LogLevel) == 'Trace'">
+    <DefineConstants>$(DefineConstants);LOG_TRACE;LOG_DEBUG;LOG_INFO;LOG_WARNING;LOG_ERROR</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(LogLevel) == 'Debug'">
+    <DefineConstants>$(DefineConstants);LOG_DEBUG;LOG_INFO;LOG_WARNING;LOG_ERROR</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(LogLevel) == 'Info'">
+    <DefineConstants>$(DefineConstants);LOG_INFO;LOG_WARNING;LOG_ERROR</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(LogLevel) == 'Warning'">
+    <DefineConstants>$(DefineConstants);LOG_WARNING;LOG_ERROR</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(LogLevel) == 'Error'">
+    <DefineConstants>$(DefineConstants);LOG_ERROR</DefineConstants>
+  </PropertyGroup>
+
+</Project>
