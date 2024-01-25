@@ -2,4 +2,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Titan.Platform\Titan.Platform.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    <_Parameter1>Titan.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    <_Parameter1>Titan.Sandbox</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

@@ -39,6 +39,7 @@ public unsafe partial struct Kernel32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [SuppressGCTransition]
     public static partial uint WaitForSingleObject(
         HANDLE hHandle,
         uint dwMilliseconds
@@ -116,6 +117,7 @@ public unsafe partial struct Kernel32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [SuppressGCTransition]
     public static partial uint GetCurrentThreadId();
 
     [LibraryImport(DllName, SetLastError = true)]

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Titan.Core.Memory.Platform;
+namespace Titan.Core.Memory;
 
 internal unsafe struct PlatformAllocator(uint pageSize)
 {
@@ -20,11 +20,11 @@ internal unsafe struct PlatformAllocator(uint pageSize)
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void* Reserve(void* startAddress, uint pages) => _reserve(startAddress, pages);
+    public readonly void* Reserve(void* startAddress, uint pages) => _reserve(startAddress, pages);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Commit(void* startAddress, uint pages, uint pageOffset = 0) => _commit(startAddress, pages, pageOffset);
+    public readonly void Commit(void* startAddress, uint pages, uint pageOffset = 0) => _commit(startAddress, pages, pageOffset);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Decommit(void* startAddress, uint pages, uint pageOffset = 0) => _decommit(startAddress, pages, pageOffset);
+    public readonly void Decommit(void* startAddress, uint pages, uint pageOffset = 0) => _decommit(startAddress, pages, pageOffset);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Release(void* startAddress, uint pages) => _release(startAddress, pages);
+    public readonly void Release(void* startAddress, uint pages) => _release(startAddress, pages);
 }

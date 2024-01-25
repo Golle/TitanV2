@@ -10,8 +10,22 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
 {
     public readonly uint Length = length;
     public T* AsPointer() => ptr;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T* GetPointer(uint index) 
+        => GetPointer((int)index);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T* GetPointer(int index)
+    {
+        Debug.Assert(index >= 0 && index < Length);
+        return ptr + index;
+    }
+
     public bool IsValid => ptr != null;
+
     public Span<T> AsSpan() => new(ptr, (int)Length);
+
     public ReadOnlySpan<T> AsReadOnlySpan() => new(ptr, (int)Length);
 
     public static implicit operator ReadOnlySpan<T>(in TitanArray<T> arr) => arr.AsSpan();
