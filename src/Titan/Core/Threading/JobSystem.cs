@@ -2,17 +2,24 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 
 namespace Titan.Core.Threading;
 
-internal record JobSystemConfig(uint NumberOfWOrkers, uint MaxQueuedJobs);
+public record JobSystemConfig(uint NumberOfWOrkers, uint MaxQueuedJobs) : IConfiguration, IDefault<JobSystemConfig>
+{
+    public static uint DefaultNumberOfWorkers = (uint)(Environment.ProcessorCount - 1);
+    public static uint DefaultMaxQueuedJobs = 1024;
+    public static JobSystemConfig Default => new(DefaultNumberOfWorkers, DefaultMaxQueuedJobs);
+}
 
 internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSystem
 {
-    private const uint MaxQueuedJobs = 1024;
-    private const uint JobQueueMask = MaxQueuedJobs - 1;
     private const int HandleOffset = 1002;
+    private uint MaxQueuedJobs;
+    private uint JobQueueMask;
+
     private static readonly TimeSpan DefaultWaitTime = TimeSpan.FromMilliseconds(100);
 
     //TODO(Jens): Jobs can have a fixed sized "buffer" where we can either store a pointer to some data sent by the user or copy entire value types. Would simplify the usage.
@@ -23,17 +30,23 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
     private volatile uint _nextJobSlot;
 
     private GCHandle _handle;
-    private readonly SemaphoreSlim _notifier = new(0, (int)MaxQueuedJobs);
+    private SemaphoreSlim _notifier = null!;
     private IMemorySystem? _memorySystem;
 
     public bool Init(in JobSystemConfig config, IMemorySystem memorySystem)
     {
-
+        if (!MathUtils.IsPowerOf2(config.MaxQueuedJobs))
+        {
+            Logger.Error<JobSystem>($"The {nameof(MaxQueuedJobs)} config value must be a power of 2. Value = {config.MaxQueuedJobs}");
+            return false;
+        }
         if (config.NumberOfWOrkers == 0)
         {
             Logger.Error<JobSystem>("The number of workers must be greater than 0.");
             return false;
         }
+
+        Logger.Trace<JobSystem>($"Init Job System. Number of Workers = {config.NumberOfWOrkers} Max Queued Jobs = {config.MaxQueuedJobs}");
 
         if (config.NumberOfWOrkers > Environment.ProcessorCount)
         {
@@ -49,8 +62,13 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
         if (!memorySystem.TryAllocArray(out _jobs, config.MaxQueuedJobs))
         {
             Logger.Error<JobSystem>($"Failed to allocate memory for the Jobs. Count = {config.MaxQueuedJobs} Size = {config.NumberOfWOrkers * sizeof(Job)}");
+            return false;
         }
 
+        MaxQueuedJobs = config.MaxQueuedJobs;
+        JobQueueMask = MaxQueuedJobs - 1;
+        _notifier = new(0, (int)MaxQueuedJobs);
+        
         _handle = GCHandle.Alloc(this);
 
         for (var i = 0; i < _workers.Length; ++i)
@@ -215,10 +233,11 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
     private Job* GetNextJob()
     {
         var maxIterations = MaxQueuedJobs;
+        var jobQueueMask = JobQueueMask;
         while (maxIterations-- > 0)
         {
             var current = _nextJob;
-            var index = Interlocked.CompareExchange(ref _nextJob, (current + 1) & JobQueueMask, current);
+            var index = Interlocked.CompareExchange(ref _nextJob, (current + 1) & jobQueueMask, current);
             if (index != current)
             {
                 //Logger.Trace<JobSystem>($"Conflict!");
@@ -241,10 +260,11 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
     private int GetNextFreeJobSlot()
     {
         var maxIterations = MaxQueuedJobs;
+        var jobQueueMask = JobQueueMask;
         while (maxIterations-- > 0)
         {
             var current = _nextJobSlot;
-            var index = Interlocked.CompareExchange(ref _nextJobSlot, (current + 1) & JobQueueMask, current);
+            var index = Interlocked.CompareExchange(ref _nextJobSlot, (current + 1) & jobQueueMask, current);
             if (index != current)
             {
                 //Logger.Trace<JobSystem>($"Conflict!");

@@ -1,6 +1,6 @@
 ﻿namespace Titan.Core.Threading;
 
-public interface IJobSystem
+public interface IJobSystem : IService
 {
     JobHandle Enqueue(in JobDescriptor descriptor);
     bool IsCompleted(in JobHandle handle);

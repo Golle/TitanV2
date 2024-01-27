@@ -1,12 +1,17 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
 
 namespace Titan.Core.Memory;
 
-public record struct MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory);
+public record MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory) : IConfiguration, IDefault<MemoryConfig>
+{
+    public static readonly uint DefaultMaxVirtualMemory = MemoryUtils.MegaBytes(512);
+    public static readonly uint DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(128);
+
+    public static MemoryConfig Default => new(DefaultMaxVirtualMemory, DefaultGeneralPurposeMemory);
+}
 
 internal sealed unsafe class MemorySystem<TPlatformAllocator> : IMemorySystem where TPlatformAllocator : IPlatformAllocator
 {

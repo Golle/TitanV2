@@ -2,7 +2,7 @@
 
 namespace Titan.Core.Memory;
 
-public interface IMemorySystem
+public interface IMemorySystem : IService
 {
     /// <summary>
     /// Alloc an array from the global general purpose memory.
