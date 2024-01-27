@@ -1,0 +1,1 @@
+&dotnet publish samples\Titan.Sandbox -c Release -o release/sandbox/ -r win-x64 --self-contained true -p:PublishAOT=true -p:DebugType=None -p:DebugSymbols=false

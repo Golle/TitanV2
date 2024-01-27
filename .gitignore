@@ -3,4 +3,6 @@
 [Bb]in/
 [Oo]bj/
 
+release/
+
 *.user
