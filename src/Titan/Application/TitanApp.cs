@@ -10,7 +10,7 @@ internal class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArra
     public T GetService<T>() where T : IService
         => (T)services[typeof(T)];
 
-    public T GetConfigOrDefaulte<T>() where T : IConfiguration, IDefault<T>
+    public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
         => (T?)configurations.FirstOrDefault(c => c.GetType() == typeof(T)) ?? T.Default;
 
     public void Run()

@@ -17,7 +17,7 @@ internal class Win32WindowModule : IModule
     public static bool Init(IApp app)
     {
         var window = app.GetService<Win32Window>();
-        var config = app.GetConfigOrDefaulte<WindowConfig>();
+        var config = app.GetConfigOrDefault<WindowConfig>();
 
         if (!window.Init(config))
         {

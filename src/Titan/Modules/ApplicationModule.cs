@@ -1,5 +1,6 @@
 using Titan.Application;
 using Titan.Core.Logging;
+using Titan.Rendering;
 using Titan.Windows;
 
 namespace Titan.Modules;
@@ -11,7 +12,9 @@ public class ApplicationModule : IModule
         Logger.Trace<ApplicationModule>($"Application Type = {config.ApplicationType}");
         if (config.ApplicationType == ApplicationType.Game)
         {
-            builder.AddModule<WindowModule>();
+            builder
+                .AddModule<WindowModule>()
+                .AddModule<RenderingModule>();
         }
 
         return true;
