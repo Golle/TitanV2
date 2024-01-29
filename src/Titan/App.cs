@@ -5,8 +5,16 @@ using Titan.Modules;
 
 namespace Titan;
 
+
+public enum ApplicationType
+{
+    Game,
+    Headless
+}
+
 public record AppConfig(string Name, string Version)
 {
+    public ApplicationType ApplicationType { get; init; } = ApplicationType.Game;
     public MemoryConfig Memory { get; init; } = MemoryConfig.Default;
     public JobSystemConfig JobSystem { get; init; } = JobSystemConfig.Default;
 }
@@ -15,5 +23,7 @@ public static class App
 {
     public static IAppBuilder Create(AppConfig config) =>
         new AppBuilder(config)
-            .AddModule<CoreModule>();
+            .AddModule<CoreModule>()
+            .AddModule<ApplicationModule>()
+        ;
 }

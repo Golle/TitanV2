@@ -1,6 +1,6 @@
 namespace Titan.Platform.Win32;
 
-public unsafe struct WNDCLASSEXA
+public unsafe struct WNDCLASSEXW
 {
     public uint CbSize;
     public uint Style;
@@ -11,7 +11,7 @@ public unsafe struct WNDCLASSEXA
     public nint HIcon;
     public HCURSOR HCursor;
     public nint HbrBackground;
-    public byte* LpszMenuName;
-    public byte* LpszClassName;
+    public char* LpszMenuName;
+    public char* LpszClassName;
     public nint HIconSm;
 }

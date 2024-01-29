@@ -13,6 +13,12 @@ public static unsafe partial class User32
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     public static partial ushort RegisterClassExW(
+        WNDCLASSEXW* wndClassEx
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial ushort RegisterClassExA(
         WNDCLASSEXA* wndClassEx
     );
 
@@ -110,6 +116,15 @@ public static unsafe partial class User32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int GetMessageW(
+        MSG* lpMsg,
+        HWND hWnd,
+        uint wMsgFilterMin,
+        uint wMsgFilterMax
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool TranslateMessage(
         MSG* lpMsg
@@ -194,4 +209,8 @@ public static unsafe partial class User32
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     public static partial nint CallNextHookEx(HHOOK* hhk, HookCodes nCode, nuint wParam, nuint lParam);
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int GetSystemMetrics(SystemMetricCodes nIndex);
 }
