@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -7,12 +5,15 @@ using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Rendering.D3D12.Adapters;
 internal sealed unsafe class D3D12Adapter : IService
 {
     private TitanArray<DXGIAdapter> _adapters;
     private IMemorySystem? _memorySystem;
-    public bool Init(IMemorySystem memorySystem, bool debug)
+
+    private uint _primaryAdapterIndex = 0;
+    public ref readonly DXGIAdapter PrimaryAdapter => ref _adapters[_primaryAdapterIndex];
+    public bool Init(IMemorySystem memorySystem, AdapterConfig? config, bool debug)
     {
         var flags = debug ? DXGI_CREATE_FACTORY_FLAGS.DXGI_CREATE_FACTORY_DEBUG : 0;
         Logger.Trace<D3D12Adapter>($"Creating {nameof(IDXGIFactory7)}. Flags = {flags}");
@@ -55,20 +56,48 @@ internal sealed unsafe class D3D12Adapter : IService
             Logger.Trace<D3D12Adapter>($"Found adapter {adapters[(int)index].DebugString}");
         }
 
-        var count = index - 1;
-        if (!memorySystem.TryAllocArray(out _adapters, count))
+        if (index == 0)
         {
-            Logger.Error<D3D12Adapter>($"Failed to allocate array. Count = {count} Size = {sizeof(DXGIAdapter) * index}");
+            Logger.Error<D3D12Adapter>("No adapters found.");
             return false;
         }
 
-        Debug.Assert(count < maxAdapters);
-        adapters[..(int)count]
+        if (!memorySystem.TryAllocArray(out _adapters, index))
+        {
+            Logger.Error<D3D12Adapter>($"Failed to allocate array. Count = {index} Size = {sizeof(DXGIAdapter) * index}");
+            return false;
+        }
+
+        adapters[..(int)index]
             .CopyTo(_adapters.AsSpan());
+
+        _primaryAdapterIndex = GetPrimaryAdapterIndex(config);
 
         _memorySystem = memorySystem;
 
         return true;
+    }
+
+    private uint GetPrimaryAdapterIndex(AdapterConfig? config)
+    {
+        if (config == null)
+        {
+            Logger.Trace<D3D12Adapter>("No adapter configuration");
+            return 0;
+        }
+
+        for (var i = 0u; i < _adapters.Length; ++i)
+        {
+            ref readonly var desc = ref _adapters[i].Desc;
+            if (desc.DeviceId == config.DeviceId && desc.VendorId == config.VendorId)
+            {
+                Logger.Trace<D3D12Adapter>($"Found a matching Adapter. Name = {_adapters[i].Name} DeviceId = {config.DeviceId} VendorId = {config.VendorId}");
+                return i;
+            }
+        }
+
+        Logger.Trace<D3D12Adapter>($"No matching adapter found. DeviceId = {config.DeviceId} VendorId = {config.VendorId}");
+        return 0;
     }
 
     public void Shutdown()
@@ -79,22 +108,4 @@ internal sealed unsafe class D3D12Adapter : IService
         }
         _memorySystem?.FreeArray(ref _adapters);
     }
-}
-
-internal unsafe struct DXGIAdapter(IDXGIAdapter3* adapter, in DXGI_ADAPTER_DESC1 desc) : IDisposable
-{
-    private ComPtr<IDXGIAdapter3> _adapter = adapter;
-    private readonly DXGI_ADAPTER_DESC1 _desc = desc;
-
-    [UnscopedRef]
-    public ref readonly DXGI_ADAPTER_DESC1 Desc => ref _desc;
-    public ReadOnlySpan<char> Name => _desc.DescriptionString();
-    public bool IsHardware => !IsSoftware;
-    public bool IsSoftware => (_desc.Flags & DXGI_ADAPTER_FLAG.DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
-    public string DebugString => $"{Name} Hardware = {IsHardware}";
-
-    public void Dispose() => _adapter.Dispose();
-
-    public static implicit operator IDXGIAdapter3*(in DXGIAdapter adapter) => adapter._adapter;
-    public static implicit operator IUnknown*(in DXGIAdapter adapter) => (IUnknown*)adapter._adapter.Get();
 }

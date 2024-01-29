@@ -4,6 +4,7 @@ using Titan.Rendering.Vulkan;
 
 namespace Titan.Rendering;
 
+public record AdapterConfig(uint DeviceId, uint VendorId);
 
 public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>
 {
@@ -14,6 +15,7 @@ public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>
 #endif
 
     public bool Debug { get; init; }
+    public AdapterConfig? Adapter { get; init; }
 
     public static RenderingConfig Default => new ()
     {

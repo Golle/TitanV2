@@ -1,6 +1,7 @@
 using Titan.Application;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Rendering.D3D12.Adapters;
 
 namespace Titan.Rendering.D3D12;
 
@@ -21,7 +22,7 @@ internal class D3D12Module : IModule
         var memorySystem = app.GetService<IMemorySystem>();
         var config = app.GetConfigOrDefault<RenderingConfig>();
 
-        if (!adapters.Init(memorySystem, config.Debug))
+        if (!adapters.Init(memorySystem, config.Adapter, config.Debug))
         {
             Logger.Error<D3D12Module>($"Failed to init {nameof(D3D12Adapter)}");
             return false;
