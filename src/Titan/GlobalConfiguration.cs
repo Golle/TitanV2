@@ -12,6 +12,7 @@ internal enum Platforms
 internal static class GlobalConfiguration
 {
     public static readonly Platforms Platform = GetPlatform();
+    public const uint MaxRenderFrames = 3; 
 
 
     private static Platforms GetPlatform()

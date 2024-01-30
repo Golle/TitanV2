@@ -3,11 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Platform.Win32.D3D12;
 
-public unsafe interface INativeGuid
-{
-    static abstract Guid* Guid { get; }
-}
-
 [Guid("e865df17-a9ee-46f9-a463-3098315aa2e5")]
 public unsafe struct ID3D12Device4 : INativeGuid
 {

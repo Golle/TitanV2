@@ -1,8 +1,13 @@
+using System.Drawing;
 using Titan.Application;
+using Titan.Core.Memory;
+using Titan.Platform.Win32.D3D;
 using Titan.Rendering.D3D12;
 using Titan.Rendering.Vulkan;
 
 namespace Titan.Rendering;
+
+
 
 public record AdapterConfig(uint DeviceId, uint VendorId);
 
@@ -17,7 +22,7 @@ public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>
     public bool Debug { get; init; }
     public AdapterConfig? Adapter { get; init; }
 
-    public static RenderingConfig Default => new ()
+    public static RenderingConfig Default => new()
     {
         Debug = DefaultDebug
     };

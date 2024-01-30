@@ -15,6 +15,10 @@ internal unsafe class Win32Window(string title) : IWindow
     private int _width;
     private int _height;
 
+    public nint NativeHandle => _windowHandle;
+    public uint Height => (uint)_height;
+    public uint Width => (uint)_width;
+
     public bool Init(WindowConfig config)
     {
         if (config.Title != null)
