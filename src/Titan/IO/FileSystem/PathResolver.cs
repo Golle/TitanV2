@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Titan.FileSystem;
+namespace Titan.IO.FileSystem;
 
 internal static class PathResolver
 {
@@ -23,5 +23,10 @@ internal static class PathResolver
     {
         var appData = GetAppDataPath(name);
         return Path.Combine(appData, "Logs");
+    }
+    public static string GetConfigsPath(string name)
+    {
+        var appData = GetAppDataPath(name);
+        return Path.Combine(appData, "Configs");
     }
 }

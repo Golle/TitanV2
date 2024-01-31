@@ -2,21 +2,20 @@ using System.Diagnostics;
 using Titan.Core.IO;
 using Titan.Core.Logging;
 
-namespace Titan.FileSystem;
+namespace Titan.IO.FileSystem;
 
-public record struct FileSystemArgs(string AppDataName, string EnginePath, string ContentPath);
-
-internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileApi
+internal class FileSystem<TFileApi>(string appdataName, string enginePath, string contentPath) : IFileSystem where TFileApi : INativeFileApi
 {
     private readonly FileApi<TFileApi>[] _fileApis = new FileApi<TFileApi>[(int)FilePathType.Count];
-    
-    public bool Init(FileSystemArgs args)
+
+    public bool Init()
     {
-        _fileApis[(int)FilePathType.AppData] = new FileApi<TFileApi>(PathResolver.GetAppDataPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Temp] = new FileApi<TFileApi>(PathResolver.GetTempPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Logs] = new FileApi<TFileApi>(PathResolver.GetLogsPath(args.AppDataName), false);
-        _fileApis[(int)FilePathType.Content] = new FileApi<TFileApi>(args.ContentPath, true);
-        _fileApis[(int)FilePathType.Engine] = new FileApi<TFileApi>(args.EnginePath, true);
+        _fileApis[(int)FilePathType.AppData] = new FileApi<TFileApi>(PathResolver.GetAppDataPath(appdataName), false);
+        _fileApis[(int)FilePathType.Temp] = new FileApi<TFileApi>(PathResolver.GetTempPath(appdataName), false);
+        _fileApis[(int)FilePathType.Logs] = new FileApi<TFileApi>(PathResolver.GetLogsPath(appdataName), false);
+        _fileApis[(int)FilePathType.Configs] = new FileApi<TFileApi>(PathResolver.GetConfigsPath(appdataName), false);
+        _fileApis[(int)FilePathType.Content] = new FileApi<TFileApi>(contentPath, true);
+        _fileApis[(int)FilePathType.Engine] = new FileApi<TFileApi>(enginePath, true);
 
         for (var i = 0; i < _fileApis.Length; ++i)
         {
@@ -27,6 +26,7 @@ internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileAp
                 return false;
             }
         }
+
         return true;
     }
 
@@ -34,6 +34,7 @@ internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileAp
     {
         try
         {
+            Logger.Trace<FileSystem<TFileApi>>($"Create directory. Path = {path}");
             Directory.CreateDirectory(path);
         }
         catch (Exception e)
@@ -44,10 +45,9 @@ internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileAp
         return true;
     }
 
-    public bool Shutdown()
+    public void Shutdown()
     {
         Array.Clear(_fileApis);
-        return true;
     }
 
     public FileHandle Open(ReadOnlySpan<char> path, FilePathType type)
@@ -67,6 +67,6 @@ internal class FileSystem<TFileApi> : IFileSystem where TFileApi : INativeFileAp
     public int Read(in FileHandle handle, Span<byte> buffer, ulong offset)
         => _fileApis[(int)handle.Type].Read(handle.NativeFileHandle, buffer, offset);
 
-    public long GetLength(in FileHandle handle) 
+    public long GetLength(in FileHandle handle)
         => _fileApis[(int)handle.Type].GetLength(handle.NativeFileHandle);
 }

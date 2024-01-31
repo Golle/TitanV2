@@ -8,7 +8,7 @@ using static Titan.Platform.Win32.GenericRights;
 
 namespace Titan.Core.IO.Platform;
 
-internal unsafe class Win32FileApi : INativeFileApi
+internal unsafe struct Win32FileApi : INativeFileApi
 {
     public static NativeFileHandle Open(ReadOnlySpan<char> path, FileAccess access, FileMode mode)
     {
@@ -38,8 +38,7 @@ internal unsafe class Win32FileApi : INativeFileApi
             return Read(handle, pBuffer, (nuint)buffer.Length, offset);
         }
     }
-
-
+    
     public static int Read(in NativeFileHandle handle, void* buffer, nuint bufferSize, ulong offset)
     {
         Trace($"Read {bufferSize} bytes from file {handle} at offset {offset}");

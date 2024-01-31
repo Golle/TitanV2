@@ -22,6 +22,10 @@ public enum FilePathType
     /// Logs folder that lives inside the AppData
     /// </summary>
     Logs,
+    /// <summary>
+    /// Configs folder contains all engine/game configurations.
+    /// </summary>
+    Configs,
 
     /// <summary>
     /// The number of types

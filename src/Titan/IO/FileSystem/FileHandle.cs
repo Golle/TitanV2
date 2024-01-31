@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Titan.Core.IO;
 
-namespace Titan.FileSystem;
+namespace Titan.IO.FileSystem;
 
 public struct FileHandle
 {

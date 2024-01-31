@@ -12,7 +12,6 @@ internal readonly struct FileApi<TFileApi>(string basePath, bool readOnly) : IFi
     {
         Debug.Assert(BasePath != null, $"{GetType().Name} has not been initialized.");
         var fullPath = Path.GetFullPath($"{BasePath}{Path.DirectorySeparatorChar}{path}");
-
         return TFileApi.Open(fullPath, IsReadOnly ? FileAccess.Read : FileAccess.ReadWrite, FileMode.Open);
     }
 

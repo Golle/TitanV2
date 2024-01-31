@@ -12,6 +12,7 @@ internal enum Platforms
 internal static class GlobalConfiguration
 {
     public static readonly Platforms Platform = GetPlatform();
+    public static readonly string BasePath = AppContext.BaseDirectory;
     public const uint MaxRenderFrames = 3; 
 
 

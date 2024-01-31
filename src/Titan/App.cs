@@ -17,6 +17,9 @@ public record AppConfig(string Name, string Version)
     public ApplicationType ApplicationType { get; init; } = ApplicationType.Game;
     public MemoryConfig Memory { get; init; } = MemoryConfig.Default;
     public JobSystemConfig JobSystem { get; init; } = JobSystemConfig.Default;
+
+    public string? EnginePath { get; init; }
+    public string? ContentPath { get; init; }
 }
 
 public static class App

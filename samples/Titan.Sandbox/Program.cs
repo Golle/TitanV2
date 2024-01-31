@@ -5,7 +5,11 @@ using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
-var appConfig = new AppConfig("Titan.Sandbox", "0.0.1");
+var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
+{
+    EnginePath = EngineHelper.GetEngineFolder("Titan.sln"),
+    ContentPath = EngineHelper.GetContentPath("Titan.Sandbox.csproj", "Assets")
+};
 
 App.Create(appConfig)
     .AddModule<GameModule>()

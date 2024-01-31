@@ -1,7 +1,9 @@
-﻿using Titan.Application;
+using Titan.Application;
+using Titan.Core.IO.Platform;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Platform;
 using Titan.Core.Threading.Platform;
+using Titan.IO;
 
 namespace Titan.Modules;
 
@@ -18,7 +20,9 @@ internal class CoreModule : IModule
 
         builder
             .AddModule<MemoryModule<Win32PlatformAllocator>>()
-            .AddModule<ThreadingModule<Win32NativeThreadApi>>();
+            .AddModule<ThreadingModule<Win32NativeThreadApi>>()
+            .AddModule<FileSystemModule<Win32FileApi>>()
+            ;
 
         return true;
     }
