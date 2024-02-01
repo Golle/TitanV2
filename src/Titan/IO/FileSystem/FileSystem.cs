@@ -50,11 +50,11 @@ internal class FileSystem<TFileApi>(string appdataName, string enginePath, strin
         Array.Clear(_fileApis);
     }
 
-    public FileHandle Open(ReadOnlySpan<char> path, FilePathType type)
+    public FileHandle Open(ReadOnlySpan<char> path, FilePathType type, bool createIfNotExist)
     {
         Debug.Assert(type != FilePathType.Count);
         ref readonly var fileApi = ref _fileApis[(int)type];
-        var handle = fileApi.Open(path);
+        var handle = fileApi.Open(path, createIfNotExist);
         return new(handle, type, fileApi.IsReadOnly);
     }
 
@@ -67,6 +67,12 @@ internal class FileSystem<TFileApi>(string appdataName, string enginePath, strin
     public int Read(in FileHandle handle, Span<byte> buffer, ulong offset)
         => _fileApis[(int)handle.Type].Read(handle.NativeFileHandle, buffer, offset);
 
+    public int Write(in FileHandle handle, ReadOnlySpan<byte> content, ulong offset = 0) 
+        => _fileApis[(int)handle.Type].Write(handle.NativeFileHandle, content, offset);
+
     public long GetLength(in FileHandle handle)
         => _fileApis[(int)handle.Type].GetLength(handle.NativeFileHandle);
+
+    public void Truncate(in FileHandle handle)
+        => _fileApis[(int)handle.Type].Truncate(handle.NativeFileHandle);
 }

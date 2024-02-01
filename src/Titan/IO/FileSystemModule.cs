@@ -17,21 +17,19 @@ internal class FileSystemModule<TFileApi> : IModule where TFileApi : INativeFile
         var enginePath = contentPath;
 #endif
 
-        builder.AddService<IFileSystem, FileSystem<TFileApi>>(new FileSystem<TFileApi>(config.Name, enginePath, contentPath));
-        return true;
-    }
-
-    public static bool Init(IApp app)
-    {
-        var fileSystem = app.GetService<FileSystem<TFileApi>>();
+        var fileSystem = new FileSystem<TFileApi>(config.Name, enginePath, contentPath);
         if (!fileSystem.Init())
         {
             Logger.Error<FileSystemModule<TFileApi>>($"Failed to init the {nameof(FileSystem<TFileApi>)}.");
             return false;
         }
 
+        builder.AddService<IFileSystem, FileSystem<TFileApi>>(fileSystem);
         return true;
     }
+
+    public static bool Init(IApp app) 
+        => true;
 
     public static bool Shutdown(IApp app)
     {

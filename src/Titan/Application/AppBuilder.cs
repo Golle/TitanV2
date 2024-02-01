@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
+using Titan.Configurations;
 using Titan.Core.Logging;
 
 namespace Titan.Application;
@@ -7,7 +9,8 @@ namespace Titan.Application;
 internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
-    private readonly List<IConfiguration> _configurations = new();
+    private readonly List<ConfigurationDescriptor> _configurations = new();
+
     private readonly List<Module> _modules = new();
     private readonly Dictionary<Type, IService> _services = new();
 
@@ -62,7 +65,17 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         {
             throw new InvalidOperationException($"A configuration of type {typeof(T).Name} has already been added.");
         }
-        _configurations.Add(config);
+        _configurations.Add(ConfigurationDescriptor.Create(config));
+        return this;
+    }
+
+    public IAppBuilder AddPersistedConfig<T>(T config) where T : IConfiguration, IPersistable<T>
+    {
+        if (_configurations.Any(c => c.GetType() == typeof(T)))
+        {
+            throw new InvalidOperationException($"A configuration of type {typeof(T).Name} has already been added.");
+        }
+        _configurations.Add(ConfigurationDescriptor.CreatePersisted(config));
         return this;
     }
 
@@ -82,9 +95,10 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
             Logger.Error<AppBuilder>($"An unahandled exception was thrown from the App. Type = {e.GetType().Name}. Message = {e.Message}");
             Logger.Error<AppBuilder>(e.StackTrace ?? "[Stacktrace Missing]");
         }
-        
+
     }
 
-    public T GetService<T>() where T : IService 
+    public T GetService<T>() where T : IService
         => (T)_services[typeof(T)];
+
 }

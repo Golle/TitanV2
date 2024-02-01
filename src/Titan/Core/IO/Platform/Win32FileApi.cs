@@ -10,9 +10,9 @@ namespace Titan.Core.IO.Platform;
 
 internal unsafe struct Win32FileApi : INativeFileApi
 {
-    public static NativeFileHandle Open(ReadOnlySpan<char> path, FileAccess access, FileMode mode)
+    public static NativeFileHandle Open(ReadOnlySpan<char> path, FileAccess access, bool createIfNotExist)
     {
-        Trace($"Open file at path {path} with Access: {access} and Mode: {mode}");
+        Trace($"Open file. Path = {path} Access = {access} CreateIfNotExit = {createIfNotExist}");
         var desiredAccess = access switch
         {
             FileAccess.Read => GENERIC_READ,
@@ -22,7 +22,11 @@ internal unsafe struct Win32FileApi : INativeFileApi
         };
         fixed (char* pPath = path)
         {
-            var handle = Kernel32.CreateFileW(pPath, (uint)desiredAccess, 0, null, (int)CreationDisposition.OPEN_EXISTING, (uint)FileAttribute.FILE_ATTRIBUTE_NORMAL, default);
+            var creationDisposition = createIfNotExist
+                ? CreationDisposition.OPEN_ALWAYS
+                : CreationDisposition.OPEN_EXISTING;
+
+            var handle = Kernel32.CreateFileW(pPath, (uint)desiredAccess, 0, null, (uint)creationDisposition, (uint)FileAttribute.FILE_ATTRIBUTE_NORMAL, default);
             if (handle.IsValid())
             {
                 return new(handle);
@@ -38,7 +42,7 @@ internal unsafe struct Win32FileApi : INativeFileApi
             return Read(handle, pBuffer, (nuint)buffer.Length, offset);
         }
     }
-    
+
     public static int Read(in NativeFileHandle handle, void* buffer, nuint bufferSize, ulong offset)
     {
         Trace($"Read {bufferSize} bytes from file {handle} at offset {offset}");
@@ -60,7 +64,17 @@ internal unsafe struct Win32FileApi : INativeFileApi
     public static int Write(in NativeFileHandle handle, ReadOnlySpan<byte> buffer)
     {
         Trace($"Write {buffer.Length} bytes to file {handle}");
-        Debug.Fail("Write has not been implemented yet.");
+
+        fixed (byte* pBuffer = buffer)
+        {
+            //NOTE(Jens): Add Overlapped when we want to write to an offset.
+            uint bytesWritten;
+            if (Kernel32.WriteFile(handle.Handle, pBuffer, (uint)buffer.Length, &bytesWritten, null))
+            {
+                return (int)bytesWritten;
+            }
+        }
+        Logger.Error<Win32FileApi>($"Failed to write to handle {handle}");
         return -1;
     }
 
@@ -80,6 +94,13 @@ internal unsafe struct Win32FileApi : INativeFileApi
             return (long)fileSize.QuadPart;
         }
         return -1;
+    }
+
+    public static void Truncate(in NativeFileHandle handle)
+    {
+        Trace($"Truncate file: {handle}");
+        Kernel32.SetFilePointerEx(handle.Handle, default, null, FileMoveMethod.FILE_BEGIN);
+        Kernel32.SetEndOfFile(handle.Handle);
     }
 
 

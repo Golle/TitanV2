@@ -1,6 +1,7 @@
 using Titan;
 using Titan.Application;
 using Titan.Core.Logging;
+using Titan.Rendering;
 using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
@@ -13,11 +14,11 @@ var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 
 App.Create(appConfig)
     .AddModule<GameModule>()
-    .AddConfig(new WindowConfig(1024, 768, true, true))
-    //.AddConfig(RenderingConfig.Default with
-    //{
-    //    Adapter = new AdapterConfig(8712, 4318)
-    //})
+    .AddPersistedConfig(new WindowConfig(1024, 768, true, true))
+    .AddPersistedConfig(new RenderingConfig
+    {
+        Debug = true
+    })
     .BuildAndRun();
 
 internal class GameModule : IModule

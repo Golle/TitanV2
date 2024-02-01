@@ -90,7 +90,6 @@ internal class D3D12Module : IModule
             return false;
         }
 
-
         return true;
     }
 
@@ -99,9 +98,16 @@ internal class D3D12Module : IModule
         app.GetService<D3D12Device>()
             .Shutdown();
 
-        app.GetService<D3D12Adapter>()
+        var adapter = app.GetService<D3D12Adapter>();
+        ref readonly var adapterDesc = ref adapter.PrimaryAdapter.Desc;
+        app.UpdateConfig(app.GetConfigOrDefault<RenderingConfig>() with
+        {
+            Adapter = new AdapterConfig(adapterDesc.DeviceId, adapterDesc.VendorId)
+        });
+
+        adapter
             .Shutdown();
-        
+
         app.GetService<DXGISwapchain>()
             .Shutdown();
 
@@ -119,7 +125,7 @@ internal class D3D12Module : IModule
         app.GetService<D3D12DebugMessages>()
             .Shutdown();
 
-        
+
 
         return true;
     }

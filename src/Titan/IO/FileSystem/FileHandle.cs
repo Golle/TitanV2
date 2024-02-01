@@ -11,6 +11,7 @@ public struct FileHandle
 
     [UnscopedRef]
     public ref readonly NativeFileHandle Handle => ref NativeFileHandle;
+    public bool IsValid() => NativeFileHandle.IsValid();
     public bool IsInvalid() => NativeFileHandle.IsInvalid();
     internal FileHandle(NativeFileHandle handle, FilePathType type, bool isReadOnly)
     {

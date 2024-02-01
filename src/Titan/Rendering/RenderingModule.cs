@@ -1,17 +1,16 @@
-using System.Drawing;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Titan.Application;
-using Titan.Core.Memory;
-using Titan.Platform.Win32.D3D;
 using Titan.Rendering.D3D12;
 using Titan.Rendering.Vulkan;
 
 namespace Titan.Rendering;
 
-
-
 public record AdapterConfig(uint DeviceId, uint VendorId);
 
-public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>
+[JsonSerializable(typeof(RenderingConfig))]
+public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>, IPersistable<RenderingConfig>
 {
 #if DEBUG
     private const bool DefaultDebug = true;
@@ -26,12 +25,17 @@ public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>
     {
         Debug = DefaultDebug
     };
+
+    public static JsonTypeInfo<RenderingConfig> TypeInfo => TitanSerializationContext.Default.RenderingConfig;
+
+    public static string Filename => "rendering.conf";
 }
 
 internal sealed class RenderingModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
+        builder.AddPersistedConfig(RenderingConfig.Default);
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {
             builder.AddModule<D3D12Module>();

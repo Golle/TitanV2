@@ -24,9 +24,10 @@ public record AppConfig(string Name, string Version)
 
 public static class App
 {
-    public static IAppBuilder Create(AppConfig config) =>
-        new AppBuilder(config)
+    public static IAppBuilder Create(AppConfig config)
+    {
+        return new AppBuilder(config)
             .AddModule<CoreModule>()
-            .AddModule<ApplicationModule>()
-        ;
+            .AddModule<ApplicationModule>();
+    }
 }

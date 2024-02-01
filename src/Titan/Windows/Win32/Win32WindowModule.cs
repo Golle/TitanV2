@@ -30,7 +30,18 @@ internal class Win32WindowModule : IModule
 
     public static bool Shutdown(IApp app)
     {
-        app.GetService<Win32Window>()
+        var window = app.GetService<Win32Window>();
+        app.UpdateConfig(app.GetConfigOrDefault<WindowConfig>() with
+        {
+            Height = window.Height,
+            Width = window.Width,
+            Title = window.Title,
+            X = -1,
+            Y = -1,
+            Windowed = true
+        });
+
+        window
             .Shutdown();
 
         return true;

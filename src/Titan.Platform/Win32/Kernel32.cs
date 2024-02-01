@@ -94,11 +94,38 @@ public unsafe partial struct Kernel32
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool WriteFile(
+        HANDLE hFile,
+        void* lpBuffer,
+        uint nNumberOfBytesToWrite,
+        uint* lpNumberOfBytesWritten,
+        OVERLAPPED* lpOverlapped
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetFileSizeEx(
         HANDLE hFile,
         LARGE_INTEGER* lpFileSize
     );
 
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetEndOfFile(
+        HANDLE hFile
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetFilePointerEx(
+        HANDLE hFile,
+        LARGE_INTEGER liDistanceToMove,
+        LARGE_INTEGER* lpNewFilePointer,
+        FileMoveMethod dwMoveMethod
+    );
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]

@@ -2,7 +2,7 @@ namespace Titan.Core.IO;
 
 internal interface IFileApi
 {
-    NativeFileHandle Open(ReadOnlySpan<char> path);
+    NativeFileHandle Open(ReadOnlySpan<char> path, bool createIfNotExists = false);
     void Close(ref NativeFileHandle handle);
     int Read(in NativeFileHandle handle, Span<byte> buffer, ulong offset = 0L);
     int Write(in NativeFileHandle handle, ReadOnlySpan<byte> content, ulong offset = 0L);

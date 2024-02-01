@@ -8,11 +8,11 @@ internal readonly struct FileApi<TFileApi>(string basePath, bool readOnly) : IFi
 {
     public readonly bool IsReadOnly = readOnly;
     public readonly string BasePath = basePath;
-    public NativeFileHandle Open(ReadOnlySpan<char> path)
+    public NativeFileHandle Open(ReadOnlySpan<char> path, bool createIfNotExists)
     {
         Debug.Assert(BasePath != null, $"{GetType().Name} has not been initialized.");
         var fullPath = Path.GetFullPath($"{BasePath}{Path.DirectorySeparatorChar}{path}");
-        return TFileApi.Open(fullPath, IsReadOnly ? FileAccess.Read : FileAccess.ReadWrite, FileMode.Open);
+        return TFileApi.Open(fullPath, IsReadOnly ? FileAccess.Read : FileAccess.ReadWrite, createIfNotExists);
     }
 
     public void Close(ref NativeFileHandle handle)
@@ -39,4 +39,13 @@ internal readonly struct FileApi<TFileApi>(string basePath, bool readOnly) : IFi
     public long GetLength(in NativeFileHandle handle)
         => TFileApi.GetLength(handle);
 
+    public void Truncate(in NativeFileHandle handle)
+    {
+        if (IsReadOnly)
+        {
+            Logger.Error<FileApi<TFileApi>>($"Trying to {nameof(Truncate)} a handle that is read only");
+            return;
+        }
+        TFileApi.Truncate(handle);
+    }
 }

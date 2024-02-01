@@ -1,17 +1,24 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Windows.Win32;
 
 namespace Titan.Application;
 
-internal class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArray<Module> modules, ImmutableArray<IConfiguration> configurations) : IApp
+internal sealed class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArray<Module> modules, ImmutableArray<ConfigurationDescriptor> configurations) : IApp
 {
     public T GetService<T>() where T : IService
         => (T)services[typeof(T)];
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
-        => (T?)configurations.FirstOrDefault(c => c.GetType() == typeof(T)) ?? T.Default;
+        => GetService<IConfigurationSystem>().GetConfigOrDefault<T>();
+
+    public void UpdateConfig<T>(T config) where T : IConfiguration =>
+        GetService<IConfigurationSystem>().UpdateConfig(config);
+
+    public ImmutableArray<ConfigurationDescriptor> GetConfigurations()
+        => configurations;
 
     public void Run()
     {
@@ -40,7 +47,6 @@ internal class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArra
 
         var window = GetService<IWindow>();
 
-
         while (window.UpdateBlocking())
         {
             //Thread.Sleep(1);
@@ -55,7 +61,5 @@ internal class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArra
                 Logger.Warning<TitanApp>($"Failed to shutdown module. Name = {module.Name} Type = {module.Type}");
             }
         }
-
-
     }
 }

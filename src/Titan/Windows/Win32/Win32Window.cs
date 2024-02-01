@@ -15,10 +15,11 @@ internal unsafe class Win32Window(string title) : IWindow
     private int _width;
     private int _height;
 
+    public string? Title { get; private set; }
     public nint NativeHandle => _windowHandle;
     public uint Height => (uint)_height;
     public uint Width => (uint)_width;
-
+    
     public bool Init(WindowConfig config)
     {
         if (config.Title != null)
@@ -130,6 +131,7 @@ internal unsafe class Win32Window(string title) : IWindow
 
         _width = width;
         _height = height;
+        Title = title;
 
         ShowWindow(_windowHandle, ShowWindowCommands.SW_SHOW);
 
@@ -181,6 +183,8 @@ internal unsafe class Win32Window(string title) : IWindow
 
     public bool SetTitle(ReadOnlySpan<char> newTitle)
     {
+        //NOTE(Jens): This allocates memory, not sure we want this.
+        Title = newTitle.ToString();
         Debug.Assert(_windowHandle.IsValid);
         fixed (char* pTitle = newTitle)
         {
