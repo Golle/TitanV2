@@ -1,10 +1,12 @@
 using Titan;
 using Titan.Application;
-using Titan.Core.Logging;
+using Titan.Core.Logging;using Titan.ECS;
 using Titan.Rendering;
 using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
+
+var entity = new Entity(10, 45);
 
 var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 {

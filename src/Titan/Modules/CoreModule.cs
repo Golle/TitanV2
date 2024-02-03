@@ -20,10 +20,15 @@ internal class CoreModule : IModule
 
         builder
             .AddModule<FileSystemModule<Win32FileApi>>()
-            .AddModule<ConfigurationsModule>()
+
             .AddModule<MemoryModule<Win32PlatformAllocator>>()
             .AddModule<ThreadingModule<Win32NativeThreadApi>>()
             ;
+
+        builder
+            .AddModule<ConfigurationsModule>()
+            .AddModule<ECSModule>();
+
 
         return true;
     }

@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <LogLevel>Trace</LogLevel>
+    <DefineConstants>$(DefineConstants);TRACE_MODULE_INIT</DefineConstants>
   </PropertyGroup>
 
 <!-- General .NET Settings -->

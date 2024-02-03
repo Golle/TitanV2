@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Windows.Win32;
@@ -37,19 +38,17 @@ internal sealed class TitanApp(FrozenDictionary<Type, IService> services, Immuta
     {
         foreach (var module in modules)
         {
-            Logger.Trace<TitanApp>($"Init module. Name = {module.Name}");
             if (!module.Init(this))
             {
                 Logger.Error<TitanApp>($"Failed to init module. Name = {module.Name} Type = {module.Type}");
                 return;
             }
         }
-
         var window = GetService<IWindow>();
 
-        while (window.UpdateBlocking())
+        while (window.Update())
         {
-            //Thread.Sleep(1);
+            Thread.Sleep(1);
         }
 
 
