@@ -1,3 +1,4 @@
+using Titan.Application.Services;
 using Titan.Core.IO;
 
 namespace Titan.IO.FileSystem;

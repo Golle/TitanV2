@@ -1,4 +1,5 @@
-﻿using Titan.Core.Memory.Allocators;
+using Titan.Application.Services;
+using Titan.Core.Memory.Allocators;
 
 namespace Titan.Core.Memory;
 
@@ -21,11 +22,16 @@ public interface IMemorySystem : IService
     /// <param name="size">The size of the buffer</param>
     /// <returns>True if the allocation was successful</returns>
     bool TryAllocBuffer(out TitanBuffer buffer, uint size);
+
+    unsafe T* Alloc<T>() where T : unmanaged;
+    unsafe void* Alloc(uint size);
+    unsafe void Free(void* ptr);
     void FreeArray<T>(ref TitanArray<T> array) where T : unmanaged;
     void FreeBuffer(ref TitanBuffer buffer);
 
     bool TryCreateGeneralAllocator(out GeneralAllocator allocator, uint minSize, uint preAllocatedSize = 0);
     bool TryCreateBumpAllocator(out BumpAllocator allocator, uint size);
     bool TryCreatePoolAllocator<T>(out BumpAllocator allocator, uint count) where T : unmanaged;
+
     
 }

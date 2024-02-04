@@ -1,16 +1,16 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using Titan.Configurations;
+using Titan.Application.Configurations;
+using Titan.Application.Services;
 using Titan.Core.Logging;
-using Titan.Windows.Win32;
+using Titan.Runners;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(FrozenDictionary<Type, IService> services, ImmutableArray<Module> modules, ImmutableArray<ConfigurationDescriptor> configurations) : IApp
+internal sealed class TitanApp(FrozenDictionary<Type, ServiceDescriptor> services, ImmutableArray<Module> modules, ImmutableArray<ConfigurationDescriptor> configurations, IRunner runner) : IApp
 {
-    public T GetService<T>() where T : IService
-        => (T)services[typeof(T)];
+    public T GetService<T>() where T : class, IService
+        => services[typeof(T)].As<T>();
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
         => GetService<IConfigurationSystem>().GetConfigOrDefault<T>();
@@ -44,13 +44,12 @@ internal sealed class TitanApp(FrozenDictionary<Type, IService> services, Immuta
                 return;
             }
         }
-        var window = GetService<IWindow>();
+        Logger.Trace<TitanApp>($"Using runner {runner.GetType().Name}");
+        runner.Init(this);
 
-        while (window.Update())
+        while (runner.RunOnce())
         {
-            Thread.Sleep(1);
         }
-
 
         foreach (var module in modules.Reverse())
         {

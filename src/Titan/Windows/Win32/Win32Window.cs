@@ -6,7 +6,7 @@ using Titan.Platform.Win32;
 using static Titan.Platform.Win32.User32;
 
 namespace Titan.Windows.Win32;
-internal unsafe class Win32Window(string title) : IWindow
+internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : IWindow
 {
     // We only support a single window so this is fine.
     private const string ClassName = nameof(Win32Window);
@@ -14,12 +14,13 @@ internal unsafe class Win32Window(string title) : IWindow
     private HWND _windowHandle;
     private int _width;
     private int _height;
+    private readonly GCHandle _messagePumpHandle = GCHandle.Alloc(messagePump);
 
     public string? Title { get; private set; }
     public nint NativeHandle => _windowHandle;
     public uint Height => (uint)_height;
     public uint Width => (uint)_width;
-    
+
     public bool Init(WindowConfig config)
     {
         if (config.Title != null)
@@ -100,7 +101,7 @@ internal unsafe class Win32Window(string title) : IWindow
 
         }
 
-        void* parameter = null;
+        var parameter = (void*)(nint)_messagePumpHandle;
 
         fixed (char* pTitle = title)
         fixed (char* pClassName = ClassName)
@@ -175,7 +176,7 @@ internal unsafe class Win32Window(string title) : IWindow
         {
             return false;
         }
-     
+
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
         return true;
@@ -207,13 +208,27 @@ internal unsafe class Win32Window(string title) : IWindow
     [UnmanagedCallersOnly]
     private static nint WindowProc(HWND hwnd, WindowMessage message, nuint wParam, nuint lParam)
     {
-        //Logger.Trace<Win32Window>($"Window Proc event: {message}");
-
-        switch (message)
+        if (message == WindowMessage.WM_CREATE)
         {
-            case WindowMessage.WM_CLOSE:
-                PostQuitMessage(0);
-                break;
+            var create = (CREATESTRUCTW*)lParam;
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (nint)create->lpCreateParams);
+        }
+
+        var userData = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+        if (userData == 0)
+        {
+            Logger.Trace<Win32Window>($"No message pump, message discarded. Message = {message} wparam = 0x{wParam:X8} lParam = 0x{lParam:X8}");
+            return DefWindowProcW(hwnd, message, wParam, lParam);
+        }
+
+        var handle = (GCHandle)userData;
+        Debug.Assert(handle.IsAllocated);
+        var pump = (Win32MessagePump)handle.Target!;
+
+        var result = pump.OnMessage(hwnd, message, wParam, lParam);
+        if (result)
+        {
+            return 0;
         }
 
         return DefWindowProcW(hwnd, message, wParam, lParam);

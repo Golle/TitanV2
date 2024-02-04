@@ -1,3 +1,4 @@
+using Titan.Application.Services;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;

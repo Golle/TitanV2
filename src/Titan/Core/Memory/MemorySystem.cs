@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
@@ -73,6 +73,24 @@ internal sealed unsafe class MemorySystem<TPlatformAllocator> : IMemorySystem wh
         lock (_syncObject)
         {
             return _generalAllocator.TryAllocBuffer(out buffer, size, true);
+        }
+    }
+
+    public T* Alloc<T>() where T : unmanaged
+        => (T*)Alloc((uint)sizeof(T));
+    public void* Alloc(uint size)
+    {
+        lock (_syncObject)
+        {
+            return _generalAllocator.Alloc(size, true);
+        }
+    }
+
+    public void Free(void* ptr)
+    {
+        lock (_syncObject)
+        {
+            _generalAllocator.Free(ptr);
         }
     }
 

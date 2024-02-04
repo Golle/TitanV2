@@ -1,7 +1,9 @@
 using Titan;
 using Titan.Application;
-using Titan.Core.Logging;using Titan.ECS;
+using Titan.Core.Logging;
+using Titan.ECS;
 using Titan.Rendering;
+using Titan.Sandbox;
 using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
@@ -23,21 +25,24 @@ App.Create(appConfig)
     })
     .BuildAndRun();
 
-internal class GameModule : IModule
+namespace Titan.Sandbox
 {
-    public static bool Build(IAppBuilder builder, AppConfig config)
+    internal class GameModule : IModule
     {
+        public static bool Build(IAppBuilder builder, AppConfig config)
+        {
 
-        return true;
-    }
+            return true;
+        }
 
-    public static bool Init(IApp app)
-    {
-        return true;
-    }
+        public static bool Init(IApp app)
+        {
+            return true;
+        }
 
-    public static bool Shutdown(IApp app)
-    {
-        return true;
+        public static bool Shutdown(IApp app)
+        {
+            return true;
+        }
     }
 }

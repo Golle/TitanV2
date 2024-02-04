@@ -8,7 +8,7 @@ using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.IO.FileSystem;
 
-namespace Titan.Configurations;
+namespace Titan.Application.Configurations;
 
 internal sealed class ConfigurationSystem(IFileSystem fileSystem) : IConfigurationSystem
 {

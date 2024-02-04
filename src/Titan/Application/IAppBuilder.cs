@@ -1,3 +1,6 @@
+using Titan.Application.Services;
+using Titan.Runners;
+
 namespace Titan.Application;
 
 public interface IAppBuilder
@@ -13,5 +16,7 @@ public interface IAppBuilder
     /// Internal method for retrieving other services, this should only be used by internal system that is initialized during build
     /// </summary>
     /// <returns>The service</returns>
-    internal T GetService<T>() where T : IService;
+    internal T GetService<T>() where T : class, IService;
+
+    internal IAppBuilder UseRunner<T>() where T : IRunner;
 }

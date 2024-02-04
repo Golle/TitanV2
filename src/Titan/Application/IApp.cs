@@ -1,11 +1,12 @@
 using System.Collections.Immutable;
-using Titan.Configurations;
+using Titan.Application.Configurations;
+using Titan.Application.Services;
 
 namespace Titan.Application;
 
 public interface IApp
 {
-    T GetService<T>() where T : IService;
+    T GetService<T>() where T : class, IService;
     T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>;
     void UpdateConfig<T>(T config) where T : IConfiguration;
 

@@ -1,8 +1,9 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
-using Titan.Configurations;
+using Titan.Application.Configurations;
+using Titan.Application.Services;
 using Titan.Core.Logging;
+using Titan.Runners;
 
 namespace Titan.Application;
 
@@ -12,7 +13,8 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     private readonly List<ConfigurationDescriptor> _configurations = new();
 
     private readonly List<Module> _modules = new();
-    private readonly Dictionary<Type, IService> _services = new();
+    private readonly Dictionary<Type, ServiceDescriptor> _services = new();
+    private IRunner? _runner;
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
     {
@@ -21,7 +23,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         {
             throw new InvalidOperationException($"A service of type  {typeof(T).Name} has already been added.");
         }
-        _services.Add(typeof(T), instance);
+        _services.Add(typeof(T), new(instance));
         return this;
     }
 
@@ -37,8 +39,8 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         {
             throw new InvalidOperationException($"A service of type {typeof(TConcrete).Name} has already been added.");
         }
-        _services.Add(typeof(TConcrete), instance);
-        _services.Add(typeof(TInterface), instance);
+        _services.Add(typeof(TConcrete), new(instance));
+        _services.Add(typeof(TInterface), new(instance));
         return this;
     }
     public IAppBuilder AddModule<T>() where T : IModule
@@ -85,9 +87,14 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         var configurations = _configurations.ToImmutableArray();
         var modules = _modules.ToImmutableArray();
 
+        if (_runner == null)
+        {
+            throw new InvalidOperationException("No runner has been set.");
+        }
+
         try
         {
-            new TitanApp(services, modules, configurations)
+            new TitanApp(services, modules, configurations, _runner)
                 .Run();
         }
         catch (Exception e)
@@ -95,10 +102,14 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
             Logger.Error<AppBuilder>($"An unahandled exception was thrown from the App. Type = {e.GetType().Name}. Message = {e.Message}");
             Logger.Error<AppBuilder>(e.StackTrace ?? "[Stacktrace Missing]");
         }
-
     }
 
-    public T GetService<T>() where T : IService
-        => (T)_services[typeof(T)];
+    public T GetService<T>() where T : class, IService
+        => _services[typeof(T)].As<T>();
 
+    public IAppBuilder UseRunner<T>() where T : IRunner
+    {
+        _runner = T.Create();
+        return this;
+    }
 }

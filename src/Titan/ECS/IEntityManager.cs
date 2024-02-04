@@ -1,3 +1,5 @@
+using Titan.Application.Services;
+
 namespace Titan.ECS;
 
 public interface IEntityManager : IService

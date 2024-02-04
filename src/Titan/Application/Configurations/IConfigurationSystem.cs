@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization.Metadata;
+using Titan.Application.Services;
 
-namespace Titan.Configurations;
+namespace Titan.Application.Configurations;
 
 internal record struct ConfigurationDescriptor(IConfiguration Config, string? Filename, JsonTypeInfo? TypeInfo)
 {
