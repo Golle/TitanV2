@@ -1,5 +1,5 @@
 using Titan.Application;
-using Titan.Application.Configurations;
+using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.IO.FileSystem;
 

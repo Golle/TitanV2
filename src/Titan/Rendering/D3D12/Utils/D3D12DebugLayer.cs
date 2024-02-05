@@ -4,7 +4,6 @@ using Titan.Platform.Win32.DXGI;
 using Titan.Platform.Win32;
 using static Titan.Platform.Win32.D3D12.D3D12Common;
 using static Titan.Platform.Win32.Win32Common;
-using Titan.Application.Services;
 
 namespace Titan.Rendering.D3D12.Utils;
 internal sealed unsafe class D3D12DebugLayer : IService

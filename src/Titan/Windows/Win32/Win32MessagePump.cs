@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Titan.Application.Services;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -46,6 +45,8 @@ internal sealed unsafe class Win32MessagePump : IService
     }
 
 
+    public bool TryReadEvent(out Win32Event @event) 
+        => _queue->TryReadEvent(out @event);
 
     public void Update()
     {

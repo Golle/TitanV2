@@ -7,6 +7,7 @@ namespace Titan.Core;
 public struct ManagedResource<T>(GCHandle handle) : IDisposable
     where T : class
 {
+    public nint Handle => (nint)handle;
     public T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,4 +48,6 @@ public struct ManagedResource<T>(GCHandle handle) : IDisposable
             handle.Free();
         }
     }
+
+    public static explicit operator ManagedResource<T>(nint handle) => new((GCHandle)handle);
 }

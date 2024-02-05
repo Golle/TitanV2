@@ -1,4 +1,4 @@
-namespace Titan.Application.Services;
+namespace Titan;
 
 /// <summary>
 /// Marker interface for Services (Managed resources)

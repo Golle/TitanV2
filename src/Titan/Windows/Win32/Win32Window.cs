@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Platform.Win32;
 using static Titan.Platform.Win32.User32;
 
 namespace Titan.Windows.Win32;
-internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : IWindow
+internal unsafe class Win32Window(string title) : IWindow
 {
     // We only support a single window so this is fine.
     private const string ClassName = nameof(Win32Window);
@@ -14,14 +15,12 @@ internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : 
     private HWND _windowHandle;
     private int _width;
     private int _height;
-    private readonly GCHandle _messagePumpHandle = GCHandle.Alloc(messagePump);
-
     public string? Title { get; private set; }
     public nint NativeHandle => _windowHandle;
     public uint Height => (uint)_height;
     public uint Width => (uint)_width;
 
-    public bool Init(WindowConfig config)
+    public bool Init(WindowConfig config, ManagedResource<Win32MessagePump> messagePump)
     {
         if (config.Title != null)
         {
@@ -101,7 +100,7 @@ internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : 
 
         }
 
-        var parameter = (void*)(nint)_messagePumpHandle;
+
 
         fixed (char* pTitle = title)
         fixed (char* pClassName = ClassName)
@@ -118,7 +117,7 @@ internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : 
                 parent,
                 hMenu: 0,
                 instance,
-                parameter
+                (void*)messagePump.Handle
             );
 
             if (!_windowHandle.IsValid)
@@ -220,12 +219,10 @@ internal unsafe class Win32Window(string title, Win32MessagePump messagePump) : 
             Logger.Trace<Win32Window>($"No message pump, message discarded. Message = {message} wparam = 0x{wParam:X8} lParam = 0x{lParam:X8}");
             return DefWindowProcW(hwnd, message, wParam, lParam);
         }
+        var handle = (ManagedResource<Win32MessagePump>)userData;
+        Debug.Assert(handle.IsValid);
 
-        var handle = (GCHandle)userData;
-        Debug.Assert(handle.IsAllocated);
-        var pump = (Win32MessagePump)handle.Target!;
-
-        var result = pump.OnMessage(hwnd, message, wParam, lParam);
+        var result = handle.Value.OnMessage(hwnd, message, wParam, lParam);
         if (result)
         {
             return 0;

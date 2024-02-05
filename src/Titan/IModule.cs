@@ -1,4 +1,6 @@
-namespace Titan.Application;
+using Titan.Application;
+
+namespace Titan;
 
 /// <summary>
 /// Modules are initialized in the order they are registered, these should be system critical systems that rely on other systems

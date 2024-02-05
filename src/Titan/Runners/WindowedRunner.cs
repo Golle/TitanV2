@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Titan.Application;
 using Titan.Windows.Win32;
 
 namespace Titan.Runners;

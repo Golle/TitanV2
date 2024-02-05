@@ -1,5 +1,4 @@
 using System.Text;
-using Titan.Application.Services;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;

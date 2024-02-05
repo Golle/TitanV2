@@ -23,7 +23,8 @@ App.Create(appConfig)
     {
         Debug = true
     })
-    .BuildAndRun();
+    .Build()
+    .Run();
 
 namespace Titan.Sandbox
 {

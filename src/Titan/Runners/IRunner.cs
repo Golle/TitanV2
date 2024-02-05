@@ -1,5 +1,3 @@
-using Titan.Application;
-
 namespace Titan.Runners;
 internal interface IRunner
 {

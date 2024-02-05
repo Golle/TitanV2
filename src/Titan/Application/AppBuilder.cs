@@ -1,9 +1,10 @@
-using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Titan.Application.Configurations;
-using Titan.Application.Services;
+using Titan.Configurations;
 using Titan.Core.Logging;
+using Titan.Resources;
 using Titan.Runners;
+using Titan.Services;
+using Titan.Systems;
 
 namespace Titan.Application;
 
@@ -11,41 +12,42 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
     private readonly List<ConfigurationDescriptor> _configurations = new();
-
-    private readonly List<Module> _modules = new();
-    private readonly Dictionary<Type, ServiceDescriptor> _services = new();
+    private readonly List<ModuleDescriptor> _modules = new();
+    private readonly List<UnmanagedResourceDescriptor> _unmanagedResources = new();
+    private readonly List<ServiceDescriptor> _services = new();
     private IRunner? _runner;
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
     {
         Logger.Trace<AppBuilder>($"Add Service {typeof(T).Name} ({instance.GetType().Name})");
-        if (_services.ContainsKey(typeof(T)))
+        if (_services.Any(s => s.GetType() == typeof(T)))
         {
             throw new InvalidOperationException($"A service of type  {typeof(T).Name} has already been added.");
         }
-        _services.Add(typeof(T), new(instance));
+        _services.Add(new(instance, typeof(T)));
         return this;
     }
 
     public IAppBuilder AddService<TInterface, TConcrete>(TConcrete instance) where TConcrete : class, TInterface, IService
     {
         Logger.Trace<AppBuilder>($"Add Service {typeof(TConcrete).Name} : {typeof(TInterface).Name} ({instance.GetType().Name})");
-        if (_services.ContainsKey(typeof(TInterface)))
+        if (_services.Any(s => s.GetType() == typeof(TInterface)))
         {
             throw new InvalidOperationException($"A service of interface {typeof(TInterface).Name} has already been added.");
         }
 
-        if (_services.ContainsKey(typeof(TConcrete)))
+        if (_services.Any(s => s.GetType() == typeof(TConcrete)))
         {
             throw new InvalidOperationException($"A service of type {typeof(TConcrete).Name} has already been added.");
         }
-        _services.Add(typeof(TConcrete), new(instance));
-        _services.Add(typeof(TInterface), new(instance));
+
+        _services.Add(new(instance, typeof(TConcrete)));
+        _services.Add(new(instance, typeof(TInterface)));
         return this;
     }
     public IAppBuilder AddModule<T>() where T : IModule
     {
-        var module = Module.CreateFromType<T>();
+        var module = ModuleDescriptor.CreateFromType<T>();
         Logger.Trace<AppBuilder>($"Add module {module.Name}");
         if (_modules.Any(m => m.Type == module.Type))
         {
@@ -73,7 +75,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 
     public IAppBuilder AddPersistedConfig<T>(T config) where T : IConfiguration, IPersistable<T>
     {
-        if (_configurations.Any(c => c.GetType() == typeof(T)))
+        if (_configurations.Any(static c => c.GetType() == typeof(T)))
         {
             throw new InvalidOperationException($"A configuration of type {typeof(T).Name} has already been added.");
         }
@@ -81,31 +83,46 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         return this;
     }
 
-    public void BuildAndRun()
+    public IAppBuilder AddSystems<T>() where T : unmanaged, ISystem
     {
-        var services = _services.ToFrozenDictionary();
+        Span<SystemDescriptor> systems = stackalloc SystemDescriptor[10];
+        var count = T.GetSystems(systems);
+        for (var i = 0; i < count; ++i)
+        {
+            Logger.Info<AppBuilder>($"Added system. Name = {systems[i].Name.GetString()} (Not Yet Implemented)");
+        }
+
+        return this;
+    }
+
+    public IAppBuilder AddResource<T>() where T : unmanaged, IResource
+    {
+        if (_unmanagedResources.Any(r => r.Id == T.Id))
+        {
+            throw new InvalidOperationException($"A resource of type {typeof(T).Name} (Id = {T.Id}) has already been added.");
+        }
+        var descriptor = UnmanagedResourceDescriptor.Create<T>();
+        _unmanagedResources.Add(descriptor);
+        return this;
+    }
+
+    public IRunnable Build()
+    {
+        var services = new ServiceRegistry(_services.ToImmutableArray());
         var configurations = _configurations.ToImmutableArray();
         var modules = _modules.ToImmutableArray();
+        var unmanagedResources = _unmanagedResources.ToImmutableArray();
 
         if (_runner == null)
         {
             throw new InvalidOperationException("No runner has been set.");
         }
 
-        try
-        {
-            new TitanApp(services, modules, configurations, _runner)
-                .Run();
-        }
-        catch (Exception e)
-        {
-            Logger.Error<AppBuilder>($"An unahandled exception was thrown from the App. Type = {e.GetType().Name}. Message = {e.Message}");
-            Logger.Error<AppBuilder>(e.StackTrace ?? "[Stacktrace Missing]");
-        }
+        return new TitanApp(services, modules, configurations, unmanagedResources, _runner);
     }
 
     public T GetService<T>() where T : class, IService
-        => _services[typeof(T)].As<T>();
+        => _services.First(s => s.Type == typeof(T)).As<T>();
 
     public IAppBuilder UseRunner<T>() where T : IRunner
     {

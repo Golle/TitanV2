@@ -2,11 +2,13 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Titan.Core;
 
-namespace Titan.Application.Services;
+namespace Titan.Services;
 
-internal struct ServiceDescriptor(IService service) : IDisposable
+internal struct ServiceDescriptor(IService service, Type type) : IDisposable
 {
     private GCHandle _handle = GCHandle.Alloc(service);
+    public readonly Type Type = type;
+
     public readonly ManagedResource<T> AsHandle<T>() where T : class, IService
     {
         Debug.Assert(service.GetType().IsAssignableTo(typeof(T)));

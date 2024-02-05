@@ -1,5 +1,6 @@
-using Titan.Application.Services;
+using Titan.Resources;
 using Titan.Runners;
+using Titan.Systems;
 
 namespace Titan.Application;
 
@@ -10,7 +11,9 @@ public interface IAppBuilder
     IAppBuilder AddModule<T>() where T : IModule;
     IAppBuilder AddConfig<T>(T config) where T : IConfiguration;
     IAppBuilder AddPersistedConfig<T>(T config) where T : IConfiguration, IPersistable<T>;
-    void BuildAndRun();
+    IAppBuilder AddSystems<T>() where T : unmanaged, ISystem;
+    IAppBuilder AddResource<T>() where T : unmanaged, IResource;
+    IRunnable Build();
 
     /// <summary>
     /// Internal method for retrieving other services, this should only be used by internal system that is initialized during build

@@ -8,11 +8,11 @@ internal class Win32WindowModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        var messagePump = new Win32MessagePump();
-        var window = new Win32Window($"{config.Name} - {config.Version}", messagePump);
+        var window = new Win32Window($"{config.Name} - {config.Version}");
         builder
             .AddService<IWindow, Win32Window>(window)
-            .AddService(messagePump)
+            .AddService(new Win32MessagePump())
+            .AddResource<Win32MessageQueue>()
             ;
 
         return true;
@@ -31,7 +31,7 @@ internal class Win32WindowModule : IModule
             return false;
         }
 
-        if (!window.Init(config))
+        if (!window.Init(config, app.GetServiceHandle<Win32MessagePump>()))
         {
             Logger.Error<Win32WindowModule>($"Failed to init the {nameof(Win32Window)}");
             return false;

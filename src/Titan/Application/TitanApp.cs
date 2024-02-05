@@ -1,16 +1,21 @@
-using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Titan.Application.Configurations;
-using Titan.Application.Services;
+using System.Diagnostics;
+using Titan.Configurations;
+using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Resources;
 using Titan.Runners;
+using Titan.Services;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(FrozenDictionary<Type, ServiceDescriptor> services, ImmutableArray<Module> modules, ImmutableArray<ConfigurationDescriptor> configurations, IRunner runner) : IApp
+internal sealed class TitanApp(IManagedServices services, ImmutableArray<ModuleDescriptor> modules, ImmutableArray<ConfigurationDescriptor> configurations, ImmutableArray<UnmanagedResourceDescriptor> resources, IRunner runner) : IApp, IRunnable
 {
     public T GetService<T>() where T : class, IService
-        => services[typeof(T)].As<T>();
+        => services.GetService<T>();
+
+    public ManagedResource<T> GetServiceHandle<T>() where T : class, IService
+        => services.GetHandle<T>();
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
         => GetService<IConfigurationSystem>().GetConfigOrDefault<T>();
@@ -21,12 +26,20 @@ internal sealed class TitanApp(FrozenDictionary<Type, ServiceDescriptor> service
     public ImmutableArray<ConfigurationDescriptor> GetConfigurations()
         => configurations;
 
+    public ImmutableArray<UnmanagedResourceDescriptor> GetResources()
+        => resources;
+
     public void Run()
     {
         Logger.Info<TitanApp>("Application starting");
         try
         {
             RunInternal();
+        }
+        catch (Exception e)
+        {
+            Logger.Error<TitanApp>($"An unahandled exception was thrown from the App. Type = {e.GetType().Name}. Message = {e.Message}");
+            Logger.Error<TitanApp>(e.StackTrace ?? "[Stacktrace Missing]");
         }
         finally
         {
@@ -44,8 +57,15 @@ internal sealed class TitanApp(FrozenDictionary<Type, ServiceDescriptor> service
                 return;
             }
         }
+
         Logger.Trace<TitanApp>($"Using runner {runner.GetType().Name}");
         runner.Init(this);
+
+        Logger.Trace<TitanApp>("Init complete. Doing a GC Collect.");
+        var gcTimer = Stopwatch.StartNew();
+        GC.Collect();
+        gcTimer.Stop();
+        Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
 
         while (runner.RunOnce())
         {
@@ -61,3 +81,4 @@ internal sealed class TitanApp(FrozenDictionary<Type, ServiceDescriptor> service
         }
     }
 }
+

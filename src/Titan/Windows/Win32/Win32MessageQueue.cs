@@ -1,11 +1,13 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core.Logging;
+using Titan.Resources;
 using Titan.Windows.Win32.Events;
 
 namespace Titan.Windows.Win32;
 
-internal unsafe struct Win32MessageQueue
+[UnmanagedResource]
+internal unsafe partial struct Win32MessageQueue
 {
     public const int Win32MaxEventCount = 1024;
     private Win32Events _events;
@@ -39,7 +41,7 @@ internal unsafe struct Win32MessageQueue
                 continue;
             }
 
-            ref var @e = ref _events[index];
+            ref var e = ref _events[index];
             e.Id = T.Id;
             *(T*)e.DataStartPtr = @event;
             Interlocked.Increment(ref _eventCount);
@@ -71,5 +73,4 @@ internal unsafe struct Win32MessageQueue
     {
         private Win32Event _event;
     }
-
 }

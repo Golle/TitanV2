@@ -3,7 +3,7 @@ using Titan.Core.Logging;
 
 namespace Titan.Application;
 
-internal unsafe struct Module
+internal unsafe struct ModuleDescriptor
 {
     public required string Name;
     public required Type Type;
@@ -15,7 +15,7 @@ internal unsafe struct Module
     public bool Init(IApp app)
     {
 #if TRACE_MODULE_INIT
-        Logger.Trace<Module>($"Init module {Name}");
+        Logger.Trace<ModuleDescriptor>($"Init module {Name}");
         var timer = Stopwatch.StartNew();
         try
         {
@@ -24,7 +24,7 @@ internal unsafe struct Module
         finally
         {
             timer.Stop();
-            Logger.Trace<Module>($"Init module {Name} completed. Elapsed = {timer.Elapsed.TotalMilliseconds} ms");
+            Logger.Trace<ModuleDescriptor>($"Init module {Name} completed. Elapsed = {timer.Elapsed.TotalMilliseconds} ms");
         }
 #else
         return _init(app);
@@ -33,7 +33,7 @@ internal unsafe struct Module
 
     public bool Shutdown(IApp app) => _shutdown(app);
 
-    public static Module CreateFromType<T>() where T : IModule =>
+    public static ModuleDescriptor CreateFromType<T>() where T : IModule =>
         new()
         {
             Name = typeof(T).Name,
