@@ -2,7 +2,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Text;
 
 namespace Titan.Generators.Systems;
@@ -36,7 +35,7 @@ public class SystemsGenerator : IIncrementalGenerator
 
         static void Execute(Compilation _, ImmutableArray<SystemType> systemTypes, SourceProductionContext context)
         {
-            Dictionary<INamedTypeSymbol, List<string>> systems = new(systemTypes.Length, SymbolEqualityComparer.Default);
+            Dictionary<INamedTypeSymbol, List<(string Name, int Stage)>> systems = new(systemTypes.Length, SymbolEqualityComparer.Default);
             foreach (var system in systemTypes)
             {
                 if (!system.Method.ReturnsVoid)
@@ -51,7 +50,7 @@ public class SystemsGenerator : IIncrementalGenerator
                 {
                     systems[containingType] = list = new();
                 }
-                list.Add(name);
+                list.Add((name, system.Stage));
             }
 
 
@@ -62,7 +61,7 @@ public class SystemsGenerator : IIncrementalGenerator
         }
     }
 
-    private static void CreateSystem(ITypeSymbol type, IReadOnlyList<string> systems, SourceProductionContext context)
+    private static void CreateSystem(ITypeSymbol type, IReadOnlyList<(string Name, int Stage)> systems, SourceProductionContext context)
     {
         var builder = new FormattedBuilder(new StringBuilder());
         var containingNamespace = type.ContainingNamespace.ToDisplayString();
@@ -86,8 +85,9 @@ public class SystemsGenerator : IIncrementalGenerator
 
             for (var i = 0; i < systems.Count; ++i)
             {
-                var systemName = systems[i];
+                var (systemName, stage) = systems[i];
                 builder
+                    .AppendLine($"descriptors[{i}].Stage = ({TitanTypes.SystemStage}){stage};")
                     .AppendLine($"descriptors[{i}].Name = {TitanTypes.StringRef}.Create(\"{systemName}\");")
                     .AppendLine($"descriptors[{i}].Init = &{systemName}.Init;")
                     .AppendLine($"descriptors[{i}].Execute = &{systemName}.Execute;");

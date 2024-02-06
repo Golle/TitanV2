@@ -1,5 +1,4 @@
 using Titan.Core.Logging;
-using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows.Win32.Events;
 

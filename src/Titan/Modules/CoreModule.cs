@@ -3,6 +3,7 @@ using Titan.Core.IO.Platform;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Platform;
 using Titan.Core.Threading.Platform;
+using Titan.Events;
 using Titan.IO;
 using Titan.Resources;
 using Titan.Systems;
@@ -25,9 +26,11 @@ internal class CoreModule : IModule
 
             .AddModule<MemoryModule<Win32PlatformAllocator>>()
             .AddModule<ThreadingModule<Win32NativeThreadApi>>()
+            
             ;
 
         builder
+            .AddModule<EventsModule>()
             .AddModule<ConfigurationsModule>()
             .AddModule<ResourcesModule>()
             .AddModule<ECSModule>()

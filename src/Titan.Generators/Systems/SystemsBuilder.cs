@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -7,7 +8,8 @@ internal enum ModifierType
 {
     In,
     Ref,
-    Value
+    Value,
+    Pointer
 }
 
 internal readonly struct ParameterInfo(ModifierType modifier, string type, bool isUnmanaged)
@@ -27,7 +29,7 @@ internal static class SystemsBuilder
             .AppendLine();
 
         AppendNamespace(systemType.Type, builder);
-
+        
         var modifier = systemType.Type.DeclaredAccessibility.AsString();
         var name = systemType.Type.Name;
         var method = systemType.Method.Name;
@@ -44,14 +46,18 @@ internal static class SystemsBuilder
             .Parameters
             .Select(static p =>
             {
-                var type = p.Type.ToDisplayString();
+                if (p.Type is IPointerTypeSymbol pointerType)
+                {
+                    return new ParameterInfo(ModifierType.Pointer, pointerType.PointedAtType.ToDisplayString(), true);
+                }
+
                 var modifier = p.RefKind switch
                 {
                     RefKind.In => ModifierType.In,
                     RefKind.Ref => ModifierType.Ref,
                     _ => ModifierType.Value
                 };
-                return new ParameterInfo(modifier, type, p.Type.IsUnmanagedType);
+                return new ParameterInfo(modifier, p.Type.ToDisplayString(), p.Type.IsUnmanagedType);
             })
             .ToArray();
 
@@ -68,7 +74,6 @@ internal static class SystemsBuilder
 
         builder.AppendLine();
 
-
         // Create init function
         builder.AppendLine($"public static void Init({TitanTypes.SystemInitializer} initializer)")
             .AppendLine("{")
@@ -81,7 +86,7 @@ internal static class SystemsBuilder
             {
                 var resourceFunction = parameter.Modifier switch
                 {
-                    ModifierType.Ref => "GetMutableResource",
+                    ModifierType.Ref or ModifierType.Pointer => "GetMutableResource",
                     _ => "GetReadOnlyResource"
                 };
                 builder.AppendLine($"_p{i} = initializer.{resourceFunction}<{parameter.Type}>();");
@@ -108,11 +113,11 @@ internal static class SystemsBuilder
 
             var mod = p.Modifier switch
             {
-                ModifierType.In => "in",
-                ModifierType.Ref => "ref",
+                ModifierType.In => "in *",
+                ModifierType.Ref => "ref *",
                 _ => string.Empty
             };
-            return $"{mod} *_p{i}";
+            return $"{mod}_p{i}";
         }));
 
 

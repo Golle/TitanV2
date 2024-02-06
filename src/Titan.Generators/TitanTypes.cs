@@ -17,4 +17,5 @@ internal static class TitanTypes
     public const string StringRef = $"{Core}.Strings.StringRef";
     public const string SystemInitializer = $"{Systems}.SystemInitializer";
     public const string ManagedResource = $"{Core}.ManagedResource";
+    public const string SystemStage = $"{Systems}.SystemStage";
 }

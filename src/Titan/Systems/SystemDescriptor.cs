@@ -12,6 +12,7 @@ namespace Titan.Systems;
 public unsafe struct SystemDescriptor
 {
     public StringRef Name;
+    public SystemStage Stage;
     public delegate*<SystemInitializer, void> Init;
     public delegate*<void> Execute;
 }
