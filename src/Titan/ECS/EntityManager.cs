@@ -8,22 +8,22 @@ namespace Titan.ECS;
 
 internal sealed unsafe class EntityManager : IEntityManager
 {
-    private IMemorySystem? _memorySystem;
+    private IMemoryManager? _memoryManager;
     private TitanArray<Entity> _freeEntities;
 
     private volatile int _freeListCount;
     private uint _maxEntities;
 
-    public bool Init(IMemorySystem memorySystem, ECSConfig config)
+    public bool Init(IMemoryManager memoryManager, ECSConfig config)
     {
-        if (!memorySystem.TryAllocArray(out _freeEntities, config.MaxEntities))
+        if (!memoryManager.TryAllocArray(out _freeEntities, config.MaxEntities))
         {
             Logger.Error<EntityManager>($"Failed to allocate memory. Entities = {config.MaxEntities} Size = {sizeof(Entity) * config.MaxEntities}");
             return false;
         }
 
         _maxEntities = config.MaxEntities;
-        _memorySystem = memorySystem;
+        _memoryManager = memoryManager;
         _freeListCount = (int)_maxEntities;
 
 
@@ -40,11 +40,11 @@ internal sealed unsafe class EntityManager : IEntityManager
 
     public void Shutdown()
     {
-        if (_memorySystem != null)
+        if (_memoryManager != null)
         {
-            _memorySystem.FreeArray(ref _freeEntities);
+            _memoryManager.FreeArray(ref _freeEntities);
         }
-        _memorySystem = null;
+        _memoryManager = null;
     }
 
     public Entity Create()

@@ -1,6 +1,6 @@
 namespace Titan.Configurations;
 
-public interface IConfigurationSystem : IService
+public interface IConfigurationManager : IService
 {
     T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>;
 

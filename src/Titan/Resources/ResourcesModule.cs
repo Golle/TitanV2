@@ -15,10 +15,10 @@ internal class ResourcesModule : IModule
     public static bool Init(IApp app)
     {
         var registry = app.GetService<UnmanagedResourceRegistry>();
-        var memorySystem = app.GetService<IMemorySystem>();
+        var memoryManager = app.GetService<IMemoryManager>();
         var resources = app.GetResources();
 
-        if (!registry.Init(memorySystem, resources))
+        if (!registry.Init(memoryManager, resources))
         {
             Logger.Error<ResourcesModule>($"Failed to init {nameof(UnmanagedResourceRegistry)}");
             return false;

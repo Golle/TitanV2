@@ -13,7 +13,7 @@ public record MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory) : I
     public static MemoryConfig Default => new(DefaultMaxVirtualMemory, DefaultGeneralPurposeMemory);
 }
 
-internal sealed unsafe class MemorySystem<TPlatformAllocator> : IMemorySystem where TPlatformAllocator : IPlatformAllocator
+internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager where TPlatformAllocator : IPlatformAllocator
 {
     private PlatformAllocator* _allocator;
     private VirtualMemory _globalMemory;
@@ -28,20 +28,20 @@ internal sealed unsafe class MemorySystem<TPlatformAllocator> : IMemorySystem wh
         _allocator = (PlatformAllocator*)MemoryUtils.GlobalAlloc((nuint)sizeof(PlatformAllocator));
         if (_allocator == null)
         {
-            Logger.Error<MemorySystem<TPlatformAllocator>>($"Failed to allocate memory for the {nameof(PlatformAllocator)}");
+            Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to allocate memory for the {nameof(PlatformAllocator)}");
             return false;
         }
         *_allocator = PlatformAllocator.Create<TPlatformAllocator>();
 
         if (!VirtualMemory.TryCreate(out _globalMemory, _allocator, config.MaxVirtualMemory))
         {
-            Logger.Error<MemorySystem<TPlatformAllocator>>($"Failed to Reserve {nameof(VirtualMemory)}. Size = {config.MaxVirtualMemory} bytes.");
+            Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to Reserve {nameof(VirtualMemory)}. Size = {config.MaxVirtualMemory} bytes.");
             return false;
         }
 
         if (!_globalMemory.TryReserveBlock(config.GeneralPurposeMemory, out var generalPurposeMemory))
         {
-            Logger.Error<MemorySystem<TPlatformAllocator>>($"Failed to reserve memory for the General Purpose Allocator. Size = {config.GeneralPurposeMemory} bytes.");
+            Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to reserve memory for the General Purpose Allocator. Size = {config.GeneralPurposeMemory} bytes.");
             return false;
         }
 
@@ -118,7 +118,7 @@ internal sealed unsafe class MemorySystem<TPlatformAllocator> : IMemorySystem wh
         {
             if (!_globalMemory.TryReserveBlock(minSize, out var block))
             {
-                Logger.Error<MemorySystem<TPlatformAllocator>>($"Failed to create a {nameof(GeneralAllocator)}. Size = {minSize} bytes");
+                Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to create a {nameof(GeneralAllocator)}. Size = {minSize} bytes");
                 return false;
             }
             allocator = new GeneralAllocator(block);

@@ -19,7 +19,7 @@ public unsafe struct SystemDescriptor
 internal sealed unsafe class SystemsScheduler : ISystemsScheduler
 {
     private ImmutableArray<SystemDescriptor> _TEMPsystems;
-    public bool Init(IMemorySystem memorySystem, ImmutableArray<SystemDescriptor> systems, IUnmanagedResources unmanaged, IManagedServices services)
+    public bool Init(IMemoryManager memoryManager, ImmutableArray<SystemDescriptor> systems, IUnmanagedResources unmanaged, IManagedServices services)
     {
         Span<uint> mutable = stackalloc uint[64];
         Span<uint> readOnly = stackalloc uint[64];

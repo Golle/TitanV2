@@ -22,10 +22,10 @@ internal sealed class ECSModule : IModule
     public static bool Init(IApp app)
     {
         var entityManager = app.GetService<EntityManager>();
-        var memorySystem = app.GetService<IMemorySystem>();
+        var memoryManager = app.GetService<IMemoryManager>();
         var config = app.GetConfigOrDefault<ECSConfig>();
 
-        if (!entityManager.Init(memorySystem, config))
+        if (!entityManager.Init(memoryManager, config))
         {
             Logger.Error<ECSModule>($"Failed to init the {nameof(EntityManager)}.");
             return false;

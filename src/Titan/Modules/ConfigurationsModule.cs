@@ -10,18 +10,18 @@ internal sealed class ConfigurationsModule : IModule
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
         var fileSystem = builder.GetService<IFileSystem>();
-        builder.AddService<IConfigurationSystem, ConfigurationSystem>(new ConfigurationSystem(fileSystem));
+        builder.AddService<IConfigurationManager, ConfigurationManager>(new ConfigurationManager(fileSystem));
 
         return true;
     }
 
     public static bool Init(IApp app)
     {
-        var system = app.GetService<ConfigurationSystem>();
+        var system = app.GetService<ConfigurationManager>();
         var configurations = app.GetConfigurations();
         if (!system.Init(configurations))
         {
-            Logger.Error<ConfigurationsModule>($"Failed to init {nameof(ConfigurationSystem)}");
+            Logger.Error<ConfigurationsModule>($"Failed to init {nameof(ConfigurationManager)}");
             return false;
         }
 
@@ -30,7 +30,7 @@ internal sealed class ConfigurationsModule : IModule
 
     public static bool Shutdown(IApp app)
     {
-        var system = app.GetService<ConfigurationSystem>();
+        var system = app.GetService<ConfigurationManager>();
 
         system.Shutdown();
         return true;

@@ -2,7 +2,7 @@ using Titan.Core.Memory.Allocators;
 
 namespace Titan.Core.Memory;
 
-public interface IMemorySystem : IService
+public interface IMemoryManager : IService
 {
     /// <summary>
     /// Alloc an array from the global general purpose memory.

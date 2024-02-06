@@ -1,4 +1,4 @@
-﻿using Titan.Application;
+using Titan.Application;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 
@@ -8,14 +8,14 @@ internal class MemoryModule<TPlatformAllocator> : IModule where TPlatformAllocat
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        var system = new MemorySystem<TPlatformAllocator>();
+        var system = new MemoryManager<TPlatformAllocator>();
         if (!system.Init(config.Memory))
         {
-            Logger.Error<MemoryModule<TPlatformAllocator>>($"Failed to init the {nameof(IMemorySystem)}");
+            Logger.Error<MemoryModule<TPlatformAllocator>>($"Failed to init the {nameof(IMemoryManager)}");
             return false;
         }
 
-        builder.AddService<IMemorySystem, MemorySystem<TPlatformAllocator>>(system);
+        builder.AddService<IMemoryManager, MemoryManager<TPlatformAllocator>>(system);
         return true;
     }
 
@@ -24,8 +24,7 @@ internal class MemoryModule<TPlatformAllocator> : IModule where TPlatformAllocat
 
     public static bool Shutdown(IApp app)
     {
-        var memorySystem = (MemorySystem<TPlatformAllocator>)app.GetService<IMemorySystem>();
-        memorySystem.Shutdown();
+        app.GetService<MemoryManager<TPlatformAllocator>>().Shutdown();
 
         return true;
     }

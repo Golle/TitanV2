@@ -9,7 +9,7 @@ internal class ThreadingModule<TNativeThreadType> : IModule where TNativeThreadT
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        var memorySystem = builder.GetService<IMemorySystem>();
+        var memorySystem = builder.GetService<IMemoryManager>();
 
         var manager = new ThreadManager<TNativeThreadType>();
         var jobSystem = new JobSystem(manager);

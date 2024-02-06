@@ -27,9 +27,9 @@ internal unsafe struct DescriptorHeap
     private SpinLock _lock;
 
 
-    public bool Init(IMemorySystem memorySystem, D3D12Device device, DescriptorHeapType type, uint count, uint temporaryCount, bool shaderVisible)
+    public bool Init(IMemoryManager memoryManager, D3D12Device device, DescriptorHeapType type, uint count, uint temporaryCount, bool shaderVisible)
     {
-        if (!memorySystem.TryAllocArray(out _freeList, count))
+        if (!memoryManager.TryAllocArray(out _freeList, count))
         {
             Logger.Error<DescriptorHeap>($"Failed to allocate array. Count = {count} Size = {sizeof(uint)}");
             return false;
@@ -117,10 +117,10 @@ internal unsafe struct DescriptorHeap
         }
     }
 
-    public void Shutdown(IMemorySystem memorySystem)
+    public void Shutdown(IMemoryManager memoryManager)
     {
         _heap.Dispose();
-        memorySystem.FreeArray(ref _freeList);
+        memoryManager.FreeArray(ref _freeList);
         this = default;
     }
 

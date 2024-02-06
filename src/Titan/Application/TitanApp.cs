@@ -30,10 +30,10 @@ internal sealed class TitanApp(
             .GetResourcePointer<T>());
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
-        => GetService<IConfigurationSystem>().GetConfigOrDefault<T>();
+        => GetService<IConfigurationManager>().GetConfigOrDefault<T>();
 
     public void UpdateConfig<T>(T config) where T : IConfiguration =>
-        GetService<IConfigurationSystem>().UpdateConfig(config);
+        GetService<IConfigurationManager>().UpdateConfig(config);
 
     public ImmutableArray<ConfigurationDescriptor> GetConfigurations()
         => configurations;

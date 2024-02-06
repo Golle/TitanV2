@@ -25,10 +25,10 @@ internal sealed unsafe class D3D12Allocator : IService
     private DescriptorHeaps _heaps;
     private TempBuffersDescriptors _tempBuffers;
     private D3D12Device? _device;
-    private IMemorySystem? _memorySystem;
+    private IMemoryManager? _memoryManager;
     private int _frameIndex;
     private uint _tempBufferSize;
-    public bool Init(IMemorySystem memorySystem, D3D12Device device, in GPUMemoryConfig config)
+    public bool Init(IMemoryManager memoryManager, D3D12Device device, in GPUMemoryConfig config)
     {
         for (var i = 0; i < (int)DescriptorHeapType.Count; ++i)
         {
@@ -36,7 +36,7 @@ internal sealed unsafe class D3D12Allocator : IService
             var tempCount = type == DescriptorHeapType.ShaderResourceView ? config.TempShaderResourceViewCount : 0;
             var shaderVisible = type == DescriptorHeapType.ShaderResourceView;
             var count = config.GetDescriptorCount(type);
-            if (!_heaps[i].Init(memorySystem, device, type, count, tempCount, shaderVisible))
+            if (!_heaps[i].Init(memoryManager, device, type, count, tempCount, shaderVisible))
             {
                 Logger.Error<D3D12Allocator>($"Failed to initialize the {nameof(DescriptorHeap)}. Type = {type} Count = {count} ShaderVisibile = {shaderVisible} TempCount = {tempCount}");
                 return false;
@@ -69,7 +69,7 @@ internal sealed unsafe class D3D12Allocator : IService
             _tempBuffers[i] = desc;
         }
 
-        _memorySystem = memorySystem;
+        _memoryManager = memoryManager;
         _device = device;
         _tempBufferSize = tempBufferSize;
 
@@ -164,7 +164,7 @@ internal sealed unsafe class D3D12Allocator : IService
 
     public void Shutdown()
     {
-        if (_memorySystem != null)
+        if (_memoryManager != null)
         {
             foreach (ref var tempBuffersDescriptor in _tempBuffers)
             {
@@ -173,11 +173,11 @@ internal sealed unsafe class D3D12Allocator : IService
             }
             for (var i = 0; i < (int)DescriptorHeapType.Count; ++i)
             {
-                _heaps[i].Shutdown(_memorySystem);
+                _heaps[i].Shutdown(_memoryManager);
             }
         }
         _heaps = default;
-        _memorySystem = null;
+        _memoryManager = null;
     }
 
     [InlineArray((int)BufferCount)]

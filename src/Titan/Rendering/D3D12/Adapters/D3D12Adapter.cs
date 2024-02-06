@@ -9,11 +9,11 @@ namespace Titan.Rendering.D3D12.Adapters;
 internal sealed unsafe class D3D12Adapter : IService
 {
     private TitanArray<DXGIAdapter> _adapters;
-    private IMemorySystem? _memorySystem;
+    private IMemoryManager? _memoryManager;
 
     private uint _primaryAdapterIndex = 0;
     public ref readonly DXGIAdapter PrimaryAdapter => ref _adapters[_primaryAdapterIndex];
-    public bool Init(IMemorySystem memorySystem, AdapterConfig? config, bool debug)
+    public bool Init(IMemoryManager memoryManager, AdapterConfig? config, bool debug)
     {
         var flags = debug ? DXGI_CREATE_FACTORY_FLAGS.DXGI_CREATE_FACTORY_DEBUG : 0;
         Logger.Trace<D3D12Adapter>($"Creating {nameof(IDXGIFactory7)}. Flags = {flags}");
@@ -62,7 +62,7 @@ internal sealed unsafe class D3D12Adapter : IService
             return false;
         }
 
-        if (!memorySystem.TryAllocArray(out _adapters, index))
+        if (!memoryManager.TryAllocArray(out _adapters, index))
         {
             Logger.Error<D3D12Adapter>($"Failed to allocate array. Count = {index} Size = {sizeof(DXGIAdapter) * index}");
             return false;
@@ -73,7 +73,7 @@ internal sealed unsafe class D3D12Adapter : IService
 
         _primaryAdapterIndex = GetPrimaryAdapterIndex(config);
 
-        _memorySystem = memorySystem;
+        _memoryManager = memoryManager;
 
         return true;
     }
@@ -106,6 +106,6 @@ internal sealed unsafe class D3D12Adapter : IService
         {
             adapter.Dispose();
         }
-        _memorySystem?.FreeArray(ref _adapters);
+        _memoryManager?.FreeArray(ref _adapters);
     }
 }

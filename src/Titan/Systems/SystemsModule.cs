@@ -18,10 +18,10 @@ internal sealed class SystemsModule : IModule
         var scheduler = app.GetService<SystemsScheduler>();
         var unmanaged = app.GetService<IUnmanagedResources>();
         var managed = app.GetService<IManagedServices>();
-        var memorySystem = app.GetService<IMemorySystem>();
+        var memoryManager = app.GetService<IMemoryManager>();
         var systems = app.GetSystems();
 
-        if (!scheduler.Init(memorySystem, systems, unmanaged, managed))
+        if (!scheduler.Init(memoryManager, systems, unmanaged, managed))
         {
             Logger.Error<SystemsModule>($"Failed to init the {nameof(SystemsScheduler)}");
             return false;

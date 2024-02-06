@@ -40,11 +40,11 @@ internal class D3D12Module : IModule
         var swapchain = app.GetService<DXGISwapchain>();
         var window = app.GetService<IWindow>();
 
-        var memorySystem = app.GetService<IMemorySystem>();
+        var memoryManager = app.GetService<IMemoryManager>();
         var config = app.GetConfigOrDefault<RenderingConfig>();
         var d3d12Config = app.GetConfigOrDefault<D3D12Config>();
 
-        if (!adapters.Init(memorySystem, config.Adapter, config.Debug))
+        if (!adapters.Init(memoryManager, config.Adapter, config.Debug))
         {
             Logger.Error<D3D12Module>($"Failed to init {nameof(D3D12Adapter)}");
             return false;
@@ -73,7 +73,7 @@ internal class D3D12Module : IModule
         }
 #endif
 
-        if (!allocator.Init(memorySystem, device, d3d12Config.MemoryConfig))
+        if (!allocator.Init(memoryManager, device, d3d12Config.MemoryConfig))
         {
             Logger.Error<D3D12Module>($"Failed to init {nameof(D3D12Allocator)}");
             return false;

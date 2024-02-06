@@ -1,5 +1,6 @@
 using Titan.Application;
 using Titan.Core.Logging;
+using Titan.Input;
 using Titan.Rendering;
 using Titan.Runners;
 using Titan.Windows;
@@ -16,7 +17,9 @@ public class ApplicationModule : IModule
             builder
                 .AddModule<WindowModule>()
                 .AddModule<RenderingModule>()
-                .UseRunner<WindowedRunner>();
+                .AddModule<InputModule>()
+                .UseRunner<WindowedRunner>()
+                ;
         }
 
         return true;

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Logging;
@@ -31,9 +31,9 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
 
     private GCHandle _handle;
     private SemaphoreSlim _notifier = null!;
-    private IMemorySystem? _memorySystem;
+    private IMemoryManager? _memoryManager;
 
-    public bool Init(in JobSystemConfig config, IMemorySystem memorySystem)
+    public bool Init(in JobSystemConfig config, IMemoryManager memoryManager)
     {
         if (!MathUtils.IsPowerOf2(config.MaxQueuedJobs))
         {
@@ -53,13 +53,13 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
             Logger.Warning<JobSystem>($"You're about to create more workers than there are CPU cores. Worker count = {config.NumberOfWOrkers} CPU Cores = {Environment.ProcessorCount}");
         }
 
-        if (!memorySystem.TryAllocArray(out _workers, config.NumberOfWOrkers))
+        if (!memoryManager.TryAllocArray(out _workers, config.NumberOfWOrkers))
         {
             Logger.Error<JobSystem>($"Failed to allocate memory for the Workers. Count = {config.NumberOfWOrkers} Size = {config.NumberOfWOrkers * sizeof(Worker)}");
             return false;
         }
 
-        if (!memorySystem.TryAllocArray(out _jobs, config.MaxQueuedJobs))
+        if (!memoryManager.TryAllocArray(out _jobs, config.MaxQueuedJobs))
         {
             Logger.Error<JobSystem>($"Failed to allocate memory for the Jobs. Count = {config.MaxQueuedJobs} Size = {config.NumberOfWOrkers * sizeof(Job)}");
             return false;
@@ -83,7 +83,7 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
         {
             threadManager.Start(worker.NativeThread);
         }
-        _memorySystem = memorySystem;
+        _memoryManager = memoryManager;
 
         return true;
     }
@@ -110,8 +110,8 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
         AssertAllAvailable();
 
         // Cleanup memory usage
-        _memorySystem!.FreeArray(ref _workers);
-        _memorySystem!.FreeArray(ref _jobs);
+        _memoryManager!.FreeArray(ref _workers);
+        _memoryManager!.FreeArray(ref _jobs);
     }
 
     [Conditional("DEBUG")]

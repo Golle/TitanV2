@@ -17,8 +17,8 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
     private TitanBuffer _resources;
     private TitanArray<uint> _offsets;
 
-    private IMemorySystem? _memorySystem;
-    public bool Init(IMemorySystem memorySystem, ImmutableArray<UnmanagedResourceDescriptor> descriptors)
+    private IMemoryManager? _memoryManager;
+    public bool Init(IMemoryManager memoryManager, ImmutableArray<UnmanagedResourceDescriptor> descriptors)
     {
         if (descriptors.Length == 0)
         {
@@ -30,14 +30,14 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
         var alignedSize = (uint)descriptors.Sum(static d => d.AlignedSize);
 
         Logger.Trace<UnmanagedResourceRegistry>($"A total of {descriptors.Length} unmanaged resources. Size = {size} bytes. Total Size (Aligned) = {alignedSize} bytes.");
-        if (!memorySystem.TryAllocBuffer(out _resources, alignedSize))
+        if (!memoryManager.TryAllocBuffer(out _resources, alignedSize))
         {
             Logger.Error<UnmanagedResourceRegistry>($"Failed to allocate memory. Size = {alignedSize} bytes");
             return false;
         }
 
         var offsetLength = descriptors.Length + 1;
-        if (!memorySystem.TryAllocArray(out _offsets, (uint)offsetLength))
+        if (!memoryManager.TryAllocArray(out _offsets, (uint)offsetLength))
         {
             Logger.Error<UnmanagedResourceRegistry>($"Failed to allocate offsets array. Count = {offsetLength} Size = {sizeof(uint) * offsetLength}");
             return false;
@@ -50,7 +50,7 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
             offset += descriptor.AlignedSize;
         }
 
-        _memorySystem = memorySystem;
+        _memoryManager = memoryManager;
 
         return true;
     }
@@ -69,8 +69,8 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
 
     public void Shutdown()
     {
-        _memorySystem?.FreeArray(ref _offsets);
-        _memorySystem?.FreeBuffer(ref _resources);
-        _memorySystem = null;
+        _memoryManager?.FreeArray(ref _offsets);
+        _memoryManager?.FreeBuffer(ref _resources);
+        _memoryManager = null;
     }
 }
