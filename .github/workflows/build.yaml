@@ -20,6 +20,7 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
+        dotnet-quality: 'preview'
 
     - name: Build Engine
       run: dotnet build src/Titan -c Release
@@ -37,6 +38,7 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
+        dotnet-quality: 'preview'
 
     - name: Package Sandbox
       run: dotnet publish samples\Titan.Sandbox -c Release -o release/ -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false
