@@ -62,7 +62,7 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
     {
         Debug.Assert(T.Id < _offsets.Length, $"The index of the type is out of bounds. Might have forgot to register the type. Type = {typeof(T).Name}");
         var offset = _offsets[T.Id];
-        Debug.Assert(offset + sizeof(T) < _resources.Size, "The offset for the type exceeds the resources. Why?");
+        Debug.Assert(offset + sizeof(T) <= _resources.Size, "The offset for the type exceeds the resources. Why?");
         var ptr = _resources.AsPointer() + offset;
         return (T*)ptr;
     }
