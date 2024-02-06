@@ -39,4 +39,4 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Package Sandbox
-      run: dotnet publish samples\Titan.Sandbox -c Release -o release/ -r win-x64 --self-contained true -p:PublishAOT=true -p:DebugType=None -p:DebugSymbols=false
+      run: dotnet publish samples\Titan.Sandbox -c Release -o release/ -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false
