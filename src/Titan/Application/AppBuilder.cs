@@ -15,6 +15,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     private readonly List<ModuleDescriptor> _modules = new();
     private readonly List<UnmanagedResourceDescriptor> _unmanagedResources = new();
     private readonly List<ServiceDescriptor> _services = new();
+    private readonly List<SystemDescriptor> _systems = new();
     private IRunner? _runner;
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
@@ -28,7 +29,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         return this;
     }
 
-    public IAppBuilder AddService<TInterface, TConcrete>(TConcrete instance) where TConcrete : class, TInterface, IService
+    public IAppBuilder AddService<TInterface, TConcrete>(TConcrete instance) where TConcrete : class, TInterface, IService where TInterface : IService
     {
         Logger.Trace<AppBuilder>($"Add Service {typeof(TConcrete).Name} : {typeof(TInterface).Name} ({instance.GetType().Name})");
         if (_services.Any(s => s.GetType() == typeof(TInterface)))
@@ -65,7 +66,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 
     public IAppBuilder AddConfig<T>(T config) where T : IConfiguration
     {
-        if (_configurations.Any(c => c.GetType() == typeof(T)))
+        if (_configurations.Any(static c => c.Config.GetType() == typeof(T)))
         {
             throw new InvalidOperationException($"A configuration of type {typeof(T).Name} has already been added.");
         }
@@ -75,7 +76,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 
     public IAppBuilder AddPersistedConfig<T>(T config) where T : IConfiguration, IPersistable<T>
     {
-        if (_configurations.Any(static c => c.GetType() == typeof(T)))
+        if (_configurations.Any(static c => c.Config.GetType() == typeof(T)))
         {
             throw new InvalidOperationException($"A configuration of type {typeof(T).Name} has already been added.");
         }
@@ -87,11 +88,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     {
         Span<SystemDescriptor> systems = stackalloc SystemDescriptor[10];
         var count = T.GetSystems(systems);
-        for (var i = 0; i < count; ++i)
-        {
-            Logger.Info<AppBuilder>($"Added system. Name = {systems[i].Name.GetString()} (Not Yet Implemented)");
-        }
-
+        _systems.AddRange(systems[..count]);
         return this;
     }
 
@@ -112,13 +109,14 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         var configurations = _configurations.ToImmutableArray();
         var modules = _modules.ToImmutableArray();
         var unmanagedResources = _unmanagedResources.ToImmutableArray();
+        var systems = _systems.ToImmutableArray();
 
         if (_runner == null)
         {
             throw new InvalidOperationException("No runner has been set.");
         }
 
-        return new TitanApp(services, modules, configurations, unmanagedResources, _runner);
+        return new TitanApp(services, modules, configurations, unmanagedResources, systems, _runner);
     }
 
     public T GetService<T>() where T : class, IService

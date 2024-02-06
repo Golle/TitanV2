@@ -34,7 +34,6 @@ internal sealed class RenderingModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        builder.AddPersistedConfig(RenderingConfig.Default);
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {
             builder.AddModule<D3D12Module>();

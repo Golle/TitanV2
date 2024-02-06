@@ -5,6 +5,7 @@ using Titan.Core.Memory.Platform;
 using Titan.Core.Threading.Platform;
 using Titan.IO;
 using Titan.Resources;
+using Titan.Systems;
 
 namespace Titan.Modules;
 
@@ -29,7 +30,8 @@ internal class CoreModule : IModule
         builder
             .AddModule<ConfigurationsModule>()
             .AddModule<ResourcesModule>()
-            .AddModule<ECSModule>();
+            .AddModule<ECSModule>()
+            .AddModule<SystemsModule>();
 
 
         return true;

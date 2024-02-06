@@ -6,16 +6,28 @@ using Titan.Core.Logging;
 using Titan.Resources;
 using Titan.Runners;
 using Titan.Services;
+using Titan.Systems;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(IManagedServices services, ImmutableArray<ModuleDescriptor> modules, ImmutableArray<ConfigurationDescriptor> configurations, ImmutableArray<UnmanagedResourceDescriptor> resources, IRunner runner) : IApp, IRunnable
+internal sealed class TitanApp(
+    IManagedServices services,
+    ImmutableArray<ModuleDescriptor> modules,
+    ImmutableArray<ConfigurationDescriptor> configurations,
+    ImmutableArray<UnmanagedResourceDescriptor> resources,
+    ImmutableArray<SystemDescriptor> systems,
+    IRunner runner
+    ) : IApp, IRunnable
 {
     public T GetService<T>() where T : class, IService
         => services.GetService<T>();
 
     public ManagedResource<T> GetServiceHandle<T>() where T : class, IService
         => services.GetHandle<T>();
+
+    public unsafe UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource =>
+        new(services.GetService<IUnmanagedResources>()
+            .GetResourcePointer<T>());
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
         => GetService<IConfigurationSystem>().GetConfigOrDefault<T>();
@@ -28,6 +40,9 @@ internal sealed class TitanApp(IManagedServices services, ImmutableArray<ModuleD
 
     public ImmutableArray<UnmanagedResourceDescriptor> GetResources()
         => resources;
+
+    public ImmutableArray<SystemDescriptor> GetSystems()
+        => systems;
 
     public void Run()
     {

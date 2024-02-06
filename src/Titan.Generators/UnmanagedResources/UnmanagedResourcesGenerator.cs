@@ -17,7 +17,7 @@ public class UnmanagedResourcesGenerator : IIncrementalGenerator
         var valueProvider = context
             .CompilationProvider
             .Combine(structDeclarations.Collect());
-
+        
         context
             .RegisterSourceOutput(valueProvider, static (productionContext, source) => Execute(source.Left, source.Right!, productionContext));
 

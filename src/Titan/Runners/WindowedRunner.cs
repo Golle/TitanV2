@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Systems;
 using Titan.Windows.Win32;
 
 namespace Titan.Runners;
@@ -6,7 +7,7 @@ namespace Titan.Runners;
 internal class WindowedRunner : IRunner
 {
     private IWindow? _window;
-    private Win32MessagePump? _messagePump; // temp
+    private ISystemsScheduler? _scheduler;
 
     public static IRunner Create()
         => new WindowedRunner();
@@ -14,15 +15,17 @@ internal class WindowedRunner : IRunner
     public void Init(IApp app)
     {
         _window = app.GetService<IWindow>();
-        _messagePump = app.GetService<Win32MessagePump>();
+        _scheduler = app.GetService<ISystemsScheduler>();
     }
 
     public bool RunOnce()
     {
-        Debug.Assert(_window != null && _messagePump != null);
-
         Thread.Sleep(1);
-        _messagePump.Update();
-        return _window.Update();
+        Debug.Assert(_window != null && _scheduler != null);
+        
+        var updateResult = _window.Update();
+
+        _scheduler.Execute();
+        return updateResult;
     }
 }

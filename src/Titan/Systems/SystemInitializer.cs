@@ -1,25 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Titan.Core;
-using Titan.Core.Strings;
 using Titan.Resources;
 using Titan.Services;
 
 namespace Titan.Systems;
-
-
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class SystemAttribute(SystemStage Stage = SystemStage.Update) : Attribute;
-
-public enum SystemStage
-{
-    First,
-    PreUpdate,
-    Update,
-    PostUpdate,
-    Last
-}
 
 public unsafe ref struct SystemInitializer(IUnmanagedResources unmanagedResources, IManagedServices managedServices, Span<uint> mutable, Span<uint> readOnly)
 {
@@ -49,17 +34,4 @@ public unsafe ref struct SystemInitializer(IUnmanagedResources unmanagedResource
         //NOTE(Jens): Managed services are not tracked.
         return managedServices.GetHandle<T>();
     }
-}
-
-[StructLayout(LayoutKind.Sequential)]
-public unsafe struct SystemDescriptor
-{
-    public StringRef Name;
-    public delegate*<SystemInitializer, void> Init;
-    public delegate*<void> Execute;
-}
-
-public interface ISystem
-{
-    static abstract int GetSystems(Span<SystemDescriptor> descriptors);
 }

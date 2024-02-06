@@ -24,13 +24,13 @@ internal class ServiceRegistry : IManagedServices
 
     public T GetService<T>() where T : class, IService
     {
-        Debug.Assert(_services.ContainsKey(typeof(T)));
+        Debug.Assert(_services.ContainsKey(typeof(T)), $"The type {typeof(T)} has not been registered.");
         return _services[typeof(T)].As<T>();
     }
 
     public ManagedResource<T> GetHandle<T>() where T : class, IService
     {
-        Debug.Assert(_services.ContainsKey(typeof(T)));
+        Debug.Assert(_services.ContainsKey(typeof(T)), $"The type {typeof(T)} has not been registered.");
         return _services[typeof(T)].AsHandle<T>();
     }
 }

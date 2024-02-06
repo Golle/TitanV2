@@ -36,10 +36,18 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
             return false;
         }
 
-        if (!memorySystem.TryAllocArray(out _offsets, (uint)descriptors.Length))
+        var offsetLength = descriptors.Length + 1;
+        if (!memorySystem.TryAllocArray(out _offsets, (uint)offsetLength))
         {
-            Logger.Error<UnmanagedResourceRegistry>($"Failed to allocate offsets array. Count = {descriptors.Length} Size = {sizeof(uint) * descriptors.Length}");
+            Logger.Error<UnmanagedResourceRegistry>($"Failed to allocate offsets array. Count = {offsetLength} Size = {sizeof(uint) * offsetLength}");
             return false;
+        }
+
+        uint offset = 0;
+        foreach (var descriptor in descriptors)
+        {
+            _offsets[descriptor.Id] = offset;
+            offset += descriptor.AlignedSize;
         }
 
         _memorySystem = memorySystem;
@@ -52,9 +60,9 @@ internal sealed unsafe class UnmanagedResourceRegistry : IUnmanagedResources
 
     public T* GetResourcePointer<T>() where T : unmanaged, IResource
     {
-        Debug.Assert(_offsets.Length < T.Id);
+        Debug.Assert(T.Id < _offsets.Length, $"The index of the type is out of bounds. Might have forgot to register the type. Type = {typeof(T).Name}");
         var offset = _offsets[T.Id];
-        Debug.Assert(offset + sizeof(T) < _resources.Size);
+        Debug.Assert(offset + sizeof(T) < _resources.Size, "The offset for the type exceeds the resources. Why?");
         var ptr = _resources.AsPointer() + offset;
         return (T*)ptr;
     }

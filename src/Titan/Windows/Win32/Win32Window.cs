@@ -3,7 +3,9 @@ using System.Runtime.InteropServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
+using Titan.Input;
 using Titan.Platform.Win32;
+using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
 
 namespace Titan.Windows.Win32;
@@ -20,7 +22,7 @@ internal unsafe class Win32Window(string title) : IWindow
     public uint Height => (uint)_height;
     public uint Width => (uint)_width;
 
-    public bool Init(WindowConfig config, ManagedResource<Win32MessagePump> messagePump)
+    public bool Init(WindowConfig config, UnmanagedResource<Win32MessageQueue> messageQueue)
     {
         if (config.Title != null)
         {
@@ -101,7 +103,6 @@ internal unsafe class Win32Window(string title) : IWindow
         }
 
 
-
         fixed (char* pTitle = title)
         fixed (char* pClassName = ClassName)
         {
@@ -117,7 +118,7 @@ internal unsafe class Win32Window(string title) : IWindow
                 parent,
                 hMenu: 0,
                 instance,
-                (void*)messagePump.Handle
+                messageQueue
             );
 
             if (!_windowHandle.IsValid)
@@ -216,16 +217,23 @@ internal unsafe class Win32Window(string title) : IWindow
         var userData = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
         if (userData == 0)
         {
-            Logger.Trace<Win32Window>($"No message pump, message discarded. Message = {message} wparam = 0x{wParam:X8} lParam = 0x{lParam:X8}");
+            Logger.Trace<Win32Window>($"No message queue, message discarded. Message = {message} wparam = 0x{wParam:X8} lParam = 0x{lParam:X8}");
             return DefWindowProcW(hwnd, message, wParam, lParam);
         }
-        var handle = (ManagedResource<Win32MessagePump>)userData;
-        Debug.Assert(handle.IsValid);
+        var queue = (Win32MessageQueue*)userData;
+        //NOTE(Jens): Do we want another layer here? that processes the windows messages
 
-        var result = handle.Value.OnMessage(hwnd, message, wParam, lParam);
-        if (result)
+        switch (message)
         {
-            return 0;
+            case WindowMessage.WM_KEYDOWN:
+                queue->Push(new Win32KeyDownEvent(KeyCode.A, false));
+                break;
+            case WindowMessage.WM_CLOSE:
+                //NOTE(Jens): This should be an event, and quit message should be handled by the engine and not the Win32 API.
+                PostQuitMessage(0);
+                break;
+            default:
+                break;
         }
 
         return DefWindowProcW(hwnd, message, wParam, lParam);

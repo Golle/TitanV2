@@ -17,5 +17,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-3.final" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="NewFolder\" />
+  </ItemGroup>
+
 
 </Project>
