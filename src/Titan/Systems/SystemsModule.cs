@@ -1,6 +1,7 @@
 using Titan.Application;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Core.Threading;
 using Titan.Resources;
 using Titan.Services;
 
@@ -18,10 +19,12 @@ internal sealed class SystemsModule : IModule
         var scheduler = app.GetService<SystemsScheduler>();
         var unmanaged = app.GetService<IUnmanagedResources>();
         var managed = app.GetService<IManagedServices>();
+        var jobSystem = app.GetService<IJobSystem>();
         var memoryManager = app.GetService<IMemoryManager>();
         var systems = app.GetSystems();
 
-        if (!scheduler.Init(memoryManager, systems, unmanaged, managed))
+
+        if (!scheduler.Init(memoryManager,jobSystem, systems, unmanaged, managed))
         {
             Logger.Error<SystemsModule>($"Failed to init the {nameof(SystemsScheduler)}");
             return false;

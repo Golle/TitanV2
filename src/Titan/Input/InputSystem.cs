@@ -19,6 +19,5 @@ internal unsafe partial struct InputSystem
         state->PreviousMousePosition = state->MousePosition;
         state->MousePosition = mousePosition;
         state->MousePositionDelta = (Vector2)(state->MousePosition - state->PreviousMousePosition);
-        state->OutsideWindow = mousePosition.Y < 0 || mousePosition.X < 0 || mousePosition.X > window.Width || mousePosition.Y > window.Height;
     }
 }

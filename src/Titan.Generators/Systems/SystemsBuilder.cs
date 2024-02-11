@@ -75,7 +75,7 @@ internal static class SystemsBuilder
         builder.AppendLine();
 
         // Create init function
-        builder.AppendLine($"public static void Init({TitanTypes.SystemInitializer} initializer)")
+        builder.AppendLine($"public static void Init(ref {TitanTypes.SystemInitializer} initializer)")
             .AppendLine("{")
             .BeginIndentation();
 
@@ -123,7 +123,7 @@ internal static class SystemsBuilder
 
         // Create execute function
         builder
-            .AppendLine("public static void Execute()")
+            .AppendLine("public static void Execute(void * context)")
             .BeginIndentation()
             .AppendLine($"=> {systemType.Type}.{systemType.Method.Name}({arguments});")
             .EndIndentation();

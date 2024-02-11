@@ -34,7 +34,7 @@ internal unsafe partial struct EventSystem
 
         eventState->A++;
 
-        Logger.Info<EventSystem>($"State: {eventState->A}");
+        //Logger.Info<EventSystem>($"State: {eventState->A}");
 
     }
 

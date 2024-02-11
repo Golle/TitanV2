@@ -52,7 +52,10 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
 
     public void Shutdown()
     {
-        _generalAllocator.Release();
+        lock (_syncObject)
+        {
+            _generalAllocator.Release();
+        }
         _globalMemory.Release();
         if (_allocator != null)
         {
@@ -128,7 +131,21 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
 
     public bool TryCreateBumpAllocator(out BumpAllocator allocator, uint size)
     {
-        throw new NotImplementedException();
+        //NOTE(Jens): maybe we want a way to allocate the context for the allocator as well, so we don't use "this" when create the Allocator for general usage. 
+        Unsafe.SkipInit(out allocator);
+        lock (_syncObject)
+        {
+            var mem = _generalAllocator.Alloc(size);
+            if (mem == null)
+            {
+                Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to create a {nameof(BumpAllocator)}. Size = {size} bytes");
+
+                return false;
+            }
+
+            allocator = new((byte*)mem, size);
+            return true;
+        }
     }
 
     public bool TryCreatePoolAllocator<T>(out BumpAllocator allocator, uint count) where T : unmanaged

@@ -1,0 +1,111 @@
+using System.Runtime.CompilerServices;
+using Titan.Core;
+using Titan.Core.Threading;
+
+namespace Titan.Systems.Executors;
+
+/// <summary>
+/// The SystemsExecutor will scheldule systems in parallel using the JobSystem, and respect the dependencies.
+/// </summary>
+internal sealed unsafe class SystemsExecutor
+{
+    [SkipLocalsInit]
+    public static void Run(IJobSystem jobSystem, TitanArray<SystemNode> nodes)
+    {
+        var count = nodes.Length;
+        var states = stackalloc SystemState[(int)count];
+        var handles = stackalloc JobHandle[(int)count];
+
+        var systemsLeft = count;
+
+        // Initial run for systems without dependencies. 
+        for (var index = 0; index < count; ++index)
+        {
+            ref readonly var node = ref nodes[index];
+            //TODO(Jens): Add check critera, if a system should run or not. And if it should be treated as an "inline" system.
+            var shouldRun = true;
+
+            if (shouldRun)
+            {
+                if (!node.HasDependencies)
+                {
+                    handles[index] = jobSystem.Enqueue(node.JobDescriptor);
+                    states[index] = SystemState.Running;
+                }
+                else
+                {
+                    handles[index] = JobHandle.Invalid;
+                    states[index] = SystemState.Waiting;
+                }
+            }
+            else
+            {
+                systemsLeft--;
+                states[index] = SystemState.Completed;
+                handles[index] = JobHandle.Invalid;
+            }
+        }
+
+
+        while (systemsLeft > 0)
+        {
+
+            //NOTE(Jens): Instead of looping through all systems we can have a "list" of systems where we just swap the system pointers when they are completed, reducing the number of iterations we have to do.
+            //NOTE(Jens): For example system at index 8 completes, there are currently 10 systems running, decrease it to 9 and swap system 8 with system 10.
+            for (var index = 0; index < count; ++index)
+            {
+                ref var jobHandle = ref handles[index];
+                if (jobHandle.IsValid && jobSystem.IsCompleted(jobHandle))
+                {
+                    jobSystem.Reset(ref jobHandle);
+                    states[index] = SystemState.Completed;
+                    systemsLeft--;
+                }
+
+                if (states[index] != SystemState.Waiting)
+                {
+                    continue;
+                }
+
+                ref readonly var system = ref nodes[index];
+                if (!IsReady(system, states))
+                {
+                    continue;
+                }
+
+                //TODO(Jens): Add check for inline exeuction
+                if (false)
+                {
+                    system.JobDescriptor.Callback(system.JobDescriptor.Context);
+                    states[index] = SystemState.Completed;
+                    systemsLeft--;
+                }
+                else
+                {
+                    handles[index] = jobSystem.Enqueue(system.JobDescriptor);
+                    states[index] = SystemState.Running;
+                }
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static bool IsReady(in SystemNode node, SystemState* systemStates)
+    {
+        if (node.Dependencies.IsEmpty)
+        {
+            return true;
+        }
+
+        //TODO(Jens): Check the code gen for this, and see if a regular for loop is faster.
+        foreach (var index in node.Dependencies.AsReadOnlySpan())
+        {
+            if (systemStates[index] != SystemState.Completed)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+}

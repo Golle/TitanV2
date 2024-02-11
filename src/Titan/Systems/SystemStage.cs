@@ -6,5 +6,6 @@ public enum SystemStage
     PreUpdate,
     Update,
     PostUpdate,
-    Last
+    Last,
+    Count
 }
