@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
+using Titan.Events;
 using Titan.Resources;
 using Titan.Services;
 
 namespace Titan.Systems;
 
-public unsafe ref struct SystemInitializer(IUnmanagedResources unmanagedResources, IManagedServices managedServices, Span<uint> mutable, Span<uint> readOnly)
+public unsafe ref struct SystemInitializer(IUnmanagedResources unmanagedResources, IManagedServices managedServices, IEventSystem eventSystem, Span<uint> mutable, Span<uint> readOnly)
 {
     private readonly Span<uint> _mutable = mutable;
     private readonly Span<uint> _readOnly = readOnly;
@@ -29,9 +30,14 @@ public unsafe ref struct SystemInitializer(IUnmanagedResources unmanagedResource
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public EventReader<T> CreateEventReader<T>() where T : unmanaged, IEvent
+        => eventSystem.CreateReader<T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public EventWriter CreateEventWriter()
+        => eventSystem.CreateWriter();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ManagedResource<T> GetService<T>() where T : class, IService
-    {
-        //NOTE(Jens): Managed services are not tracked.
-        return managedServices.GetHandle<T>();
-    }
+        => managedServices.GetHandle<T>();
 }

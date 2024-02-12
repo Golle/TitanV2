@@ -1,15 +1,15 @@
 namespace Titan.Generators;
 internal static class TitanTypes
 {
-    
 
     public const string Resources = "Titan.Resources";
     public const string Systems = "Titan.Systems";
+    public const string Events = "Titan.Events";
     public const string Core = "Titan.Core";
 
     public const string UnmanagedResourceAttribute = $"{Resources}.UnmanagedResourceAttribute";
-    public const string IResource = $"{Resources}.IResource";
     public const string UnmanagedResourceGenerator = $"{Resources}.UnmanagedResourceId";
+    public const string IResource = $"{Resources}.IResource";
     public const string SystemAttribute = $"{Systems}.SystemAttribute";
     public const string ISystem = $"{Systems}.ISystem";
     public const string SystemDescriptor = $"{Systems}.SystemDescriptor";
@@ -18,4 +18,11 @@ internal static class TitanTypes
     public const string SystemInitializer = $"{Systems}.SystemInitializer";
     public const string ManagedResource = $"{Core}.ManagedResource";
     public const string SystemStage = $"{Systems}.SystemStage";
+    public const string SystemExecutionType = $"{Systems}.SystemExecutionType";
+
+    public const string EventAttribute = $"{Events}.EventAttribute";
+    public const string EventsGenerator = $"{Events}.EventId";
+    public const string EventReader = $"{Events}.EventReader";
+    public const string EventWriter = $"{Events}.EventWriter";
+    public const string IEvent = $"{Events}.IEvent";
 }

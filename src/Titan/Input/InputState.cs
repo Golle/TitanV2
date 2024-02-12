@@ -5,7 +5,7 @@ using Titan.Resources;
 namespace Titan.Input;
 
 [UnmanagedResource]
-internal unsafe partial struct InputState
+public unsafe partial struct InputState
 {
     public fixed bool Current[(int)KeyCode.NumberOfKeys];
     public fixed bool Previous[(int)KeyCode.NumberOfKeys];

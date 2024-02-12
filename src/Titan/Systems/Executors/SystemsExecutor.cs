@@ -29,8 +29,18 @@ internal sealed unsafe class SystemsExecutor
             {
                 if (!node.HasDependencies)
                 {
-                    handles[index] = jobSystem.Enqueue(node.JobDescriptor);
-                    states[index] = SystemState.Running;
+                    if (node.SystemDescriptor.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck) // we can do this with flags instead.
+                    {
+                        node.Execute();
+                        systemsLeft--;
+                        states[index] = SystemState.Completed;
+                        handles[index] = JobHandle.Invalid;
+                    }
+                    else
+                    {
+                        handles[index] = jobSystem.Enqueue(node.JobDescriptor);
+                        states[index] = SystemState.Running;
+                    }
                 }
                 else
                 {
@@ -73,10 +83,9 @@ internal sealed unsafe class SystemsExecutor
                     continue;
                 }
 
-                //TODO(Jens): Add check for inline exeuction
-                if (false)
+                if (system.SystemDescriptor.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck)
                 {
-                    system.JobDescriptor.Callback(system.JobDescriptor.Context);
+                    system.Execute();
                     states[index] = SystemState.Completed;
                     systemsLeft--;
                 }

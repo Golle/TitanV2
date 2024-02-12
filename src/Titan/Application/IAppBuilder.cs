@@ -11,7 +11,7 @@ public interface IAppBuilder
     IAppBuilder AddModule<T>() where T : IModule;
     IAppBuilder AddConfig<T>(T config) where T : IConfiguration;
     IAppBuilder AddPersistedConfig<T>(T config) where T : IConfiguration, IPersistable<T>;
-    IAppBuilder AddSystems<T>() where T : unmanaged, ISystem;
+    IAppBuilder AddSystems<T>() where T : ISystem;
     IAppBuilder AddResource<T>() where T : unmanaged, IResource;
     IRunnable Build();
 

@@ -30,9 +30,9 @@ internal class CoreModule : IModule
             ;
 
         builder
-            .AddModule<EventsModule>()
             .AddModule<ConfigurationsModule>()
             .AddModule<ResourcesModule>()
+            .AddModule<EventsModule>()
             .AddModule<ECSModule>()
             .AddModule<SystemsModule>();
 

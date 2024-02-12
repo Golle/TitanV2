@@ -1,6 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core;
-using Titan.Core.Strings;
 using Titan.Core.Threading;
 
 namespace Titan.Systems;
@@ -15,4 +15,7 @@ internal struct SystemNode
 #if DEBUG
     public SystemDescriptor SystemDescriptor;
 #endif
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly unsafe void Execute() => JobDescriptor.Callback(JobDescriptor.Context);
 }

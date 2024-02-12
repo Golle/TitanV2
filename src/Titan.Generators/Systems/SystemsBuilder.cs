@@ -12,11 +12,20 @@ internal enum ModifierType
     Pointer
 }
 
-internal readonly struct ParameterInfo(ModifierType modifier, string type, bool isUnmanaged)
+internal enum ArgumentKind
+{
+    Unmanaged,
+    Managed,
+    EventWriter,
+    EventReader
+}
+
+internal readonly struct ParameterInfo(ModifierType modifier, string type, ArgumentKind argumentKind)
 {
     public readonly ModifierType Modifier = modifier;
     public readonly string Type = type;
-    public readonly bool IsUnmanaged = isUnmanaged;
+
+    public readonly ArgumentKind ArgumentKind = argumentKind;
 }
 internal static class SystemsBuilder
 {
@@ -29,7 +38,7 @@ internal static class SystemsBuilder
             .AppendLine();
 
         AppendNamespace(systemType.Type, builder);
-        
+
         var modifier = systemType.Type.DeclaredAccessibility.AsString();
         var name = systemType.Type.Name;
         var method = systemType.Method.Name;
@@ -40,15 +49,28 @@ internal static class SystemsBuilder
             .AppendLine("{")
             .BeginIndentation();
 
+        //Debugger.Launch();
         // Create members
         var parameters = systemType
             .Method
             .Parameters
             .Select(static p =>
             {
+                var displayString = p.Type.ToDisplayString();
+                if (displayString.StartsWith(TitanTypes.EventReader))
+                {
+                    var type = ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString();
+                    return new ParameterInfo(ModifierType.Value, type, ArgumentKind.EventReader);
+                }
+
+                if (displayString == TitanTypes.EventWriter)
+                {
+                    return new ParameterInfo(ModifierType.Value, string.Empty, ArgumentKind.EventWriter);
+                }
+
                 if (p.Type is IPointerTypeSymbol pointerType)
                 {
-                    return new ParameterInfo(ModifierType.Pointer, pointerType.PointedAtType.ToDisplayString(), true);
+                    return new ParameterInfo(ModifierType.Pointer, pointerType.PointedAtType.ToDisplayString(), ArgumentKind.Unmanaged);
                 }
 
                 var modifier = p.RefKind switch
@@ -57,7 +79,7 @@ internal static class SystemsBuilder
                     RefKind.Ref => ModifierType.Ref,
                     _ => ModifierType.Value
                 };
-                return new ParameterInfo(modifier, p.Type.ToDisplayString(), p.Type.IsUnmanagedType);
+                return new ParameterInfo(modifier, displayString, p.Type.IsUnmanagedType ? ArgumentKind.Unmanaged : ArgumentKind.Managed);
             })
             .ToArray();
 
@@ -65,10 +87,17 @@ internal static class SystemsBuilder
         {
             var parameter = parameters[i];
 
-            //builder.AppendLine($"// Unmanaged: {unmanaged} {parameter.Type.Name} {parameter.Name} {string.Join(", ", parameter.CustomModifiers.Select(m => $"{m.Modifier.Name} (Optional: {m.IsOptional})"))}");
-            var type = parameter.IsUnmanaged
-                ? $"{parameter.Type}*"
-                : $"{TitanTypes.ManagedResource}<{parameter.Type}>";
+            var type = parameter.ArgumentKind switch
+            {
+                ArgumentKind.EventWriter => TitanTypes.EventWriter,
+                ArgumentKind.EventReader => $"{TitanTypes.EventReader}<{parameter.Type}>",
+                ArgumentKind.Managed => $"{TitanTypes.ManagedResource}<{parameter.Type}>",
+                ArgumentKind.Unmanaged => $"{parameter.Type}*",
+                _ => throw new NotImplementedException($"The kind {parameter.ArgumentKind} has not been implemented.")
+            };
+            //var type = parameter.IsUnmanaged
+            //    ? $"{parameter.Type}*"
+            //    : $"{TitanTypes.ManagedResource}<{parameter.Type}>";
             builder.AppendLine($"private static {type} _p{i};");
         }
 
@@ -82,31 +111,38 @@ internal static class SystemsBuilder
         for (var i = 0; i < parameters.Length; ++i)
         {
             var parameter = parameters[i];
-            if (parameter.IsUnmanaged)
+            switch (parameter.ArgumentKind)
             {
-                var resourceFunction = parameter.Modifier switch
-                {
-                    ModifierType.Ref or ModifierType.Pointer => "GetMutableResource",
-                    _ => "GetReadOnlyResource"
-                };
-                builder.AppendLine($"_p{i} = initializer.{resourceFunction}<{parameter.Type}>();");
-            }
-            else
-            {
-                builder.AppendLine($"_p{i} = initializer.GetService<{parameter.Type}>();");
+                case ArgumentKind.Unmanaged:
+                    var resourceFunction = parameter.Modifier switch
+                    {
+                        ModifierType.Ref or ModifierType.Pointer => "GetMutableResource",
+                        _ => "GetReadOnlyResource"
+                    };
+                    builder.AppendLine($"_p{i} = initializer.{resourceFunction}<{parameter.Type}>();");
+                    break;
+                case ArgumentKind.Managed:
+                    builder.AppendLine($"_p{i} = initializer.GetService<{parameter.Type}>();");
+                    break;
+                case ArgumentKind.EventReader:
+                    builder.AppendLine($"_p{i} = initializer.CreateEventReader<{parameter.Type}>();");
+                    break;
+                case ArgumentKind.EventWriter:
+                    builder.AppendLine($"_p{i} = initializer.CreateEventWriter();");
+                    break;
             }
         }
 
         builder
             .EndIndentation()
-            .AppendLine("}")
-            .AppendLine();
+                .AppendLine("}")
+                .AppendLine();
 
 
 
         var arguments = string.Join(", ", parameters.Select(static (p, i) =>
         {
-            if (!p.IsUnmanaged)
+            if (p.ArgumentKind is ArgumentKind.Managed)
             {
                 return $"_p{i}.Value";
             }
@@ -117,6 +153,7 @@ internal static class SystemsBuilder
                 ModifierType.Ref => "ref *",
                 _ => string.Empty
             };
+
             return $"{mod}_p{i}";
         }));
 
@@ -124,14 +161,14 @@ internal static class SystemsBuilder
         // Create execute function
         builder
             .AppendLine("public static void Execute(void * context)")
-            .BeginIndentation()
-            .AppendLine($"=> {systemType.Type}.{systemType.Method.Name}({arguments});")
-            .EndIndentation();
+                .BeginIndentation()
+                .AppendLine($"=> {systemType.Type}.{systemType.Method.Name}({arguments});")
+                .EndIndentation();
 
 
         builder
             .EndIndentation()
-            .AppendLine("}");
+                .AppendLine("}");
 
         context.AddSource($"{systemTypeName}.g.cs", builder.ToString());
         return systemTypeName;

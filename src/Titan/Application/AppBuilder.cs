@@ -84,7 +84,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         return this;
     }
 
-    public IAppBuilder AddSystems<T>() where T : unmanaged, ISystem
+    public IAppBuilder AddSystems<T>() where T : ISystem
     {
         Span<SystemDescriptor> systems = stackalloc SystemDescriptor[10];
         var count = T.GetSystems(systems);

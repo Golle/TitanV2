@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Core.Logging;
 using Titan.Systems;
 using Titan.Windows.Win32;
 
@@ -16,6 +17,7 @@ internal class WindowedRunner : IRunner
     {
         _window = app.GetService<IWindow>();
         _scheduler = app.GetService<ISystemsScheduler>();
+        Logger.Warning<WindowedRunner>("We currently have a Thread.Sleep(1) in the loop. Remove that when we have rendering.");
     }
 
     public bool RunOnce()
