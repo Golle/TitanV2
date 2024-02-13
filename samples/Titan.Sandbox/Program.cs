@@ -3,7 +3,6 @@ using Titan.Application;
 using Titan.Core.Logging;
 using Titan.ECS;
 using Titan.Events;
-using Titan.Input;
 using Titan.Rendering;
 using Titan.Sandbox;
 using Titan.Systems;
@@ -56,8 +55,9 @@ namespace Titan.Sandbox
         private static int counter;
 
         [System(SystemStage.Update, SystemExecutionType.Inline)]
-        public static unsafe void Update(EventWriter writer, EventReader<TestEvent> reader, EventReader<SomeOtherEvent> reader1)
+        public static void Update(EventWriter writer, EventReader<TestEvent> reader, EventReader<SomeOtherEvent> reader1)
         {
+            return;
             if (counter++ > 100)
             {
                 writer.Send(new TestEvent(1));

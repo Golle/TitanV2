@@ -43,7 +43,7 @@ internal unsafe partial class EventSystem : IEventSystem
     public void Shutdown()
     {
         ref var state = ref _eventState.AsRef;
-        var tempEvents = state.Events;
+        var tempEvents = state.Buffer;
         _memoryManager?.FreeBuffer(ref tempEvents);
         state = default;
     }
@@ -78,8 +78,5 @@ internal unsafe partial class EventSystem : IEventSystem
     {
         (eventState->Current, eventState->Previous) = (eventState->Previous, eventState->Current);
         eventState->Current.Count = 0;
-
-        //TODO(Jens): Swap the current with previous, reset current
-        //Logger.Info<EventSystem>($"State: {eventState->A}");
     }
 }
