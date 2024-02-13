@@ -29,7 +29,7 @@ internal sealed unsafe class SystemsExecutor
             {
                 if (!node.HasDependencies)
                 {
-                    if (node.SystemDescriptor.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck) // we can do this with flags instead.
+                    if (node.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck) // we can do this with flags instead.
                     {
                         node.Execute();
                         systemsLeft--;
@@ -83,7 +83,7 @@ internal sealed unsafe class SystemsExecutor
                     continue;
                 }
 
-                if (system.SystemDescriptor.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck)
+                if (system.ExecutionType is SystemExecutionType.Inline or SystemExecutionType.InlineCheck)
                 {
                     system.Execute();
                     states[index] = SystemState.Completed;

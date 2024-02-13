@@ -11,7 +11,7 @@ internal struct SystemNode
     public JobDescriptor JobDescriptor;
     public TitanArray<ushort> Dependencies;
     public readonly bool HasDependencies => !Dependencies.IsEmpty;
-
+    public SystemExecutionType ExecutionType;
 #if DEBUG
     public SystemDescriptor SystemDescriptor;
 #endif

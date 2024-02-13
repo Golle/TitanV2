@@ -73,6 +73,7 @@ internal unsafe ref struct ExecutionTreeBuilder
                 ref var node = ref nodes[outer];
                 ref var outerSystem = ref _systems[outer];
                 node.JobDescriptor = JobDescriptor.Create(outerSystem.Descriptor.Execute, outerSystem.Context, false);
+                node.ExecutionType = outerSystem.Descriptor.ExecutionType;
 #if DEBUG
                 node.SystemDescriptor = outerSystem.Descriptor;
 #endif
