@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Titan.Core.Threading;
@@ -9,19 +9,19 @@ public readonly struct JobHandle
 #pragma warning restore CS0660, CS0661
 {
     [FieldOffset(0)]
-    internal readonly int Value;
+    internal readonly uint Value;
     [FieldOffset(3)]
     internal readonly byte Version;
 
     internal int ValueWithoutVersion
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Value & 0x00ffffff;
+        get => (int)(Value & 0x00ffffff);
     }
 
     internal JobHandle(int value, byte version)
     {
-        Value = value;
+        Value = (uint)value;
         Version = version;
     }
     public bool IsValid => Value > 0;

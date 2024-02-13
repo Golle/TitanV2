@@ -18,11 +18,13 @@ internal class D3D12Module : IModule
         Logger.Trace<D3D12Module>("Using D3D12 Rendering");
 
         builder
+            .AddResource<D3D12SwapchainInfo>()
             .AddService(new D3D12Adapter())
             .AddService(new D3D12Device())
             .AddService(new D3D12CommandQueue())
             .AddService(new D3D12Allocator())
             .AddService(new DXGISwapchain())
+            .AddSystems<DXGISwapchain>()
 #if D3D12_DEBUG_LAYER
             .AddService(new D3D12DebugLayer())
             .AddService(new D3D12DebugMessages())
@@ -38,6 +40,7 @@ internal class D3D12Module : IModule
         var commandQueue = app.GetService<D3D12CommandQueue>();
         var allocator = app.GetService<D3D12Allocator>();
         var swapchain = app.GetService<DXGISwapchain>();
+        var swapchainInfo = app.GetResourceHandle<D3D12SwapchainInfo>();
         var window = app.GetService<IWindow>();
 
         var memoryManager = app.GetService<IMemoryManager>();
@@ -84,7 +87,7 @@ internal class D3D12Module : IModule
             return false;
         }
 
-        if (!swapchain.Init(commandQueue, window, config.Debug))
+        if (!swapchain.Init(commandQueue, device, allocator, window, swapchainInfo, config.Debug))
         {
             Logger.Error<D3D12Module>($"Failed to init {nameof(DXGISwapchain)}");
             return false;

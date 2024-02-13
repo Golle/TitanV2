@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Threading;
@@ -21,10 +22,10 @@ internal sealed unsafe class SystemsExecutor
         // Initial run for systems without dependencies. 
         for (var index = 0; index < count; ++index)
         {
+            
             ref readonly var node = ref nodes[index];
             //TODO(Jens): Add check critera, if a system should run or not. And if it should be treated as an "inline" system.
             var shouldRun = true;
-
             if (shouldRun)
             {
                 if (!node.HasDependencies)
@@ -39,6 +40,7 @@ internal sealed unsafe class SystemsExecutor
                     else
                     {
                         handles[index] = jobSystem.Enqueue(node.JobDescriptor);
+                        Debug.Assert(handles[index].IsValid, "This was not expected, the job queue failed.");
                         states[index] = SystemState.Running;
                     }
                 }
@@ -59,7 +61,6 @@ internal sealed unsafe class SystemsExecutor
 
         while (systemsLeft > 0)
         {
-
             //NOTE(Jens): Instead of looping through all systems we can have a "list" of systems where we just swap the system pointers when they are completed, reducing the number of iterations we have to do.
             //NOTE(Jens): For example system at index 8 completes, there are currently 10 systems running, decrease it to 9 and swap system 8 with system 10.
             for (var index = 0; index < count; ++index)
@@ -70,6 +71,7 @@ internal sealed unsafe class SystemsExecutor
                     jobSystem.Reset(ref jobHandle);
                     states[index] = SystemState.Completed;
                     systemsLeft--;
+                    continue;
                 }
 
                 if (states[index] != SystemState.Waiting)

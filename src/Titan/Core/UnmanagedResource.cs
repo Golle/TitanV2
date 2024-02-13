@@ -8,5 +8,7 @@ public readonly unsafe struct UnmanagedResource<T>(T* resource) where T : unmana
     public ref T AsRef => ref *resource;
     public T* AsPointer => resource;
 
+    public void Init(in T value) => AsRef = value;
+
     public static implicit operator T*(in UnmanagedResource<T> resource) => resource.AsPointer;
 }

@@ -68,7 +68,7 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
         MaxQueuedJobs = config.MaxQueuedJobs;
         JobQueueMask = MaxQueuedJobs - 1;
         _notifier = new(0, (int)MaxQueuedJobs);
-        
+
         _handle = GCHandle.Alloc(this);
 
         for (var i = 0; i < _workers.Length; ++i)
@@ -144,8 +144,11 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsCompleted(in JobHandle handle)
     {
+        if (!handle.IsValid)
+        {
+            return true;
+        }
         //NOTE(Jens): Might be more efficient to store the pointer to the job.
-        Debug.Assert(handle.IsValid);
         var index = handle.ValueWithoutVersion - HandleOffset;
         Debug.Assert(index < MaxQueuedJobs);
         var job = _jobs.GetPointer(index);
@@ -161,7 +164,10 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset(ref JobHandle handle)
     {
-        Debug.Assert(handle.IsValid);
+        if (!handle.IsValid)
+        {
+            return;
+        }
         var index = handle.ValueWithoutVersion - HandleOffset;
         Debug.Assert(index < MaxQueuedJobs);
         var job = _jobs.GetPointer(index);
