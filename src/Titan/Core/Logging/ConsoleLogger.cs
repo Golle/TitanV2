@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace Titan.Core.Logging;
 
@@ -34,7 +34,7 @@ public class ConsoleLogger : ILogger
             Console.ResetColor();
             Console.Write("][");
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.Write(message.Scope);
+            Console.Write(ScopePrettyName.PrettyName(message.Scope));
         }
         Console.ResetColor();
         Console.WriteLine("] - {0}", message.Message);

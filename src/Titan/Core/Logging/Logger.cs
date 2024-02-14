@@ -1,9 +1,9 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Titan.Core.Logging;
 
-public record struct LogMessage(LogLevel Level, string Message, string? Scope);
+public record struct LogMessage(LogLevel Level, string Message, Type? Scope);
 
 public static class Logger
 {
@@ -38,7 +38,7 @@ public static class Logger
     public static void Debug<T>(string message) => Debug(message, typeof(T));
 
     [Conditional("LOG_DEBUG")]
-    public static void Debug(string message, Type type) => Log(LogLevel.Debug, message, type.Name);
+    public static void Debug(string message, Type type) => Log(LogLevel.Debug, message, type);
 
     [Conditional("LOG_TRACE")]
     public static void Trace(string message) => Log(LogLevel.Trace, message);
@@ -47,26 +47,26 @@ public static class Logger
     public static void Trace<T>(string message) => Trace(message, typeof(T));
 
     [Conditional("LOG_TRACE")]
-    public static void Trace(string message, Type type) => Log(LogLevel.Trace, message, type.Name);
+    public static void Trace(string message, Type type) => Log(LogLevel.Trace, message, type);
 
     [Conditional("LOG_INFO")]
     public static void Info<T>(string message) => Info(message, typeof(T));
     [Conditional("LOG_INFO")]
-    public static void Info(string message, Type type) => Log(LogLevel.Info, message, type.Name);
+    public static void Info(string message, Type type) => Log(LogLevel.Info, message, type);
     [Conditional("LOG_INFO")]
     public static void Info(string message) => Log(LogLevel.Info, message);
 
     [Conditional("LOG_ERROR")]
     public static void Error<T>(string message) => Error(message, typeof(T));
     [Conditional("LOG_ERROR")]
-    public static void Error(string message, Type type) => Log(LogLevel.Error, message, type.Name);
+    public static void Error(string message, Type type) => Log(LogLevel.Error, message, type);
     [Conditional("LOG_ERROR")]
     public static void Error(string message) => Log(LogLevel.Error, message);
 
     [Conditional("LOG_WARNING")]
     public static void Warning<T>(string message) => Warning(message, typeof(T));
     [Conditional("LOG_WARNING")]
-    public static void Warning(string message, Type type) => Log(LogLevel.Warning, message, type.Name);
+    public static void Warning(string message, Type type) => Log(LogLevel.Warning, message, type);
     [Conditional("LOG_WARNING")]
     public static void Warning(string message) => Log(LogLevel.Warning, message);
 
@@ -79,7 +79,7 @@ public static class Logger
 #endif
     }
 
-    private static void Log(LogLevel level, string message, string? scope = null)
+    private static void Log(LogLevel level, string message, Type? scope = null)
     {
         System.Diagnostics.Debug.Assert(_backgroundLogger != null);
         var result = _backgroundLogger.TryWrite(new LogMessage(level, message, scope));
