@@ -20,10 +20,9 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
     private GeneralAllocator _generalAllocator;
     private readonly object _syncObject = new();
 
-    public bool Init(in MemoryConfig config)
+    public bool Init(MemoryConfig config)
     {
         Debug.Assert(config.GeneralPurposeMemory < config.MaxVirtualMemory, $"{nameof(MemoryConfig.MaxVirtualMemory)} must be greater than {nameof(MemoryConfig.GeneralPurposeMemory)}.");
-
 
         _allocator = (PlatformAllocator*)MemoryUtils.GlobalAlloc((nuint)sizeof(PlatformAllocator));
         if (_allocator == null)

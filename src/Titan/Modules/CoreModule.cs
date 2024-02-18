@@ -1,4 +1,5 @@
 using Titan.Application;
+using Titan.Configurations;
 using Titan.Core.IO.Platform;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Platform;
@@ -21,28 +22,27 @@ internal class CoreModule : IModule
             throw new PlatformNotSupportedException($"Support for platform {GlobalConfiguration.Platform} has not been implemented yet.");
         }
 
+        // Platform specific modules
         builder
             .AddModule<FileSystemModule<Win32FileApi>>()
-
             .AddModule<MemoryModule<Win32PlatformAllocator>>()
             .AddModule<ThreadingModule<Win32NativeThreadApi>>()
             
             ;
 
+        // Base modules, serivces and resources.
         builder
-            .AddModule<ConfigurationsModule>()
-            .AddModule<ResourcesModule>()
-            .AddModule<EventsModule>()
+            .AddService<IConfigurationManager, ConfigurationManager>(new ConfigurationManager())
+            .AddService(new UnmanagedResourceRegistry())
+            .AddService(new SystemsScheduler())
+            .AddService(new EventSystem())
+            .AddResource<EventState>()
+
+
             .AddModule<ECSModule>()
-            .AddModule<SystemsModule>();
+            ;
 
 
         return true;
     }
-
-    public static bool Init(IApp app)
-        => true;
-
-    public static bool Shutdown(IApp app)
-        => true;
 }

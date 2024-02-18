@@ -1,3 +1,4 @@
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Memory;
@@ -21,15 +22,20 @@ internal struct SystemStageCollection
 internal struct ExecutionTree(IMemoryManager memoryManager, SystemStageCollection stages, TitanArray<SystemNode> nodes, TitanArray<ushort> dependencies) : IDisposable
 {
     //NOTE(Jens): This struct is basically redundant, this information should be stored inside the scheduler. and the cleanup should be handled by the scheduler. Refactor later.
-    public void Run(IJobSystem jobSystem)
+
+    public void PreInit(IJobSystem jobSystem) => stages[(int)SystemStage.PreInit].Execute(jobSystem);
+    public void Init(IJobSystem jobSystem) => stages[(int)SystemStage.Init].Execute(jobSystem);
+    public void RunUpdate(IJobSystem jobSystem)
     {
-        var i = 0;
-        foreach (ref var stage in stages)
+        foreach (ref var stage in stages[(int)SystemStage.PreUpdate..(int)SystemStage.PostUpdate])
         {
             //Logger.Info<ExecutionTree>($"Execute stage: {(SystemStage)i++} System Count: {stage.Count}");
             stage.Execute(jobSystem);
         }
     }
+
+    public void Shutdown(IJobSystem jobSystem) => stages[(int)SystemStage.Shutdown].Execute(jobSystem);
+    public void PostShutdown(IJobSystem jobSystem) => stages[(int)SystemStage.PostShutdown].Execute(jobSystem);
 
     public void Dispose()
     {

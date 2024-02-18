@@ -1,6 +1,9 @@
-using System.Collections.Immutable;
 using Titan.Configurations;
 using Titan.Core.Logging;
+using Titan.Core.Memory;
+using Titan.Core.Threading;
+using Titan.Events;
+using Titan.IO.FileSystem;
 using Titan.Resources;
 using Titan.Runners;
 using Titan.Services;
@@ -8,11 +11,13 @@ using Titan.Systems;
 
 namespace Titan.Application;
 
+
 internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
+    private readonly HashSet<Type> _modules = new();
+
     private readonly List<ConfigurationDescriptor> _configurations = new();
-    private readonly List<ModuleDescriptor> _modules = new();
     private readonly List<UnmanagedResourceDescriptor> _unmanagedResources = new();
     private readonly List<ServiceDescriptor> _services = new();
     private readonly List<SystemDescriptor> _systems = new();
@@ -48,19 +53,19 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     }
     public IAppBuilder AddModule<T>() where T : IModule
     {
-        var module = ModuleDescriptor.CreateFromType<T>();
-        Logger.Trace<AppBuilder>($"Add module {module.Name}");
-        if (_modules.Any(m => m.Type == module.Type))
+        //var module = ModuleDescriptor.CreateFromType<T>();
+        var type = typeof(T);
+        Logger.Trace<AppBuilder>($"Add module {type.Name}");
+        if (!_modules.Add(type))
         {
-            throw new InvalidOperationException($"A module of type {module.Type.AssemblyQualifiedName} has already been added.");
+            throw new InvalidOperationException($"A module of type {type.AssemblyQualifiedName} has already been added.");
         }
-
-        var result = module.Build(this, appConfig);
+        var result = T.Build(this, appConfig);
         if (!result)
         {
-            throw new InvalidOperationException($"Failed to build module. Name = {module.Name}");
+            throw new InvalidOperationException($"Failed to build module. Name = {type.Name}");
         }
-        _modules.Add(module);
+        _modules.Add(type);
         return this;
     }
 
@@ -105,18 +110,49 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 
     public IRunnable Build()
     {
-        var services = new ServiceRegistry(_services.ToImmutableArray());
-        var configurations = _configurations.ToImmutableArray();
-        var modules = _modules.ToImmutableArray();
-        var unmanagedResources = _unmanagedResources.ToImmutableArray();
-        var systems = _systems.ToImmutableArray();
-
         if (_runner == null)
         {
             throw new InvalidOperationException("No runner has been set.");
         }
 
-        return new TitanApp(services, modules, configurations, unmanagedResources, systems, _runner);
+        var memoryManager = GetService<IMemoryManager>();
+        var fileSystem = GetService<IFileSystem>();
+        var jobSystem = GetService<IJobSystem>();
+
+        var scheduler = GetService<SystemsScheduler>();
+        var unmanagedResourceRegistry = GetService<UnmanagedResourceRegistry>();
+        var configurationManager = GetService<ConfigurationManager>();
+        var eventSystem = GetService<EventSystem>();
+
+        // Set up all unmanaged resources that have been registered.
+        if (!unmanagedResourceRegistry.Init(memoryManager, _unmanagedResources))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(UnmanagedResourceRegistry)}.");
+            throw new InvalidOperationException($"{nameof(UnmanagedResourceRegistry)} failed.");
+        }
+
+        // Init the configurations
+        if (!configurationManager.Init(fileSystem, _configurations))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(ConfigurationManager)}.");
+            throw new InvalidOperationException($"{nameof(ConfigurationManager)} failed.");
+        }
+
+        if (!eventSystem.Init(memoryManager, appConfig.EventConfig, unmanagedResourceRegistry.GetResourceHandle<EventState>()))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(EventSystem)}.");
+            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
+        }
+
+        var serviceRegistry = new ServiceRegistry(_services);
+
+        if (!scheduler.Init(memoryManager, jobSystem, eventSystem, _systems, unmanagedResourceRegistry, serviceRegistry))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
+            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
+        }
+        
+        return new TitanApp(serviceRegistry, _runner);
     }
 
     public T GetService<T>() where T : class, IService

@@ -1,7 +1,32 @@
 using Titan.Application;
 using Titan.Core.Logging;
+using Titan.Resources;
 
 namespace Titan.Windows.Win32;
+
+[UnmanagedResource]
+internal unsafe partial struct Window
+{
+    public const int MaxTitleSize = 128;
+    
+    public nuint Handle;
+
+    public int Width, Height;
+    public int X, Y;
+
+    public int TitleLength;
+    public fixed char Title[MaxTitleSize];
+    
+    public bool Windowed;
+    public void SetTitle(string title)
+    {
+        fixed (char* pTitle = Title)
+        {
+            title.CopyTo(new(pTitle, MaxTitleSize));
+            TitleLength = title.Length;
+        }
+    }
+}
 
 internal class Win32WindowModule : IModule
 {
@@ -11,7 +36,9 @@ internal class Win32WindowModule : IModule
         builder
             .AddService<IWindow, Win32Window>(window)
             .AddResource<Win32MessageQueue>()
+            .AddResource<Window>()
             .AddSystems<Win32MessagePumpSystem>()
+            .AddSystems<Win32WindowSystem>()
             ;
 
         return true;

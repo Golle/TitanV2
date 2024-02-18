@@ -1,8 +1,8 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Threading;
 using Titan.Resources;
 using Titan.Runners;
 using Titan.Services;
@@ -10,39 +10,23 @@ using Titan.Systems;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(
-    IManagedServices services,
-    ImmutableArray<ModuleDescriptor> modules,
-    ImmutableArray<ConfigurationDescriptor> configurations,
-    ImmutableArray<UnmanagedResourceDescriptor> resources,
-    ImmutableArray<SystemDescriptor> systems,
-    IRunner runner
-    ) : IApp, IRunnable
+internal sealed class TitanApp(ServiceRegistry serviceRegistry, IRunner runner) : IApp, IRunnable
 {
     public T GetService<T>() where T : class, IService
-        => services.GetService<T>();
+        => serviceRegistry.GetService<T>();
 
     public ManagedResource<T> GetServiceHandle<T>() where T : class, IService
-        => services.GetHandle<T>();
+        => serviceRegistry.GetHandle<T>();
 
     public unsafe UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource =>
-        new(services.GetService<IUnmanagedResources>()
+        new(serviceRegistry.GetService<UnmanagedResourceRegistry>()
             .GetResourcePointer<T>());
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
-        => GetService<IConfigurationManager>().GetConfigOrDefault<T>();
+        => GetService<ConfigurationManager>().GetConfigOrDefault<T>();
 
     public void UpdateConfig<T>(T config) where T : IConfiguration =>
-        GetService<IConfigurationManager>().UpdateConfig(config);
-
-    public ImmutableArray<ConfigurationDescriptor> GetConfigurations()
-        => configurations;
-
-    public ImmutableArray<UnmanagedResourceDescriptor> GetResources()
-        => resources;
-
-    public ImmutableArray<SystemDescriptor> GetSystems()
-        => systems;
+        GetService<ConfigurationManager>().UpdateConfig(config);
 
     public void Run()
     {
@@ -64,14 +48,14 @@ internal sealed class TitanApp(
 
     private void RunInternal()
     {
-        foreach (var module in modules)
-        {
-            if (!module.Init(this))
-            {
-                Logger.Error<TitanApp>($"Failed to init module. Name = {module.Name} Type = {module.Type}");
-                return;
-            }
-        }
+        var jobSystem = GetService<IJobSystem>();
+        var scheduler = GetService<SystemsScheduler>();
+        ref var executionTree = ref scheduler._executionTree;
+
+        Logger.Trace<TitanApp>("PreInit");
+        executionTree.PreInit(jobSystem);
+        Logger.Trace<TitanApp>("Init");
+        executionTree.Init(jobSystem);
 
         Logger.Trace<TitanApp>($"Using runner {runner.GetType().Name}");
         runner.Init(this);
@@ -86,14 +70,10 @@ internal sealed class TitanApp(
         {
         }
 
-        foreach (var module in modules.Reverse())
-        {
-            Logger.Trace<TitanApp>($"Shutdown module. Name = {module.Name}");
-            if (!module.Shutdown(this))
-            {
-                Logger.Warning<TitanApp>($"Failed to shutdown module. Name = {module.Name} Type = {module.Type}");
-            }
-        }
+        Logger.Trace<TitanApp>("Shutdown");
+        executionTree.Shutdown(jobSystem);
+        Logger.Trace<TitanApp>("PostShutdown");
+        executionTree.PostShutdown(jobSystem);
     }
 }
 
