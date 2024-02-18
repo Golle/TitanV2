@@ -57,6 +57,6 @@ internal sealed unsafe class SystemsScheduler : IService
     public void Execute()
     {
         Debug.Assert(_jobSystem != null);
-        _executionTree.RunUpdate(_jobSystem);
+        _executionTree.Update(_jobSystem);
     }
 }

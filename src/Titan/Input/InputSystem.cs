@@ -10,7 +10,7 @@ internal unsafe partial struct InputSystem
     private const uint KeyStateSize = sizeof(bool) * (uint)KeyCode.NumberOfKeys;
 
     [System(SystemStage.PreUpdate)]
-    public static void Update(InputState* state, IWindow window)
+    public static void Update(InputState* state, in Window window)
     {
         MemoryUtils.Copy(state->Previous, state->Current, KeyStateSize);
 

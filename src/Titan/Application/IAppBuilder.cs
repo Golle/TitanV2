@@ -1,5 +1,4 @@
 using Titan.Resources;
-using Titan.Runners;
 using Titan.Systems;
 
 namespace Titan.Application;
@@ -20,6 +19,4 @@ public interface IAppBuilder
     /// </summary>
     /// <returns>The service</returns>
     internal T GetService<T>() where T : class, IService;
-
-    internal IAppBuilder UseRunner<T>() where T : IRunner;
 }

@@ -1,4 +1,4 @@
-﻿using Titan.Application;
+using Titan.Application;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
@@ -12,6 +12,7 @@ internal class ThreadingModule<TNativeThreadType> : IModule where TNativeThreadT
         var memorySystem = builder.GetService<IMemoryManager>();
 
         var manager = new ThreadManager<TNativeThreadType>();
+        builder.AddService<IThreadManager>(manager);
         var jobSystem = new JobSystem(manager);
 
         if (!jobSystem.Init(config.JobSystem, memorySystem))
@@ -21,16 +22,6 @@ internal class ThreadingModule<TNativeThreadType> : IModule where TNativeThreadT
         }
 
         builder.AddService<IJobSystem, JobSystem>(jobSystem);
-        return true;
-    }
-
-    public static bool Init(IApp app)
-        => true;
-
-    public static bool Shutdown(IApp app)
-    {
-        var jobSystem = app.GetService<JobSystem>();
-        jobSystem.Shutdown();
         return true;
     }
 }

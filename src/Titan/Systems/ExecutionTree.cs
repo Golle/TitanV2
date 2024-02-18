@@ -25,11 +25,10 @@ internal struct ExecutionTree(IMemoryManager memoryManager, SystemStageCollectio
 
     public void PreInit(IJobSystem jobSystem) => stages[(int)SystemStage.PreInit].Execute(jobSystem);
     public void Init(IJobSystem jobSystem) => stages[(int)SystemStage.Init].Execute(jobSystem);
-    public void RunUpdate(IJobSystem jobSystem)
+    public void Update(IJobSystem jobSystem)
     {
         foreach (ref var stage in stages[(int)SystemStage.PreUpdate..(int)SystemStage.PostUpdate])
         {
-            //Logger.Info<ExecutionTree>($"Execute stage: {(SystemStage)i++} System Count: {stage.Count}");
             stage.Execute(jobSystem);
         }
     }

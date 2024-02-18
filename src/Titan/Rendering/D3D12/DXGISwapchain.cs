@@ -62,7 +62,7 @@ internal sealed unsafe partial class DXGISwapchain : IService
     private D3D12Device? _device;
     private D3D12Allocator? _allocator;
 
-    public bool Init(D3D12CommandQueue commandQueue, D3D12Device device, D3D12Allocator allocator, IWindow window, UnmanagedResource<D3D12SwapchainInfo> swapchainInfoHandle, bool debug)
+    public bool Init(D3D12CommandQueue commandQueue, D3D12Device device, D3D12Allocator allocator, Window* window, UnmanagedResource<D3D12SwapchainInfo> swapchainInfoHandle, bool debug)
     {
         var flags = debug ? DXGI_CREATE_FACTORY_FLAGS.DXGI_CREATE_FACTORY_DEBUG : 0;
         using ComPtr<IDXGIFactory7> factory = default;
@@ -80,8 +80,8 @@ internal sealed unsafe partial class DXGISwapchain : IService
             BufferUsage = DXGI_USAGE.DXGI_CPU_ACCESS_NONE,
             Flags = DXGI_SWAP_CHAIN_FLAG.DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING,
             Format = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
-            Height = window.Height,
-            Width = window.Width,
+            Height = (uint)window->Height,
+            Width = (uint)window->Width,
             SampleDesc =
             {
                 Count = 1,
@@ -94,8 +94,8 @@ internal sealed unsafe partial class DXGISwapchain : IService
 
 
         IDXGISwapChain3* swapchain;
-        Logger.Trace<DXGISwapchain>($"Creating Swapchain for HWND. Width = {window.Width} Height = {window.Height} BufferCount = {BufferCount}");
-        hr = factory.Get()->CreateSwapChainForHwnd((IUnknown*)commandQueue.CommandQueue, window.NativeHandle, &desc, null, null, (IDXGISwapChain1**)&swapchain);
+        Logger.Trace<DXGISwapchain>($"Creating Swapchain for HWND. Width = {window->Width} Height = {window->Height} BufferCount = {BufferCount}");
+        hr = factory.Get()->CreateSwapChainForHwnd((IUnknown*)commandQueue.CommandQueue, window->Handle, &desc, null, null, (IDXGISwapChain1**)&swapchain);
         if (FAILED(hr))
         {
             Logger.Error<DXGISwapchain>($"Failed to create {nameof(IDXGISwapChain3)}. HRESULT = {hr}");
@@ -104,7 +104,7 @@ internal sealed unsafe partial class DXGISwapchain : IService
 
         // Disable Alt-enter (will be handled by windows input)
         {
-            hr = factory.Get()->MakeWindowAssociation((nuint)window.NativeHandle, DXGI_MAKE_WINDOW_ASSOCIATION_FLAGS.DXGI_MWA_NO_ALT_ENTER);
+            hr = factory.Get()->MakeWindowAssociation(window->Handle, DXGI_MAKE_WINDOW_ASSOCIATION_FLAGS.DXGI_MWA_NO_ALT_ENTER);
             if (FAILED(hr))
             {
                 Logger.Error<DXGISwapchain>($"Failed to disable Alt+Enter. HRESULT = {hr}");
@@ -133,7 +133,7 @@ internal sealed unsafe partial class DXGISwapchain : IService
         _allocator = allocator;
         _swapchainInfo = swapchainInfoHandle;
 
-        if (!InitBackbuffers(window.Width, window.Height, true))
+        if (!InitBackbuffers((uint)window->Width, (uint)window->Height, true))
         {
             Logger.Error<DXGISwapchain>("Failed to init the backbuffers.");
             return false;

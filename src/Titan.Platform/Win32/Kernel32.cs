@@ -62,6 +62,10 @@ public unsafe partial struct Kernel32
         int bInitialState,
         byte* lpName
     );
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetEvent(HANDLE hEvent);
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]

@@ -14,3 +14,14 @@ internal readonly struct Win32KeyUpEvent(KeyCode code) : IWin32Event
     public static int Id => EventTypes.KeyDown;
     public readonly KeyCode Code = code;
 }
+
+internal readonly struct Win32QuitEvent(int code) : IWin32Event
+{
+    public static int Id => EventTypes.Quit;
+    public readonly int ExitCode = code;
+}
+
+internal readonly struct Win32CloseEvent : IWin32Event
+{
+    public static int Id => EventTypes.Close;
+}

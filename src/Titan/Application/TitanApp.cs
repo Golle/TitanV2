@@ -4,13 +4,12 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Threading;
 using Titan.Resources;
-using Titan.Runners;
 using Titan.Services;
 using Titan.Systems;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(ServiceRegistry serviceRegistry, IRunner runner) : IApp, IRunnable
+internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnable
 {
     public T GetService<T>() where T : class, IService
         => serviceRegistry.GetService<T>();
@@ -57,17 +56,18 @@ internal sealed class TitanApp(ServiceRegistry serviceRegistry, IRunner runner) 
         Logger.Trace<TitanApp>("Init");
         executionTree.Init(jobSystem);
 
-        Logger.Trace<TitanApp>($"Using runner {runner.GetType().Name}");
-        runner.Init(this);
-
         Logger.Trace<TitanApp>("Init complete. Doing a GC Collect.");
         var gcTimer = Stopwatch.StartNew();
         GC.Collect();
         gcTimer.Stop();
         Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
 
-        while (runner.RunOnce())
+        int i = 1000;
+        Logger.Trace<TitanApp>("Starting main game loop");
+        while (true) //TODO(Jens): Add something that can exit this
         {
+            //Thread.Sleep(100);
+            executionTree.Update(jobSystem);
         }
 
         Logger.Trace<TitanApp>("Shutdown");

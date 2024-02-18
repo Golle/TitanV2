@@ -1,6 +1,6 @@
-﻿namespace Titan.Core.Threading;
+namespace Titan.Core.Threading;
 
-public unsafe interface IThreadManager
+public unsafe interface IThreadManager : IService
 {
     NativeThreadHandle Create(delegate* unmanaged<void*, int> callback, void* parameters, bool startImmediately);
     bool Start(in NativeThreadHandle handle);

@@ -33,7 +33,7 @@ internal class D3D12Module : IModule
         return true;
     }
 
-    public static bool Init(IApp app)
+    public static unsafe bool Init(IApp app)
     {
         var adapters = app.GetService<D3D12Adapter>();
         var device = app.GetService<D3D12Device>();
@@ -41,7 +41,6 @@ internal class D3D12Module : IModule
         var allocator = app.GetService<D3D12Allocator>();
         var swapchain = app.GetService<DXGISwapchain>();
         var swapchainInfo = app.GetResourceHandle<D3D12SwapchainInfo>();
-        var window = app.GetService<IWindow>();
 
         var memoryManager = app.GetService<IMemoryManager>();
         var config = app.GetConfigOrDefault<RenderingConfig>();
@@ -87,7 +86,7 @@ internal class D3D12Module : IModule
             return false;
         }
 
-        if (!swapchain.Init(commandQueue, device, allocator, window, swapchainInfo, config.Debug))
+        if (!swapchain.Init(commandQueue, device, allocator, null, swapchainInfo, config.Debug))
         {
             Logger.Error<D3D12Module>($"Failed to init {nameof(DXGISwapchain)}");
             return false;

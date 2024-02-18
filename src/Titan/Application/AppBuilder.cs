@@ -5,7 +5,6 @@ using Titan.Core.Threading;
 using Titan.Events;
 using Titan.IO.FileSystem;
 using Titan.Resources;
-using Titan.Runners;
 using Titan.Services;
 using Titan.Systems;
 
@@ -21,7 +20,6 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     private readonly List<UnmanagedResourceDescriptor> _unmanagedResources = new();
     private readonly List<ServiceDescriptor> _services = new();
     private readonly List<SystemDescriptor> _systems = new();
-    private IRunner? _runner;
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
     {
@@ -108,13 +106,14 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         return this;
     }
 
+
+    /// <summary>
+    /// Initialize the base systems of the engine and create a runnable.
+    /// </summary>
+    /// <returns>The game engine instance</returns>
+    /// <exception cref="InvalidOperationException">If some system fails to initialize a fatal error will be thrown</exception>
     public IRunnable Build()
     {
-        if (_runner == null)
-        {
-            throw new InvalidOperationException("No runner has been set.");
-        }
-
         var memoryManager = GetService<IMemoryManager>();
         var fileSystem = GetService<IFileSystem>();
         var jobSystem = GetService<IJobSystem>();
@@ -152,15 +151,9 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
             throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
         }
         
-        return new TitanApp(serviceRegistry, _runner);
+        return new TitanApp(serviceRegistry);
     }
 
     public T GetService<T>() where T : class, IService
         => _services.First(s => s.Type == typeof(T)).As<T>();
-
-    public IAppBuilder UseRunner<T>() where T : IRunner
-    {
-        _runner = T.Create();
-        return this;
-    }
 }
