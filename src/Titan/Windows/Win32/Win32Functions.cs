@@ -1,4 +1,3 @@
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Platform.Win32;
 
@@ -13,15 +12,21 @@ internal static unsafe class Win32Functions
             return new Point(point.X, point.Y);
         }
 
-        Logger.Error("Failed to get the Cursor position.", typeof(Win32Functions));
+        //Logger.Error("Failed to get the Cursor position.", typeof(Win32Functions));
         return default;
     }
 
     private static bool SetTitle(nuint handle, char* title)
         => User32.SetWindowTextW(handle, title);
 
+    private static void Close(nuint handle)
+        => User32.CloseWindow(handle);
+
     public static WindowFunctions GetFunctionPointers() => new(
         &GetRelativeCursorPosition,
-        &SetTitle
+        &SetTitle,
+        &Close
     );
+
+
 }

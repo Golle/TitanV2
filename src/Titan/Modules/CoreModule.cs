@@ -22,6 +22,11 @@ internal class CoreModule : IModule
             throw new PlatformNotSupportedException($"Support for platform {GlobalConfiguration.Platform} has not been implemented yet.");
         }
 
+        // Register app lifetime handling first.
+        builder
+            .AddResource<ApplicationLifetime>()
+            .AddSystems<ApplicationLifetimeSystem>();
+
         // Platform specific modules
         builder
             .AddModule<FileSystemModule<Win32FileApi>>()
@@ -36,6 +41,7 @@ internal class CoreModule : IModule
             .AddService(new UnmanagedResourceRegistry())
             .AddService(new SystemsScheduler())
             .AddService(new EventSystem())
+            .AddSystems<EventSystem>()
             .AddResource<EventState>()
 
 

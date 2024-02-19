@@ -1,7 +1,7 @@
 using System.Numerics;
 using Titan.Core.Memory;
 using Titan.Systems;
-using Titan.Windows.Win32;
+using Titan.Windows;
 
 namespace Titan.Input;
 

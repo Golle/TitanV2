@@ -9,6 +9,12 @@ using Titan.Systems;
 
 namespace Titan.Application;
 
+[UnmanagedResource]
+internal partial struct ApplicationLifetime
+{
+    public bool Active;
+}
+
 internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnable
 {
     public T GetService<T>() where T : class, IService
@@ -47,26 +53,28 @@ internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnabl
 
     private void RunInternal()
     {
+        ref readonly var lifetime = ref GetResourceHandle<ApplicationLifetime>().AsReadOnlyRef;
+
         var jobSystem = GetService<IJobSystem>();
         var scheduler = GetService<SystemsScheduler>();
         ref var executionTree = ref scheduler._executionTree;
 
+        var timer = Stopwatch.StartNew();
         Logger.Trace<TitanApp>("PreInit");
         executionTree.PreInit(jobSystem);
         Logger.Trace<TitanApp>("Init");
         executionTree.Init(jobSystem);
 
-        Logger.Trace<TitanApp>("Init complete. Doing a GC Collect.");
+        timer.Stop();
+        Logger.Trace<TitanApp>($"Init completed in {timer.Elapsed.TotalMilliseconds} ms. Doing a GC Collect.");
         var gcTimer = Stopwatch.StartNew();
         GC.Collect();
         gcTimer.Stop();
         Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
 
-        int i = 1000;
         Logger.Trace<TitanApp>("Starting main game loop");
-        while (true) //TODO(Jens): Add something that can exit this
+        while (lifetime.Active)
         {
-            //Thread.Sleep(100);
             executionTree.Update(jobSystem);
         }
 
@@ -75,5 +83,7 @@ internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnabl
         Logger.Trace<TitanApp>("PostShutdown");
         executionTree.PostShutdown(jobSystem);
     }
+
+
 }
 

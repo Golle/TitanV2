@@ -1,10 +1,10 @@
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
-using Titan.Platform.Win32;
 using Titan.Resources;
+using Titan.Windows.Win32;
 
-namespace Titan.Windows.Win32;
+namespace Titan.Windows;
 
 [UnmanagedResource]
 internal unsafe partial struct Window
@@ -41,4 +41,7 @@ internal unsafe partial struct Window
 
     public readonly Point GetRelativeCursorPosition()
         => Functions.GetRelativeCursorPosition(Handle);
+
+    public void Close() 
+        => Functions.Close(Handle);
 }

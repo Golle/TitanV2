@@ -12,6 +12,7 @@ using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows.Win32;
 using static Titan.Platform.Win32.Win32Common;
+using Window = Titan.Windows.Window;
 
 namespace Titan.Rendering.D3D12;
 

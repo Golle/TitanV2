@@ -6,14 +6,18 @@ using Titan.Core.Threading;
 namespace Titan.Systems.Executors;
 
 /// <summary>
-/// The SystemsExecutor will scheldule systems in parallel using the JobSystem, and respect the dependencies.
+/// The OrderedSystemsExecutor will scheldule systems in parallel using the JobSystem, and respect the dependencies.
 /// </summary>
-internal sealed unsafe class SystemsExecutor
+internal sealed unsafe class OrderedSystemsExecutor : ISystemsExecutor
 {
     [SkipLocalsInit]
     public static void Run(IJobSystem jobSystem, TitanArray<SystemNode> nodes)
     {
         var count = nodes.Length;
+        if (count == 0)
+        {
+            return;
+        }
         var states = stackalloc SystemState[(int)count];
         var handles = stackalloc JobHandle[(int)count];
 

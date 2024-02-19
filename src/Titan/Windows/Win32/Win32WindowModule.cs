@@ -10,6 +10,7 @@ internal class Win32WindowModule : IModule
             .AddResource<Win32MessageQueue>()
             .AddResource<Window>()
             .AddSystems<Win32WindowSystem>()
+            .AddSystems<Win32MessagePump>()
             ;
 
         return true;

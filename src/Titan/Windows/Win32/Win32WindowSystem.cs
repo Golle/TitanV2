@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using Titan.Configurations;
 using Titan.Core.Logging;
-using Titan.Core.Memory;
 using Titan.Core.Threading;
 using Titan.Input;
 using Titan.Platform.Win32;
@@ -31,7 +30,7 @@ internal unsafe partial struct Win32WindowSystem
         window->Queue = queue;
 
         window->WindowThread = threadManager.Create(&CreateAndStartWindow, window, true);
-
+        //TODO(Jens): This should be handled in some nicer way. CreateEvent and SetEvent causes the debugger to deadlock though, so not sure what we can do.
         while (window->Handle == 0)
         {
             Thread.Sleep(1);
@@ -71,7 +70,6 @@ internal unsafe partial struct Win32WindowSystem
     private static int CreateAndStartWindow(void* context)
     {
         var window = (Window*)context;
-        var queue = (Win32MessageQueue*)window->Queue;
 
         Logger.Trace<Win32WindowSystem>($"Creating Win32 Window. Width = {window->Width} Height = {window->Height} Windowed = {window->Windowed} Title = {new string(window->Title, 0, window->TitleLength)}");
         HINSTANCE instance = Kernel32.GetModuleHandleW(null);
@@ -164,64 +162,23 @@ internal unsafe partial struct Win32WindowSystem
         window->Active = true;
         ShowWindow(handle, ShowWindowCommands.SW_SHOW);
 
-        while (window->Active)
+        ref var active = ref window->Active;
+        while (active)
         {
             MSG msg;
             //NOTE(Jens): For some reason the GetMessageW returns -1 when the window is closed.
             var result = GetMessageW(&msg, handle, 0, 0);
             if (result is 0 or -1)
             {
-                queue->Push(new Win32QuitEvent(0));
-                window->Active = false;
+                active = false;
                 break;
             }
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
 
+        Logger.Trace<Win32WindowSystem>("Window Message loop ended");
         return 1;
-    }
-
-    [System(SystemStage.Last)]
-    public static void MessagePump(in Window window, ref Win32MessageQueue queue)
-    {
-        // Pump the messages and put them on the queue (This is something we might want to do async, maybe start a thread in CreateWindow)
-
-        if (!queue.HasEvents())
-        {
-            return;
-        }
-
-        var count = queue.EventCount;
-        for (var i = 0; i < count; ++i)
-        {
-            if (!queue.TryReadEvent(out var @event))
-            {
-                break;
-            }
-
-            switch (@event.Id)
-            {
-                case EventTypes.KeyDown:
-                    ref readonly var keyDownEvent = ref @event.As<Win32KeyDownEvent>();
-                    Logger.Info($"Key Down: {keyDownEvent.Code} (Repeat = {keyDownEvent.Repeat})");
-                    break;
-                case EventTypes.KeyUp:
-                    ref readonly var keyUpEvent = ref @event.As<Win32KeyUpEvent>();
-                    Logger.Info($"Key Down: {keyUpEvent.Code}");
-                    break;
-                case EventTypes.Close:
-                    Logger.Info<Win32WindowSystem>("Close message received");
-                    PostQuitMessage(0);
-                    break;
-                case EventTypes.Quit:
-                    Logger.Info<Win32WindowSystem>("Quit message received!");
-                    break;
-                default:
-                    Logger.Warning<Win32WindowSystem>($"Win32 Message not handled. Id = {@event.Id}");
-                    break;
-            }
-        }
     }
 
     [UnmanagedCallersOnly]
@@ -256,6 +213,7 @@ internal unsafe partial struct Win32WindowSystem
                 queue->Push(new Win32CloseEvent());
                 break;
         }
+
         return DefWindowProcW(hwnd, message, wParam, lParam);
     }
 }
