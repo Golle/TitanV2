@@ -1,6 +1,7 @@
 using Titan.Application.Events;
 using Titan.Core.Logging;
 using Titan.Events;
+using Titan.Input;
 using Titan.Systems;
 using Titan.Windows.Win32.Events;
 
@@ -29,18 +30,23 @@ internal unsafe partial struct Win32MessagePump
             {
                 case EventTypes.KeyDown:
                     ref readonly var keyDownEvent = ref @event.As<Win32KeyDownEvent>();
-                    Logger.Info($"Key Down: {keyDownEvent.Code} (Repeat = {keyDownEvent.Repeat})");
+                    writer.Send(new KeyDownEvent(keyDownEvent.Code, keyDownEvent.Repeat));
                     break;
                 case EventTypes.KeyUp:
-                    ref readonly var keyUpEvent = ref @event.As<Win32KeyUpEvent>();
-                    Logger.Info($"Key Down: {keyUpEvent.Code}");
+                    
+                    ref readonly var keyUp = ref @event.As<Win32KeyUpEvent>();
+                    writer.Send(new KeyUpEvent(keyUp.Code));
+                    break;
+                case EventTypes.CharacterTyped:
+                    ref readonly var charTypedEvent = ref @event.As<Win32CharacterTypedEvent>();
+                    writer.Send(new CharacterTypedEvent(charTypedEvent.Character));
                     break;
                 case EventTypes.Close:
-                    Logger.Info<Win32WindowSystem>("Close message received");
+                    Logger.Trace<Win32WindowSystem>("Close message received");
                     writer.Send(new EngineShutdownEvent());
                     break;
                 case EventTypes.Quit:
-                    Logger.Info<Win32WindowSystem>("Quit message received!");
+                    Logger.Trace<Win32WindowSystem>("Quit message received!");
                     break;
                 default:
                     Logger.Warning<Win32WindowSystem>($"Win32 Message not handled. Id = {@event.Id}");

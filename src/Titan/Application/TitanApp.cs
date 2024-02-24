@@ -1,30 +1,68 @@
+using Microsoft.Win32;
 using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Memory;
 using Titan.Core.Threading;
+using Titan.Events;
+using Titan.IO.FileSystem;
 using Titan.Resources;
 using Titan.Services;
 using Titan.Systems;
 
 namespace Titan.Application;
 
-[UnmanagedResource]
-internal partial struct ApplicationLifetime
+internal sealed class TitanApp : IApp, IRunnable
 {
-    public bool Active;
-}
+    private readonly ServiceRegistry _registry;
+    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems)
+    {
+        _registry = registry;
 
-internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnable
-{
+        var memoryManager = registry.GetService<IMemoryManager>();
+        var fileSystem = registry.GetService<IFileSystem>();
+
+        var unmanagedResourceRegistry = registry.GetService<UnmanagedResourceRegistry>();
+        var configurationManager = registry.GetService<ConfigurationManager>();
+        var eventSystem = registry.GetService<EventSystem>();
+
+        // Set up all unmanaged resources that have been registered.
+        if (!unmanagedResourceRegistry.Init(memoryManager, resources))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(UnmanagedResourceRegistry)}.");
+            throw new InvalidOperationException($"{nameof(UnmanagedResourceRegistry)} failed.");
+        }
+
+        // Init the configurations
+        if (!configurationManager.Init(fileSystem, configurations))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(ConfigurationManager)}.");
+            throw new InvalidOperationException($"{nameof(ConfigurationManager)} failed.");
+        }
+
+        if (!eventSystem.Init(memoryManager, config.EventConfig, unmanagedResourceRegistry.GetResourceHandle<EventState>()))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(EventSystem)}.");
+            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
+        }
+
+        ref var scheduler = ref unmanagedResourceRegistry.GetResource<SystemsScheduler>();
+        if (!scheduler.Init(memoryManager, eventSystem, systems, unmanagedResourceRegistry, registry))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
+            throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
+        }
+    }
+
     public T GetService<T>() where T : class, IService
-        => serviceRegistry.GetService<T>();
+        => _registry.GetService<T>();
 
     public ManagedResource<T> GetServiceHandle<T>() where T : class, IService
-        => serviceRegistry.GetHandle<T>();
+        => _registry.GetHandle<T>();
 
     public unsafe UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource =>
-        new(serviceRegistry.GetService<UnmanagedResourceRegistry>()
+        new(_registry.GetService<UnmanagedResourceRegistry>()
             .GetResourcePointer<T>());
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
@@ -56,14 +94,32 @@ internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnabl
         ref readonly var lifetime = ref GetResourceHandle<ApplicationLifetime>().AsReadOnlyRef;
 
         var jobSystem = GetService<IJobSystem>();
-        var scheduler = GetService<SystemsScheduler>();
-        ref var executionTree = ref scheduler._executionTree;
+        ref var scheduler = ref GetResourceHandle<SystemsScheduler>().AsRef;
 
+        Init(ref scheduler, jobSystem);
+
+        Logger.Trace<TitanApp>("Starting main game loop");
+        while (lifetime.Active)
+        {
+            scheduler.UpdateSystems(jobSystem);
+
+            //NOTE(Jens): Until we have a render pipeline in place, just sleep for a ms.
+            Thread.Sleep(1);
+        }
+
+        Shutdown(ref scheduler, jobSystem);
+
+        Cleanup();
+
+    }
+
+    private static void Init(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
         var timer = Stopwatch.StartNew();
         Logger.Trace<TitanApp>("PreInit");
-        executionTree.PreInit(jobSystem);
+        scheduler.PreInitSystems(jobSystem);
         Logger.Trace<TitanApp>("Init");
-        executionTree.Init(jobSystem);
+        scheduler.InitSystems(jobSystem);
 
         timer.Stop();
         Logger.Trace<TitanApp>($"Init completed in {timer.Elapsed.TotalMilliseconds} ms. Doing a GC Collect.");
@@ -71,19 +127,26 @@ internal sealed class TitanApp(ServiceRegistry serviceRegistry) : IApp, IRunnabl
         GC.Collect();
         gcTimer.Stop();
         Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
-
-        Logger.Trace<TitanApp>("Starting main game loop");
-        while (lifetime.Active)
-        {
-            executionTree.Update(jobSystem);
-        }
-
-        Logger.Trace<TitanApp>("Shutdown");
-        executionTree.Shutdown(jobSystem);
-        Logger.Trace<TitanApp>("PostShutdown");
-        executionTree.PostShutdown(jobSystem);
     }
 
+    private void Shutdown(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        Logger.Trace<TitanApp>("Shutdown");
+        scheduler.ShutdownSystems(jobSystem);
+        Logger.Trace<TitanApp>("PostShutdown");
+        scheduler.PostShutdownSystems(jobSystem);
+    }
 
+    private void Cleanup()
+    {
+        var memoryManager = _registry.GetService<IMemoryManager>();
+        GetResourceHandle<SystemsScheduler>().AsRef.Shutdown(memoryManager);
+        _registry.GetService<EventSystem>().Shutdown();
+        _registry.GetService<ConfigurationManager>().Shutdown();
+        _registry.GetService<UnmanagedResourceRegistry>().Shutdown();
+        _registry.GetService<IFileSystem>().Shutdown();
+        _registry.GetService<JobSystem>().Shutdown();
+
+    }
 }
 

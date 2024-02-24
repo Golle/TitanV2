@@ -11,6 +11,7 @@ internal struct SystemStageCollection
     public readonly unsafe struct Stage(SystemStage stage, TitanArray<SystemNode> nodes, delegate*<IJobSystem, TitanArray<SystemNode>, void> executor)
     {
         public readonly SystemStage Name = stage;
+
         public uint Count => nodes.Length;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

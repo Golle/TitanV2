@@ -116,9 +116,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     {
         var memoryManager = GetService<IMemoryManager>();
         var fileSystem = GetService<IFileSystem>();
-        var jobSystem = GetService<IJobSystem>();
 
-        var scheduler = GetService<SystemsScheduler>();
         var unmanagedResourceRegistry = GetService<UnmanagedResourceRegistry>();
         var configurationManager = GetService<ConfigurationManager>();
         var eventSystem = GetService<EventSystem>();
@@ -145,13 +143,14 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
 
         var serviceRegistry = new ServiceRegistry(_services);
 
-        if (!scheduler.Init(memoryManager, jobSystem, eventSystem, _systems, unmanagedResourceRegistry, serviceRegistry))
+        ref var scheduler = ref unmanagedResourceRegistry.GetResource<SystemsScheduler>();
+        if (!scheduler.Init(memoryManager, eventSystem, _systems, unmanagedResourceRegistry, serviceRegistry))
         {
             Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
-            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
+            throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
         }
-        
-        return new TitanApp(serviceRegistry);
+
+        return new TitanApp(serviceRegistry, appConfig, _unmanagedResources, _configurations, _systems);
     }
 
     public T GetService<T>() where T : class, IService

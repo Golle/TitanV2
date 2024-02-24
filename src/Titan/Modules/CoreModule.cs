@@ -39,7 +39,7 @@ internal class CoreModule : IModule
         builder
             .AddService<IConfigurationManager, ConfigurationManager>(new ConfigurationManager())
             .AddService(new UnmanagedResourceRegistry())
-            .AddService(new SystemsScheduler())
+            .AddResource<SystemsScheduler>()
             .AddService(new EventSystem())
             .AddSystems<EventSystem>()
             .AddResource<EventState>()

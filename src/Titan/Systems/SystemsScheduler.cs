@@ -1,5 +1,5 @@
-using System.Diagnostics;
-using Titan.Configurations;
+using System.Runtime.CompilerServices;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
@@ -9,12 +9,14 @@ using Titan.Services;
 
 namespace Titan.Systems;
 
-internal sealed unsafe class SystemsScheduler : IService
+[UnmanagedResource]
+internal unsafe partial struct SystemsScheduler
 {
-    //TODO(Jens): This should not be here, this should be creted somewhere else and initilzied here.
-    public ExecutionTree _executionTree;
-    private IJobSystem? _jobSystem;
-    public bool Init(IMemoryManager memoryManager, IJobSystem jobSystem, EventSystem eventSystem, IReadOnlyList<SystemDescriptor> systems, UnmanagedResourceRegistry unmanaged, ServiceRegistry services)
+    private SystemStageCollection _stages;
+    private TitanArray<SystemNode> _nodes;
+    private TitanArray<ushort> _dependencies;
+
+    public bool Init(IMemoryManager memoryManager, EventSystem eventSystem, IReadOnlyList<SystemDescriptor> systems, UnmanagedResourceRegistry unmanaged, ServiceRegistry services)
     {
         // Make this configurable. This is during init phase, so it will always be the same for each run when the game is published. Adjust accordingly.
         var systemInitializerSize = MemoryUtils.MegaBytes(2);
@@ -37,26 +39,35 @@ internal sealed unsafe class SystemsScheduler : IService
             Logger.Trace<SystemsScheduler>($"Initialized system {descriptor.Name.GetString()}. Mutable = {initializer.MutableCount} ReadOnly = {initializer.ReadOnlyCount}");
         }
 
-        if (!builder.TryBuild(out _executionTree, memoryManager))
+        if (!builder.TryBuild(ref _stages, ref _nodes, ref _dependencies, memoryManager))
         {
-            Logger.Error<SystemsScheduler>($"Failed to build the {nameof(ExecutionTree)}");
+            Logger.Error<SystemsScheduler>($"Failed to build the {nameof(SystemsScheduler)}");
             return false;
         }
 
-        _jobSystem = jobSystem;
         return true;
     }
 
-
-    public void Shutdown()
+    public void Shutdown(IMemoryManager memoryManager)
     {
-        _executionTree.Dispose();
+        memoryManager.FreeArray(ref _dependencies);
+        memoryManager.FreeArray(ref _nodes);
     }
 
+    public void PreInitSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.PreInit].Execute(jobSystem);
 
-    public void Execute()
+    public void InitSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.Init].Execute(jobSystem);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void UpdateSystems(IJobSystem jobSystem)
     {
-        Debug.Assert(_jobSystem != null);
-        _executionTree.Update(_jobSystem);
+        for (var i = SystemStage.First; i <= SystemStage.Last; ++i)
+        {
+            _stages[(int)i].Execute(jobSystem);
+        }
     }
+
+    public void ShutdownSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.Shutdown].Execute(jobSystem);
+
+    public void PostShutdownSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.PostShutdown].Execute(jobSystem);
 }

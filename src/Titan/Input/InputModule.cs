@@ -1,7 +1,7 @@
 using Titan.Application;
 
 namespace Titan.Input;
-internal class InputModule : IModule
+internal sealed class InputModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
@@ -9,16 +9,6 @@ internal class InputModule : IModule
             .AddResource<InputState>()
             .AddSystems<InputSystem>();
 
-        return true;
-    }
-
-    public static bool Init(IApp app)
-    {
-        return true;
-    }
-
-    public static bool Shutdown(IApp app)
-    {
         return true;
     }
 }

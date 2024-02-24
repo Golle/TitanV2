@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Titan.Configurations;
 using Titan.Core.Logging;
@@ -7,6 +8,7 @@ using Titan.Platform.Win32;
 using Titan.Systems;
 using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
+using static Titan.Platform.Win32.WindowMessage;
 
 namespace Titan.Windows.Win32;
 
@@ -36,7 +38,6 @@ internal unsafe partial struct Win32WindowSystem
             Thread.Sleep(1);
         }
     }
-
 
     [System(SystemStage.Shutdown)]
     public static void DestroyWindow(Window* window, IThreadManager threadManager)
@@ -184,7 +185,7 @@ internal unsafe partial struct Win32WindowSystem
     [UnmanagedCallersOnly]
     private static nint WindowProc(HWND hwnd, WindowMessage message, nuint wParam, nuint lParam)
     {
-        if (message == WindowMessage.WM_CREATE)
+        if (message == WM_CREATE)
         {
             var create = (CREATESTRUCTW*)lParam;
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (nint)create->lpCreateParams);
@@ -203,13 +204,30 @@ internal unsafe partial struct Win32WindowSystem
 
         switch (message)
         {
-            case WindowMessage.WM_KEYDOWN:
-                queue->Push(new Win32KeyDownEvent(KeyCode.A, false));
+            case WM_KEYDOWN:
+            case WM_SYSKEYDOWN:
+                {
+                    var repeat = (lParam & 0x40000000) > 0;
+                    var code = (int)wParam;
+                    Debug.Assert(code is >= 0 and <= byte.MaxValue);
+                    queue->Push(new Win32KeyDownEvent((KeyCode)code, repeat));
+                    break;
+                }
+            case WM_KEYUP:
+            case WM_SYSKEYUP:
+                {
+                    var code = (int)wParam;
+                    Debug.Assert(code is >= 0 and <= byte.MaxValue);
+                    queue->Push(new Win32KeyUpEvent((KeyCode)code));
+                    break;
+                }
+
+            case WM_CHAR:
+                var character = (char)wParam;
+                queue->Push(new Win32CharacterTypedEvent(character));
                 break;
-            case WindowMessage.WM_KEYUP:
-                queue->Push(new Win32KeyUpEvent(KeyCode.A));
-                break;
-            case WindowMessage.WM_CLOSE:
+
+            case WM_CLOSE:
                 queue->Push(new Win32CloseEvent());
                 break;
         }
