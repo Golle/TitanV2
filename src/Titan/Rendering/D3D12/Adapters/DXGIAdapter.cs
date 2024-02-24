@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;

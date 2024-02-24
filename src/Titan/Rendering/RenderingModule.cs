@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Titan.Application;
-using Titan.Rendering.D3D12;
+using Titan.Rendering.D3D12New;
 using Titan.Rendering.Vulkan;
 
 namespace Titan.Rendering;
@@ -45,7 +45,4 @@ internal sealed class RenderingModule : IModule
 
         return true;
     }
-
-    public static bool Init(IApp app) => true;
-    public static bool Shutdown(IApp app) => true;
 }

@@ -2,16 +2,19 @@
 using Titan.Application;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
-using Titan.Rendering.D3D12.Adapters;
 using Titan.Rendering.D3D12.Memory;
 using Titan.Rendering.D3D12.Utils;
-using Titan.Windows.Win32;
+using Titan.Rendering.D3D12New;
+using D3D12Adapter = Titan.Rendering.D3D12.Adapters.D3D12Adapter;
 
 namespace Titan.Rendering.D3D12;
 
 public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures);
 
-internal class D3D12Module : IModule
+
+
+
+internal class D3D12ModuleOld : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
