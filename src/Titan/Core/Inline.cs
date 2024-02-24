@@ -18,7 +18,7 @@ public struct Inline2<T> where T : unmanaged
     public unsafe ref T this[uint index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref *AsPointer();
+        get => ref *(AsPointer() + index);
     }
 }
 
@@ -37,7 +37,7 @@ public struct Inline3<T> where T : unmanaged
     public unsafe ref T this[uint index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref *AsPointer();
+        get => ref *(AsPointer() + index);
     }
 }
 
@@ -55,7 +55,7 @@ public struct Inline8<T> where T : unmanaged
     public unsafe ref T this[uint index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref *AsPointer();
+        get => ref *(AsPointer() + index);
     }
 }
 
@@ -73,7 +73,7 @@ public struct Inline10<T> where T : unmanaged
     public unsafe ref T this[uint index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref *AsPointer();
+        get => ref *(AsPointer() + index);
     }
 }
 
@@ -91,6 +91,6 @@ public struct Inline16<T> where T : unmanaged
     public unsafe ref T this[uint index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref *AsPointer();
+        get => ref *(AsPointer() + index);
     }
 }
