@@ -1,9 +1,5 @@
 using Titan.Configurations;
 using Titan.Core.Logging;
-using Titan.Core.Memory;
-using Titan.Core.Threading;
-using Titan.Events;
-using Titan.IO.FileSystem;
 using Titan.Resources;
 using Titan.Services;
 using Titan.Systems;
@@ -114,42 +110,7 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     /// <exception cref="InvalidOperationException">If some system fails to initialize a fatal error will be thrown</exception>
     public IRunnable Build()
     {
-        var memoryManager = GetService<IMemoryManager>();
-        var fileSystem = GetService<IFileSystem>();
-
-        var unmanagedResourceRegistry = GetService<UnmanagedResourceRegistry>();
-        var configurationManager = GetService<ConfigurationManager>();
-        var eventSystem = GetService<EventSystem>();
-
-        // Set up all unmanaged resources that have been registered.
-        if (!unmanagedResourceRegistry.Init(memoryManager, _unmanagedResources))
-        {
-            Logger.Error<AppBuilder>($"Failed to init the {nameof(UnmanagedResourceRegistry)}.");
-            throw new InvalidOperationException($"{nameof(UnmanagedResourceRegistry)} failed.");
-        }
-
-        // Init the configurations
-        if (!configurationManager.Init(fileSystem, _configurations))
-        {
-            Logger.Error<AppBuilder>($"Failed to init the {nameof(ConfigurationManager)}.");
-            throw new InvalidOperationException($"{nameof(ConfigurationManager)} failed.");
-        }
-
-        if (!eventSystem.Init(memoryManager, appConfig.EventConfig, unmanagedResourceRegistry.GetResourceHandle<EventState>()))
-        {
-            Logger.Error<AppBuilder>($"Failed to init the {nameof(EventSystem)}.");
-            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
-        }
-
         var serviceRegistry = new ServiceRegistry(_services);
-
-        ref var scheduler = ref unmanagedResourceRegistry.GetResource<SystemsScheduler>();
-        if (!scheduler.Init(memoryManager, eventSystem, _systems, unmanagedResourceRegistry, serviceRegistry))
-        {
-            Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
-            throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
-        }
-
         return new TitanApp(serviceRegistry, appConfig, _unmanagedResources, _configurations, _systems);
     }
 

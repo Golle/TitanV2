@@ -146,7 +146,6 @@ internal sealed class TitanApp : IApp, IRunnable
         _registry.GetService<UnmanagedResourceRegistry>().Shutdown();
         _registry.GetService<IFileSystem>().Shutdown();
         _registry.GetService<JobSystem>().Shutdown();
-
     }
 }
 

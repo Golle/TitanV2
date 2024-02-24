@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Titan.Core.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
@@ -16,9 +16,7 @@ internal unsafe struct AdapterInfo
     public uint DescriptionLength;
     public bool IsHardware;
 
-#if DEBUG
     public readonly string DebugString => $"{GetName()} Hardware = {IsHardware} DeviceId = {DeviceId} VendorId = {VendorId}";
-#endif
     public readonly ReadOnlySpan<char> GetName()
     {
         fixed (char* pDescription = Description)
