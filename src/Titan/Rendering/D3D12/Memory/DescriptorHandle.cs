@@ -5,21 +5,12 @@ using Titan.Platform.Win32.D3D12;
 namespace Titan.Rendering.D3D12.Memory;
 
 [DebuggerDisplay("CPU: {CPU.ptr, nq} GPU: {GPU.ptr, nq}")]
-internal readonly struct DescriptorHandle
+internal readonly struct DescriptorHandle(DescriptorHeapType type, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu, int index)
 {
-    public readonly D3D12_CPU_DESCRIPTOR_HANDLE CPU;
-    public readonly D3D12_GPU_DESCRIPTOR_HANDLE GPU;
-    public readonly uint Index;
-    public readonly DescriptorHeapType Type;
-
-    public DescriptorHandle(DescriptorHeapType type, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu, uint index)
-    {
-        Debug.Assert(cpu.ptr != 0, "cpu.ptr != 0, this is not expected since that is how we check for an invalid handle. Rework this.");
-        Type = type;
-        CPU = cpu;
-        GPU = gpu;
-        Index = index;
-    }
+    public readonly D3D12_CPU_DESCRIPTOR_HANDLE CPU = cpu;
+    public readonly D3D12_GPU_DESCRIPTOR_HANDLE GPU = gpu;
+    public readonly int Index = index;
+    public readonly DescriptorHeapType Type = type;
 
     public bool IsValid => CPU.ptr != 0;
     public bool IsShaderVisible => GPU.ptr != 0;

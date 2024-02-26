@@ -1,14 +1,24 @@
 using Titan.Configurations;
+using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
+using Titan.Platform.Win32;
+using Titan.Resources;
 using Titan.Systems;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12New;
+namespace Titan.Rendering.D3D12New.Adapters;
 
-internal sealed unsafe partial class D3D12AdapterSystem
+[UnmanagedResource]
+internal unsafe partial struct D3D12Adapter
 {
+    public const int MaxAdapters = 10;
+    public uint PrimaryAdapterIndex;
+    public uint AdapterCount;
+    public Inline8<AdapterInfo> Adapters;
+    public readonly ref readonly AdapterInfo PrimaryAdapter => ref Adapters[PrimaryAdapterIndex];
+
+
     [System(SystemStage.Init)]
     public static void Init(D3D12Adapter* adapter, IConfigurationManager configurationManager)
     {
@@ -28,7 +38,7 @@ internal sealed unsafe partial class D3D12AdapterSystem
         //NOTE(Jens): We use the first device we find if there's no stored config. We enumerate them by GPU preference so we expect to get the best one first.
         adapter->PrimaryAdapterIndex = 0;
 
-        for (var index = 0u; index < D3D12Adapter.MaxAdapters; ++index)
+        for (var index = 0u; index < MaxAdapters; ++index)
         {
             IDXGIAdapter3* dxgiAdapter;
             hr = factory.Get()->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE.DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IDXGIAdapter3.Guid, (void**)&dxgiAdapter);
@@ -51,7 +61,6 @@ internal sealed unsafe partial class D3D12AdapterSystem
                 break;
             }
 
-
             ref var info = ref adapter->Adapters[adapter->AdapterCount++];
             info.Adapter = dxgiAdapter;
             info.SetName(desc.DescriptionString());
@@ -66,7 +75,7 @@ internal sealed unsafe partial class D3D12AdapterSystem
         {
             var deviceId = config.Adapter.DeviceId;
             var vendorId = config.Adapter.VendorId;
-            Logger.Info<D3D12AdapterSystem>($"Using configured adapter. DeviceId = {deviceId} VendorId = {vendorId}");
+            Logger.Info<D3D12Adapter>($"Using configured adapter. DeviceId = {deviceId} VendorId = {vendorId}");
             var found = false;
             for (var i = 0u; i < adapter->AdapterCount; ++i)
             {
@@ -81,11 +90,11 @@ internal sealed unsafe partial class D3D12AdapterSystem
 
             if (!found)
             {
-                Logger.Warning<D3D12AdapterSystem>($"The adapter in the configuration could not be found, using default device. Configured DeviceId = {deviceId} Configured VendorId = {vendorId}");
+                Logger.Warning<D3D12Adapter>($"The adapter in the configuration could not be found, using default device. Configured DeviceId = {deviceId} Configured VendorId = {vendorId}");
             }
         }
 
-        Logger.Trace<D3D12AdapterSystem>($"Found {adapter->AdapterCount} adapters.");
+        Logger.Trace<D3D12Adapter>($"Found {adapter->AdapterCount} adapters.");
     }
 
     [System(SystemStage.Shutdown)]

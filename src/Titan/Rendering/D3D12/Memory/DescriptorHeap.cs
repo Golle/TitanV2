@@ -88,7 +88,7 @@ internal unsafe struct DescriptorHeap
         var cpuStart = _cpuStart.ptr + offset;
         var gpuStart = _shaderVisible ? _gpuStart.ptr + offset : 0ul;
 
-        return new(_type, cpuStart, gpuStart, index);
+        return new(_type, cpuStart, gpuStart, (int)index);
     }
 
     public void Free(in DescriptorHandle handle)
@@ -96,12 +96,12 @@ internal unsafe struct DescriptorHeap
         Debug.Assert(handle.Type == _type, $"Expected type = {_type}. Got {handle.Type}");
 
 #if DEBUG
-        CheckForDuplicateIndices(_freeList.AsReadOnlySpan()[(int)_descriptorCount..], handle.Index);
+        CheckForDuplicateIndices(_freeList.AsReadOnlySpan()[(int)_descriptorCount..], (uint)handle.Index);
 #endif
 
         var gotLock = false;
         _lock.Enter(ref gotLock);
-        _freeList[--_descriptorCount] = handle.Index;
+        _freeList[--_descriptorCount] = (uint)handle.Index;
         _lock.Exit();
     }
 

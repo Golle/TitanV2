@@ -7,7 +7,7 @@ using Titan.Systems;
 namespace Titan.Application;
 
 
-internal class AppBuilder(AppConfig appConfig) : IAppBuilder
+internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
     private readonly HashSet<Type> _modules = new();

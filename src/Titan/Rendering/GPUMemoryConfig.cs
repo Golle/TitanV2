@@ -7,6 +7,10 @@ public unsafe struct GPUMemoryConfig
     private fixed uint _counts[(int)DescriptorHeapType.Count];
     public readonly uint TempBufferSize;
     public readonly uint TempShaderResourceViewCount;
+    /// <summary>
+    ///  The TotalCount is the number of Descriptors forSRV, RTV, DSV and UAV. Not the temporary ones.This is used when allocating a single block
+    /// </summary>
+    public readonly uint TotalCount;
 
     public GPUMemoryConfig(uint srvCount, uint rtvCount, uint dsvCount, uint uavCount, uint tempBufferSize, uint tempSrvCount)
     {
@@ -16,8 +20,12 @@ public unsafe struct GPUMemoryConfig
         _counts[(int)DescriptorHeapType.UnorderedAccessView] = uavCount;
         TempBufferSize = tempBufferSize;
         TempShaderResourceViewCount = tempSrvCount;
+        TotalCount = srvCount + rtvCount + dsvCount + uavCount;
     }
-
+    
     public readonly uint GetDescriptorCount(DescriptorHeapType type)
-        => _counts[(int)type];
+        => GetDescriptorCount((int)type);
+
+    public readonly uint GetDescriptorCount(int index)
+        => _counts[index];
 }

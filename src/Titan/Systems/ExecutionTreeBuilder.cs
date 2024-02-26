@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -129,7 +128,7 @@ internal unsafe ref struct ExecutionTreeBuilder
         for (var i = 0; i < (int)SystemStage.Count; ++i)
         {
             var numberOfNodes = (uint)_stageCounter[i];
-            Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}");
+            Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}", typeof(ExecutionTreeBuilder));
 
             //NOTE(Jens): PreInit and PostShutdown are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
             delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = (SystemStage)i switch

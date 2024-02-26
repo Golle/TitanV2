@@ -41,6 +41,26 @@ public struct Inline3<T> where T : unmanaged
     }
 }
 
+
+[InlineArray(Length)]
+public struct Inline4<T> where T : unmanaged
+{
+    private const int Length = 4;
+    private T _ref;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref _ref, Length);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<T> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref _ref, Length);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe T* AsPointer() => (T*)Unsafe.AsPointer(ref this);
+    public unsafe ref T this[uint index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref *(AsPointer() + index);
+    }
+}
+
+
 [InlineArray(Length)]
 public struct Inline8<T> where T : unmanaged
 {
