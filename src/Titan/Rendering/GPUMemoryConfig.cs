@@ -1,5 +1,4 @@
 using Titan.Rendering.D3D12.Memory;
-using Titan.Rendering.D3D12New.Memory;
 
 namespace Titan.Rendering;
 
