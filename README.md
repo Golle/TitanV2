@@ -20,7 +20,7 @@ Looking forward for an exciting 2024.
 #### UI
 - [ ] Text
 - [ ] Sprites
-  [ ] 9-patch sprites
+- [ ] 9-patch sprites
 - [ ] Debug UI
 
 #### ECS (Entity Component System)
