@@ -13,7 +13,8 @@ internal static class GlobalConfiguration
 {
     public static readonly Platforms Platform = GetPlatform();
     public static readonly string BasePath = AppContext.BaseDirectory;
-    public const uint MaxRenderFrames = 3; 
+    public const uint MaxRenderFrames = 2;
+    public const uint CommandBufferCount = 16;
 
 
     private static Platforms GetPlatform()

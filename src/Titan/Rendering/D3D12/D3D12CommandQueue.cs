@@ -3,121 +3,87 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using static Titan.Rendering.D3D12.Utils.D3D12Helpers;
+using Titan.Resources;
+using Titan.Systems;
 
 namespace Titan.Rendering.D3D12;
 
-using CommandListType = ID3D12GraphicsCommandList4;
-internal sealed unsafe class D3D12CommandQueue : IService
+[UnmanagedResource]
+internal unsafe partial struct D3D12CommandQueue
 {
-    private const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
+    public const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
+    public const uint CommandListCount = GlobalConfiguration.CommandBufferCount;
 
-    //NOTE(Jens): Add this to the configuration, no need to create these up front if they'll never be used.
-    private const uint CommandListCount = 16;
-    private const uint MaxCommandLists = BufferCount * CommandListCount;
+    public const uint TotalCommandListCount = BufferCount * CommandListCount;
 
-    private ComPtr<ID3D12CommandQueue> _commandQueue;
+    public uint BufferIndex;
+    public uint Next;
 
-    private Inline3<Inline16<ComPtr<ID3D12CommandAllocator>>> _allocators;
-    private Inline3<Inline16<ComPtr<CommandListType>>> _commandLists;
+    public ComPtr<ID3D12CommandQueue> Queue;
 
-    private uint _next;
-    private uint _bufferIndex;
+    public Inline3<Inline16<ComPtr<ID3D12CommandAllocator>>> Allocators;
+    public Inline3<Inline16<ComPtr<ID3D12GraphicsCommandList4>>> CommandLists;
 
-    public ID3D12CommandQueue* CommandQueue => _commandQueue;
-    public bool Init(D3D12Device device)
+    [System(SystemStage.Init)]
+    public static void Init(in D3D12Device device, D3D12CommandQueue* commandQueue)
     {
-        var directQueue = device.CreateCommandQueue(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
-        if (directQueue == null)
+        using var _ = new MeasureTime<D3D12CommandQueue>("Init completed in {0} ms");
+        commandQueue->Queue = device.CreateCommandQueue(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
+        if (!commandQueue->Queue.IsValid)
         {
-            Logger.Error<D3D12CommandQueue>($"Failed to create the {nameof(ID3D12CommandQueue)}.");
-            return false;
+            Logger.Error<D3D12CommandQueue>("Failed to create the command queue.");
+            return;
         }
 
-        SetName(directQueue, $"{nameof(D3D12CommandQueue)}.{nameof(ID3D12CommandQueue)}");
+        var allocators = (ComPtr<ID3D12CommandAllocator>*)commandQueue->Allocators.AsPointer();
+        var commandLists = (ComPtr<ID3D12GraphicsCommandList4>*)commandQueue->CommandLists.AsPointer();
 
-        var allocators = (ComPtr<ID3D12CommandAllocator>*)_allocators.AsPointer();
-        var commandLists = (ComPtr<CommandListType>*)_commandLists.AsPointer();
-        for (var i = 0; i < MaxCommandLists; ++i)
+        for (var i = 0; i < TotalCommandListCount; ++i)
         {
-            var commandList = device.CreateCommandList(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
+            var commandList = device.CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
             if (commandList == null)
             {
-                Logger.Error<D3D12CommandQueue>($"Failed to create a {nameof(CommandListType)}. Index = {i}");
-                return false;
+                Logger.Error<D3D12CommandQueue>($"Failed to create the command list at index {i}");
             }
 
             var allocator = device.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
             if (allocator == null)
             {
-                Logger.Error<D3D12CommandQueue>($"Failed to create a {nameof(ID3D12CommandAllocator)}. Index = {i}");
-                return false;
+                Logger.Error<D3D12CommandQueue>($"Failed to create the command allocator at index {i}");
             }
 
-            SetName(commandList, $"{nameof(D3D12CommandQueue)}.{nameof(CommandListType)}[{i}]");
-            SetName(allocator, $"{nameof(D3D12CommandQueue)}.{nameof(ID3D12CommandAllocator)}[{i}]");
-            *commandLists = commandList;
-            *allocators = allocator;
-
-            commandLists++;
-            allocators++;
+            allocators[i] = allocator;
+            commandLists[i] = commandList;
         }
-
-        _commandQueue = directQueue;
-        return true;
     }
 
 
-    //public D3D12CommandList GetCommandList()
-    //{
-    //    Debug.Assert(_resourceManager != null);
-    //    var index = Interlocked.Increment(ref _next) - 1;
-    //    Debug.Assert(index < CommandListCount, "Max command list count exceeded.");
-
-    //    var allocator = _allocators[_bufferIndex][index];
-    //    var commandList = _commandLists[_bufferIndex][index];
-
-    //    Debug.Assert(allocator.IsValid && commandList.IsValid);
-    //    return new D3D12CommandList(commandList, allocator, _resourceManager);
-    //}
-
-    public void ExecuteAndReset()
+    [System(SystemStage.PostUpdate)]
+    public static void ExecuteAndReset(D3D12CommandQueue* commandQueue)
     {
-        var queue = _commandQueue.Get();
+        // no dependencies, just execute all
+        commandQueue->Queue.Get()->ExecuteCommandLists(commandQueue->Next, (ID3D12CommandList**)commandQueue->CommandLists[commandQueue->BufferIndex].AsPointer());
 
-        //NOTE(Jens): This will just execute all command lists, no dependencies. Change this when needed for postprocessing for example.
-        //queue->ExecuteCommandLists(_next, (ID3D12CommandList**)_commandLists[_bufferIndex].AsPointer());
-
-        _bufferIndex = (_bufferIndex + 1) % BufferCount;
-        _next = 0;
-
+        commandQueue->BufferIndex = (commandQueue->BufferIndex + 1) % BufferCount;
+        commandQueue->Next = 0;
     }
 
-    public void Shutdown()
-    {
-        _commandQueue.Dispose();
-        _commandQueue = default;
 
-        var allocators = EnumerateAllocators();
-        var commandLists = EnumerateCommandLists();
-        for (var i = 0; i < MaxCommandLists; ++i)
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(D3D12CommandQueue* commandQueue)
+    {
+        var allocators = (ComPtr<ID3D12CommandAllocator>*)commandQueue->Allocators.AsPointer();
+        var commandLists = (ComPtr<ID3D12GraphicsCommandList4>*)commandQueue->CommandLists.AsPointer();
+
+        for (var i = 0; i < TotalCommandListCount; ++i)
         {
             allocators[i].Dispose();
             commandLists[i].Dispose();
         }
 
-        _allocators = default;
-        _commandLists = default;
+        commandQueue->Queue.Dispose();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public HRESULT Signal(ID3D12Fence* fence, ulong value)
-        => _commandQueue.Get()->Signal(fence, value);
-
-    private Span<ComPtr<ID3D12CommandAllocator>> EnumerateAllocators()
-        => new(_allocators.AsPointer(), (int)(MaxCommandLists * sizeof(ComPtr<ID3D12CommandAllocator>)));
-
-    private Span<ComPtr<ID3D12GraphicsCommandList>> EnumerateCommandLists()
-        => new(_commandLists.AsPointer(), (int)(MaxCommandLists * sizeof(ComPtr<ID3D12GraphicsCommandList>)));
-
+    public readonly HRESULT Signal(ID3D12Fence* fence, ulong value) => Queue.Get()->Signal(fence, value);
 }

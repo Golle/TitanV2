@@ -33,4 +33,6 @@ public interface IMemoryManager : IService
     bool TryCreatePoolAllocator<T>(out BumpAllocator allocator, uint count) where T : unmanaged;
 
     
+    internal bool Init(MemoryConfig config);
+    internal void Shutdown();
 }

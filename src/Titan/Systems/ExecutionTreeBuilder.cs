@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -43,21 +42,19 @@ internal unsafe ref struct ExecutionTreeBuilder
         _stageCounter[(int)system.Descriptor.Stage]++;
     }
 
-    public bool TryBuild(out ExecutionTree executionTree, IMemoryManager memoryManager)
+    public bool TryBuild(ref SystemStageCollection stages, ref TitanArray<SystemNode> nodes, ref TitanArray<ushort> dependencies, IMemoryManager memoryManager)
     {
-        Unsafe.SkipInit(out executionTree);
-
         var systemCount = _count;
 
         _systems.AsSpan().Sort(SortSystems);
 
-        if (!memoryManager.TryAllocArray<SystemNode>(out var nodes, systemCount))
+        if (!memoryManager.TryAllocArray(out nodes, systemCount))
         {
             Logger.Error($"Failed to allocate memory. Type = {nameof(SystemNode)} Count = {systemCount} Size = {systemCount * sizeof(SystemNode)} bytes", typeof(ExecutionTreeBuilder));
             return false;
         }
 
-        if (!memoryManager.TryAllocArray<ushort>(out var dependencies, _totalDependencies))
+        if (!memoryManager.TryAllocArray(out dependencies, _totalDependencies))
         {
             Logger.Error($"Failed to allocate memory. Type = {nameof(UInt16)} Size = {systemCount * sizeof(ushort)}", typeof(ExecutionTreeBuilder));
             return false;
@@ -127,24 +124,27 @@ internal unsafe ref struct ExecutionTreeBuilder
             }
         }
 
-        var stages = new SystemStageCollection();
         var offset = 0u;
         for (var i = 0; i < (int)SystemStage.Count; ++i)
         {
             var numberOfNodes = (uint)_stageCounter[i];
-            Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}");
+            Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}", typeof(ExecutionTreeBuilder));
 
-            delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = &SystemsExecutor.Run;
+            //NOTE(Jens): PreInit and PostShutdown are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
+            delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = (SystemStage)i switch
+            {
+                SystemStage.PreInit => &SequentialExecutor.Run,
+                SystemStage.PostShutdown => &ReverseSequentialExecutor.Run,
+                _ => &OrderedSystemsExecutor.Run
+            };
             var stageNodes = nodes.Slice(offset, numberOfNodes);
             // The dependency index is in the full array of systems, this is an optimization to adjust the index to the current stage. 
             AdjustDependencyIndices(stageNodes, offset);
-            stages[i] = new SystemStageCollection.Stage(stageNodes, executor);
+            stages[i] = new SystemStageCollection.Stage((SystemStage)i, stageNodes, executor);
 
             offset += numberOfNodes;
         }
-
-        executionTree = new ExecutionTree(memoryManager, stages, nodes, dependencies);
-
+        
         return true;
 
         static void AdjustDependencyIndices(TitanArray<SystemNode> nodes, uint offset)

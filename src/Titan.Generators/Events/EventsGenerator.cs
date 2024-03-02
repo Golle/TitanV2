@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Titan.Generators.Events;
 
@@ -12,7 +10,7 @@ public class EventsGenerator : IIncrementalGenerator
     {
         var structDeclarations = context.SyntaxProvider.ForAttributeWithMetadataName(
             TitanTypes.EventAttribute,
-            static (node, _) => node is StructDeclarationSyntax structDecl && structDecl.Modifiers.Any(static m => m.IsKind(SyntaxKind.PartialKeyword)),
+            static (node, _) => node.IsPartial() && (node.IsStruct() || node.IsRecordStruct()),
             static (syntaxContext, _) => new EventsType((INamedTypeSymbol)syntaxContext.TargetSymbol));
 
         var valueProvider = context
@@ -30,6 +28,5 @@ public class EventsGenerator : IIncrementalGenerator
                 context.AddSource($"{eventsType.Symbol.Name}.g.cs", result);
             }
         }
-
     }
 }

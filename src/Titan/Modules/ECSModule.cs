@@ -33,12 +33,4 @@ internal sealed class ECSModule : IModule
 
         return true;
     }
-
-    public static bool Shutdown(IApp app)
-    {
-        app.GetService<EntityManager>()
-            .Shutdown();
-
-        return true;
-    }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -75,7 +74,7 @@ internal static class SystemsBuilder
 
                 var modifier = p.RefKind switch
                 {
-                    RefKind.In => ModifierType.In,
+                    RefKind.In or RefKind.RefReadOnlyParameter => ModifierType.In,
                     RefKind.Ref => ModifierType.Ref,
                     _ => ModifierType.Value
                 };

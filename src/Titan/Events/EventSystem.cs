@@ -6,7 +6,7 @@ using Titan.Systems;
 
 namespace Titan.Events;
 
-internal unsafe partial class EventSystem : IEventSystem
+internal unsafe partial class EventSystem : IService
 {
     private UnmanagedResource<EventState> _eventState;
     private IMemoryManager? _memoryManager;

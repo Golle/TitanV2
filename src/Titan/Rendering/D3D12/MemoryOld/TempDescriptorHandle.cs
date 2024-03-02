@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Platform.Win32.D3D12;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Rendering.D3D12.MemoryOld;
 
 [SkipLocalsInit]
 [DebuggerDisplay("CPU: {CPU.ptr, nq} GPU: {GPU.ptr, nq} Index: {Index, nq}")]

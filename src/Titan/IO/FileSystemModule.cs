@@ -16,6 +16,9 @@ internal class FileSystemModule<TFileApi> : IModule where TFileApi : INativeFile
 #else
         var enginePath = contentPath;
 #endif
+        Logger.Trace<FileSystemModule<TFileApi>>($"Platform = {GlobalConfiguration.Platform}");
+        Logger.Trace<FileSystemModule<TFileApi>>($"ContentPath = {contentPath}");
+        Logger.Trace<FileSystemModule<TFileApi>>($"EnginePath = {enginePath}");
 
         var fileSystem = new FileSystem<TFileApi>(config.Name, enginePath, contentPath);
         if (!fileSystem.Init())
@@ -28,7 +31,7 @@ internal class FileSystemModule<TFileApi> : IModule where TFileApi : INativeFile
         return true;
     }
 
-    public static bool Init(IApp app) 
+    public static bool Init(IApp app)
         => true;
 
     public static bool Shutdown(IApp app)

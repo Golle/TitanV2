@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Rendering.D3D12.MemoryOld;
 
 [SkipLocalsInit]
 internal unsafe struct TempConstantBuffer

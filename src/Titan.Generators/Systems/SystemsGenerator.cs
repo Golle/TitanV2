@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text;
 
 namespace Titan.Generators.Systems;
@@ -90,7 +91,6 @@ public class SystemsGenerator : IIncrementalGenerator
         var classOrStruct = type.IsValueType ? "struct" : "class";
 
         var modifier = type.DeclaredAccessibility.AsString();
-
         builder.AppendLine("// Auto-Generated")
             .AppendLine($"namespace {containingNamespace};")
             .AppendLine($"{modifier} unsafe partial {classOrStruct} {typeName} : {TitanTypes.ISystem}")
@@ -126,6 +126,7 @@ public class SystemsGenerator : IIncrementalGenerator
             .EndIndentation()
             .AppendLine("}");
 
-        context.AddSource($"{typeName}.g.cs", builder.ToString());
+        //NOTE(Jens): This will crash if this is a resource without a namespace. Fix if it ever occurs.
+        context.AddSource($"{containingNamespace}.{typeName}.g.cs", builder.ToString());
     }
 }

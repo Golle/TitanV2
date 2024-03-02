@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Titan": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

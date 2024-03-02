@@ -1,22 +1,21 @@
-using System.Collections.Immutable;
 using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Resources;
-using Titan.Runners;
 using Titan.Services;
 using Titan.Systems;
 
 namespace Titan.Application;
 
-internal class AppBuilder(AppConfig appConfig) : IAppBuilder
+
+internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
+    private readonly HashSet<Type> _modules = new();
+
     private readonly List<ConfigurationDescriptor> _configurations = new();
-    private readonly List<ModuleDescriptor> _modules = new();
     private readonly List<UnmanagedResourceDescriptor> _unmanagedResources = new();
     private readonly List<ServiceDescriptor> _services = new();
     private readonly List<SystemDescriptor> _systems = new();
-    private IRunner? _runner;
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
     {
@@ -48,19 +47,19 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
     }
     public IAppBuilder AddModule<T>() where T : IModule
     {
-        var module = ModuleDescriptor.CreateFromType<T>();
-        Logger.Trace<AppBuilder>($"Add module {module.Name}");
-        if (_modules.Any(m => m.Type == module.Type))
+        //var module = ModuleDescriptor.CreateFromType<T>();
+        var type = typeof(T);
+        Logger.Trace<AppBuilder>($"Add module {type.Name}");
+        if (!_modules.Add(type))
         {
-            throw new InvalidOperationException($"A module of type {module.Type.AssemblyQualifiedName} has already been added.");
+            throw new InvalidOperationException($"A module of type {type.AssemblyQualifiedName} has already been added.");
         }
-
-        var result = module.Build(this, appConfig);
+        var result = T.Build(this, appConfig);
         if (!result)
         {
-            throw new InvalidOperationException($"Failed to build module. Name = {module.Name}");
+            throw new InvalidOperationException($"Failed to build module. Name = {type.Name}");
         }
-        _modules.Add(module);
+        _modules.Add(type);
         return this;
     }
 
@@ -103,28 +102,18 @@ internal class AppBuilder(AppConfig appConfig) : IAppBuilder
         return this;
     }
 
+
+    /// <summary>
+    /// Initialize the base systems of the engine and create a runnable.
+    /// </summary>
+    /// <returns>The game engine instance</returns>
+    /// <exception cref="InvalidOperationException">If some system fails to initialize a fatal error will be thrown</exception>
     public IRunnable Build()
     {
-        var services = new ServiceRegistry(_services.ToImmutableArray());
-        var configurations = _configurations.ToImmutableArray();
-        var modules = _modules.ToImmutableArray();
-        var unmanagedResources = _unmanagedResources.ToImmutableArray();
-        var systems = _systems.ToImmutableArray();
-
-        if (_runner == null)
-        {
-            throw new InvalidOperationException("No runner has been set.");
-        }
-
-        return new TitanApp(services, modules, configurations, unmanagedResources, systems, _runner);
+        var serviceRegistry = new ServiceRegistry(_services);
+        return new TitanApp(serviceRegistry, appConfig, _unmanagedResources, _configurations, _systems);
     }
 
     public T GetService<T>() where T : class, IService
         => _services.First(s => s.Type == typeof(T)).As<T>();
-
-    public IAppBuilder UseRunner<T>() where T : IRunner
-    {
-        _runner = T.Create();
-        return this;
-    }
 }

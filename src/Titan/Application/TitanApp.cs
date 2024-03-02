@@ -1,48 +1,74 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Memory;
+using Titan.Core.Threading;
+using Titan.Events;
+using Titan.IO.FileSystem;
 using Titan.Resources;
-using Titan.Runners;
 using Titan.Services;
 using Titan.Systems;
 
 namespace Titan.Application;
 
-internal sealed class TitanApp(
-    IManagedServices services,
-    ImmutableArray<ModuleDescriptor> modules,
-    ImmutableArray<ConfigurationDescriptor> configurations,
-    ImmutableArray<UnmanagedResourceDescriptor> resources,
-    ImmutableArray<SystemDescriptor> systems,
-    IRunner runner
-    ) : IApp, IRunnable
+internal sealed class TitanApp : IApp, IRunnable
 {
+    private readonly ServiceRegistry _registry;
+    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems)
+    {
+        _registry = registry;
+
+        var memoryManager = registry.GetService<IMemoryManager>();
+        var fileSystem = registry.GetService<IFileSystem>();
+
+        var unmanagedResourceRegistry = registry.GetService<UnmanagedResourceRegistry>();
+        var configurationManager = registry.GetService<ConfigurationManager>();
+        var eventSystem = registry.GetService<EventSystem>();
+
+        // Set up all unmanaged resources that have been registered.
+        if (!unmanagedResourceRegistry.Init(memoryManager, resources))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(UnmanagedResourceRegistry)}.");
+            throw new InvalidOperationException($"{nameof(UnmanagedResourceRegistry)} failed.");
+        }
+
+        // Init the configurations
+        if (!configurationManager.Init(fileSystem, configurations))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(ConfigurationManager)}.");
+            throw new InvalidOperationException($"{nameof(ConfigurationManager)} failed.");
+        }
+
+        if (!eventSystem.Init(memoryManager, config.EventConfig, unmanagedResourceRegistry.GetResourceHandle<EventState>()))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(EventSystem)}.");
+            throw new InvalidOperationException($"{nameof(EventSystem)} failed.");
+        }
+
+        ref var scheduler = ref unmanagedResourceRegistry.GetResource<SystemsScheduler>();
+        if (!scheduler.Init(memoryManager, eventSystem, systems, unmanagedResourceRegistry, registry))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
+            throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
+        }
+    }
+
     public T GetService<T>() where T : class, IService
-        => services.GetService<T>();
+        => _registry.GetService<T>();
 
     public ManagedResource<T> GetServiceHandle<T>() where T : class, IService
-        => services.GetHandle<T>();
+        => _registry.GetHandle<T>();
 
     public unsafe UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource =>
-        new(services.GetService<IUnmanagedResources>()
+        new(_registry.GetService<UnmanagedResourceRegistry>()
             .GetResourcePointer<T>());
 
     public T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>
-        => GetService<IConfigurationManager>().GetConfigOrDefault<T>();
+        => GetService<ConfigurationManager>().GetConfigOrDefault<T>();
 
     public void UpdateConfig<T>(T config) where T : IConfiguration =>
-        GetService<IConfigurationManager>().UpdateConfig(config);
-
-    public ImmutableArray<ConfigurationDescriptor> GetConfigurations()
-        => configurations;
-
-    public ImmutableArray<UnmanagedResourceDescriptor> GetResources()
-        => resources;
-
-    public ImmutableArray<SystemDescriptor> GetSystems()
-        => systems;
+        GetService<ConfigurationManager>().UpdateConfig(config);
 
     public void Run()
     {
@@ -64,36 +90,69 @@ internal sealed class TitanApp(
 
     private void RunInternal()
     {
-        foreach (var module in modules)
+        ref readonly var lifetime = ref GetResourceHandle<ApplicationLifetime>().AsReadOnlyRef;
+
+        var jobSystem = GetService<IJobSystem>();
+        ref var scheduler = ref GetResourceHandle<SystemsScheduler>().AsRef;
+
+        Init(ref scheduler, jobSystem);
+
+        var frameCount = 0;
+        var timer = Stopwatch.StartNew();
+        Logger.Trace<TitanApp>("Starting main game loop");
+        while (lifetime.Active)
         {
-            if (!module.Init(this))
+            scheduler.UpdateSystems(jobSystem);
+
+            frameCount++;
+            if (timer.Elapsed.TotalSeconds > 1f)
             {
-                Logger.Error<TitanApp>($"Failed to init module. Name = {module.Name} Type = {module.Type}");
-                return;
+                var fps = frameCount / timer.Elapsed.TotalSeconds;
+                //Logger.Info<TitanApp>($"FPS: {fps}");
+                frameCount = 0;
+                timer.Restart();
             }
         }
 
-        Logger.Trace<TitanApp>($"Using runner {runner.GetType().Name}");
-        runner.Init(this);
+        Shutdown(ref scheduler, jobSystem);
 
-        Logger.Trace<TitanApp>("Init complete. Doing a GC Collect.");
+        Cleanup();
+
+    }
+
+    private static void Init(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        var timer = Stopwatch.StartNew();
+        Logger.Trace<TitanApp>("PreInit");
+        scheduler.PreInitSystems(jobSystem);
+        Logger.Trace<TitanApp>("Init");
+        scheduler.InitSystems(jobSystem);
+
+        timer.Stop();
+        Logger.Trace<TitanApp>($"Init completed in {timer.Elapsed.TotalMilliseconds} ms. Doing a GC Collect.");
         var gcTimer = Stopwatch.StartNew();
         GC.Collect();
         gcTimer.Stop();
         Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
+    }
 
-        while (runner.RunOnce())
-        {
-        }
+    private void Shutdown(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        Logger.Trace<TitanApp>("Shutdown");
+        scheduler.ShutdownSystems(jobSystem);
+        Logger.Trace<TitanApp>("PostShutdown");
+        scheduler.PostShutdownSystems(jobSystem);
+    }
 
-        foreach (var module in modules.Reverse())
-        {
-            Logger.Trace<TitanApp>($"Shutdown module. Name = {module.Name}");
-            if (!module.Shutdown(this))
-            {
-                Logger.Warning<TitanApp>($"Failed to shutdown module. Name = {module.Name} Type = {module.Type}");
-            }
-        }
+    private void Cleanup()
+    {
+        var memoryManager = _registry.GetService<IMemoryManager>();
+        GetResourceHandle<SystemsScheduler>().AsRef.Shutdown(memoryManager);
+        _registry.GetService<EventSystem>().Shutdown();
+        _registry.GetService<ConfigurationManager>().Shutdown();
+        _registry.GetService<UnmanagedResourceRegistry>().Shutdown();
+        _registry.GetService<IFileSystem>().Shutdown();
+        _registry.GetService<JobSystem>().Shutdown();
     }
 }
 

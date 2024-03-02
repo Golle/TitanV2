@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core.Memory;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Rendering.D3D12.MemoryOld;
 
 [SkipLocalsInit]
 internal unsafe struct StructuredBuffer<T> where T : unmanaged

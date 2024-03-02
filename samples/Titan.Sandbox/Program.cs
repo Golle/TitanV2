@@ -1,8 +1,8 @@
 using Titan;
 using Titan.Application;
 using Titan.Core.Logging;
-using Titan.ECS;
 using Titan.Events;
+using Titan.Input;
 using Titan.Rendering;
 using Titan.Sandbox;
 using Titan.Systems;
@@ -10,13 +10,13 @@ using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
-var entity = new Entity(10, 45);
 
 var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 {
     EnginePath = EngineHelper.GetEngineFolder("Titan.sln"),
     ContentPath = EngineHelper.GetContentPath("Titan.Sandbox.csproj", "Assets")
 };
+
 
 App.Create(appConfig)
     .AddModule<GameModule>()
@@ -37,67 +37,33 @@ namespace Titan.Sandbox
             builder.AddSystems<ATestSystem>();
             return true;
         }
-
-        public static bool Init(IApp app)
-        {
-            return true;
-        }
-
-        public static bool Shutdown(IApp app)
-        {
-            return true;
-        }
     }
 
 
-    internal partial class ATestSystem
+    internal partial struct ATestSystem
     {
-        private static int counter;
-
         [System(SystemStage.Update, SystemExecutionType.Inline)]
-        public static void Update(EventWriter writer, EventReader<TestEvent> reader, EventReader<SomeOtherEvent> reader1)
+        public static void Update(in InputState inputState)
         {
-            return;
-            if (counter++ > 100)
+            if (inputState.IsKeyDown(KeyCode.W))
             {
-                writer.Send(new TestEvent(1));
-                writer.Send(new SomeOtherEvent('A'));
-                writer.Send(new TestEvent(2));
-                writer.Send(new SomeOtherEvent('C'));
-                writer.Send(new TestEvent(3));
-                writer.Send(new TestEvent(4));
-                counter = 0;
+                Logger.Info<ATestSystem>("Moving forward!");
             }
 
-            // Check if there are events
-            // NOTE(Jens): This check is currently the total number of events, so not accurate
-            if (reader.HasEvents)
+            if (inputState.IsKeyDown(KeyCode.A))
             {
-                Logger.Info($"HAS EVENTS! Count = {reader.EventCount}");
-                foreach (ref readonly var @event in reader)
-                {
-                    Logger.Info($"Event Type = {@event.GetType().Name} Value = {@event.Value}");
-                }
+                Logger.Info<ATestSystem>("Turning left");
             }
 
-            // Could just loop without check as well.
-            foreach (ref readonly var otherEvent in reader1)
+            if (inputState.IsKeyDown(KeyCode.D))
             {
-                Logger.Info($"Event Type = {otherEvent.GetType().Name} Value = {otherEvent.Value}");
+                Logger.Info<ATestSystem>("Turning right");
+            }
+            
+            if (inputState.IsKeyDown(KeyCode.S))
+            {
+                Logger.Info<ATestSystem>("Moving backwards");
             }
         }
-    }
-
-    [Event]
-    internal readonly partial struct TestEvent(int value)
-    {
-        public readonly int Value = value;
-    }
-
-
-    [Event]
-    internal readonly partial struct SomeOtherEvent(char value)
-    {
-        public readonly char Value = value;
     }
 }
