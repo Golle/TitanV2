@@ -7,7 +7,7 @@ using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Graphics.D3D12.Memory;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12Allocator

@@ -1,4 +1,4 @@
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Graphics.D3D12.Memory;
 
 public enum DescriptorHeapType
 {

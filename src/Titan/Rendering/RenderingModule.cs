@@ -1,8 +1,9 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Titan.Application;
+using Titan.Graphics.D3D12;
+using Titan.Graphics.Vulkan;
 using Titan.Rendering.D3D12;
-using Titan.Rendering.Vulkan;
 
 namespace Titan.Rendering;
 
@@ -40,7 +41,11 @@ internal sealed class RenderingModule : IModule
     {
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {
-            builder.AddModule<D3D12Module>();
+            builder
+                .AddModule<D3D12GraphicsModule>()
+                .AddModule<D3D12RenderingModule>()
+                ;
+
         }
         else if (GlobalConfiguration.Platform == Platforms.Linux)
         {

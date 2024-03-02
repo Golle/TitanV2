@@ -1,8 +1,9 @@
+using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering.D3D12.Memory;
+using Titan.Rendering;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Graphics.D3D12;
 
 internal struct D3D12Texture2D
 {

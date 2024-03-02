@@ -3,10 +3,11 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Graphics.D3D12;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12CommandQueue
@@ -86,4 +87,17 @@ internal unsafe partial struct D3D12CommandQueue
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly HRESULT Signal(ID3D12Fence* fence, ulong value) => Queue.Get()->Signal(fence, value);
+
+
+    public readonly CommandList GetCommandList(void * pipelineState)
+    {
+        //NOTE(Jens): We use interlocked here to increase the Next variable, and we do a "hack" to avoid requesting this resource as a mutable resource.
+        var index = Interlocked.Increment(ref Unsafe.AsRef(in Next)) - 1;
+        var commandList = CommandLists[BufferIndex][index].Get();
+        var allocator = Allocators[BufferIndex][index].Get();
+        
+        allocator->Reset();
+        commandList->Reset(allocator, null);
+        return new(commandList);
+    }
 }

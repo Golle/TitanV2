@@ -8,7 +8,7 @@ using static Titan.Platform.Win32.D3D12.D3D12_TEXTURE_ADDRESS_MODE;
 using static Titan.Platform.Win32.D3D12.D3D12Constants;
 
 
-namespace Titan.Rendering.D3D12.Utils;
+namespace Titan.Graphics.D3D12.Utils;
 
 internal static class D3D12Helpers
 {

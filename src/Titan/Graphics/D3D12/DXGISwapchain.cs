@@ -2,17 +2,18 @@ using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Graphics.D3D12.Memory;
+using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
-using Titan.Rendering.D3D12.Memory;
-using Titan.Rendering.D3D12.Utils;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Graphics.D3D12;
 
 [UnmanagedResource]
 internal unsafe partial struct DXGISwapchain
@@ -32,6 +33,10 @@ internal unsafe partial struct DXGISwapchain
 
     public uint SyncInterval;
     public uint PresentFlags;
+
+
+    public Texture2D* CurrentBackbuffer => (Texture2D*)(BackBuffers.AsPointer() + FrameIndex);
+
 
 
     [System(SystemStage.Init)]

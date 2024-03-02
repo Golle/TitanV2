@@ -7,7 +7,7 @@ using Titan.Systems;
 using static Titan.Platform.Win32.D3D12.D3D12Common;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12.Utils;
+namespace Titan.Graphics.D3D12.Utils;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12DebugLayer

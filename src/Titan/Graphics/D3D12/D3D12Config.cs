@@ -1,8 +1,9 @@
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Platform.Win32.D3D;
+using Titan.Rendering;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Graphics.D3D12;
 
 public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, bool VSync, Color ClearColor) : IConfiguration, IDefault<D3D12Config>
 {

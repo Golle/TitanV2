@@ -3,11 +3,11 @@ using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering.D3D12.Memory;
 
-namespace Titan.Rendering.D3D12.MemoryOld;
+namespace Titan.Graphics.D3D12.MemoryOld;
 internal unsafe struct DescriptorHeapOld
 {
     private TitanArray<uint> _freeList;

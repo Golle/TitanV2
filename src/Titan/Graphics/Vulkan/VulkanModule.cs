@@ -1,6 +1,6 @@
 using Titan.Application;
 
-namespace Titan.Rendering.Vulkan;
+namespace Titan.Graphics.Vulkan;
 internal sealed class VulkanModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)

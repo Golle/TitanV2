@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Platform.Win32.D3D12;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Graphics.D3D12.Memory;
 
 [DebuggerDisplay("CPU: {CPU.ptr, nq} GPU: {GPU.ptr, nq}")]
 internal readonly struct DescriptorHandle(DescriptorHeapType type, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu, int index)

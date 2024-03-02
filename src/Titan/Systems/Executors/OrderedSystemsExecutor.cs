@@ -101,6 +101,9 @@ internal sealed unsafe class OrderedSystemsExecutor : ISystemsExecutor
                     states[index] = SystemState.Running;
                 }
             }
+            //NOTE(Jens) We need a better way to check for tasks that are completed. this will slow down the entire process. It's possible to just spin as well, but it will consume a single core completely.
+            //NOTE(Jens): Keep this until we've figured out a better way.
+            Thread.Sleep(1);
         }
     }
 

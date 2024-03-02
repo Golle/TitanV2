@@ -2,7 +2,7 @@ using Titan.Core;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 
-namespace Titan.Rendering.D3D12.Memory;
+namespace Titan.Graphics.D3D12.Memory;
 
 internal struct DescriptorHeap
 {

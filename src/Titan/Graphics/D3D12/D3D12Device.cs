@@ -3,18 +3,18 @@ using System.Text;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Graphics.D3D12.Adapters;
+using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
-using Titan.Rendering.D3D12.Adapters;
-using Titan.Rendering.D3D12.Memory;
 using Titan.Resources;
 using Titan.Systems;
 using static Titan.Platform.Win32.D3D12.D3D12Common;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Graphics.D3D12;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12Device

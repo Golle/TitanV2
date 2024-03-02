@@ -3,11 +3,12 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 using static Titan.Platform.Win32.Win32Common;
 
-namespace Titan.Rendering.D3D12.Adapters;
+namespace Titan.Graphics.D3D12.Adapters;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12Adapter

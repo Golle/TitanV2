@@ -1,4 +1,4 @@
-﻿namespace Titan.Rendering.D3D12;
+﻿namespace Titan.Graphics.D3D12;
 
 public enum SamplerState
 {
