@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Titan.Configurations;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Platform.Win32.D3D12;
@@ -15,16 +16,18 @@ internal unsafe partial struct D3D12Allocator
 {
     public const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
 
-    private D3D12DescriptorHeaps* _heaps;
+    private TitanArray<int> _sharedFreeList;
+    private Inline4<DescriptorHeap> _heaps;
+
     private int _frameIndex;
 
     [System(SystemStage.Init)]
-    public static void Init(D3D12Allocator* allocator, D3D12DescriptorHeaps* heaps, ref readonly D3D12Device device, IMemoryManager memoryManager, IConfigurationManager configurationManager)
+    public static void Init(D3D12Allocator* allocator, in D3D12Device device, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
         var memoryConfig = config.MemoryConfig;
 
-        if (!memoryManager.TryAllocArray(out heaps->SharedFreeList, memoryConfig.TotalCount))
+        if (!memoryManager.TryAllocArray(out allocator->_sharedFreeList, memoryConfig.TotalCount))
         {
             Logger.Error<D3D12Allocator>($"Failed to allocate memory for the shared free list. Count = {memoryConfig.TotalCount} Size = {memoryConfig.TotalCount * sizeof(uint)}");
             return;
@@ -42,10 +45,10 @@ internal unsafe partial struct D3D12Allocator
                 _ => throw new InvalidOperationException("Not supported")
             };
 
-            ref var heap = ref heaps->Heaps[(int)type];
+            ref var heap = ref allocator->_heaps[(int)type];
 
             heap.NumberOfDescriptors = memoryConfig.GetDescriptorCount(type);
-            heap.FreeList = heaps->SharedFreeList.Slice(offset, heap.NumberOfDescriptors);
+            heap.FreeList = allocator->_sharedFreeList.Slice(offset, heap.NumberOfDescriptors);
             heap.IncrementSize = device.GetDescriptorHandleIncrementSize(d3d12Type);
             heap.ShaderVisible = type is DescriptorHeapType.ShaderResourceView;
             //NOTE(Jens): We only have temporary SRV descriptors.
@@ -74,14 +77,12 @@ internal unsafe partial struct D3D12Allocator
 
             offset += heap.NumberOfDescriptors;
         }
-
-        allocator->_heaps = heaps;
     }
 
 
     public readonly DescriptorHandle Allocate(DescriptorHeapType type)
     {
-        ref var heap = ref _heaps->Heaps[(int)type];
+        ref var heap = ref *(_heaps.AsPointer() + (int)type);
         var index = heap.Count++;
         Debug.Assert(index >= 0);
         var offset = (uint)(heap.FreeList[index] * heap.IncrementSize);
@@ -95,7 +96,7 @@ internal unsafe partial struct D3D12Allocator
 
     public readonly void Free(in DescriptorHandle handle)
     {
-        ref var heap = ref _heaps->Heaps[(int)handle.Type];
+        ref var heap = ref *(_heaps.AsPointer() + (int)handle.Type);
         var index = --heap.Count;
 
         heap.FreeList[index] = handle.Index;
@@ -103,15 +104,14 @@ internal unsafe partial struct D3D12Allocator
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(D3D12Allocator* allocator, D3D12DescriptorHeaps* heaps, IMemoryManager memoryManager)
+    public static void Shutdown(D3D12Allocator* allocator, IMemoryManager memoryManager)
     {
         for (var type = 0; type < (int)DescriptorHeapType.Count; ++type)
         {
-            heaps->Heaps[type].Heap.Dispose();
+            allocator->_heaps[type].Heap.Dispose();
         }
 
-        memoryManager.FreeArray(ref heaps->SharedFreeList);
-        *heaps = default;
+        memoryManager.FreeArray(ref allocator->_sharedFreeList);
         *allocator = default;
     }
 
