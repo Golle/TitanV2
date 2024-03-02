@@ -146,4 +146,17 @@ internal unsafe partial struct D3D12Device
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly uint GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE type)
         => Device.Get()->GetDescriptorHandleIncrementSize(type);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CreateRenderTargetView(ID3D12Resource* resource, in D3D12_RENDER_TARGET_VIEW_DESC desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+    {
+        fixed (D3D12_RENDER_TARGET_VIEW_DESC* pDesc = &desc)
+        {
+            CreateRenderTargetView(resource, pDesc, cpuHandle);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+        => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 }

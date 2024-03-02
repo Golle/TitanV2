@@ -18,11 +18,15 @@ public record RenderingConfig : IConfiguration, IDefault<RenderingConfig>, IPers
 #endif
 
     public bool Debug { get; init; }
+    public bool VSync { get; init; }
+    public bool AllowTearing { get; init; }
     public AdapterConfig? Adapter { get; init; }
 
     public static RenderingConfig Default => new()
     {
-        Debug = DefaultDebug
+        Debug = DefaultDebug,
+        VSync = true,
+        AllowTearing = false
     };
 
     public static JsonTypeInfo<RenderingConfig> TypeInfo => TitanSerializationContext.Default.RenderingConfig;

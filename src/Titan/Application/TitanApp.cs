@@ -98,13 +98,21 @@ internal sealed class TitanApp : IApp, IRunnable
 
         Init(ref scheduler, jobSystem);
 
+        var frameCount = 0;
+        var timer = Stopwatch.StartNew();
         Logger.Trace<TitanApp>("Starting main game loop");
         while (lifetime.Active)
         {
             scheduler.UpdateSystems(jobSystem);
 
-            //NOTE(Jens): Until we have a render pipeline in place, just sleep for a ms.
-            Thread.Sleep(1);
+            frameCount++;
+            if (timer.Elapsed.TotalSeconds > 1f)
+            {
+                var fps = frameCount / timer.Elapsed.TotalSeconds;
+                //Logger.Info<TitanApp>($"FPS: {fps}");
+                frameCount = 0;
+                timer.Restart();
+            }
         }
 
         Shutdown(ref scheduler, jobSystem);

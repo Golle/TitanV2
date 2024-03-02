@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
@@ -67,4 +68,7 @@ internal unsafe partial struct D3D12CommandQueue
 
         commandQueue->Queue.Dispose();
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly HRESULT Signal(ID3D12Fence* fence, ulong value) => Queue.Get()->Signal(fence, value);
 }
