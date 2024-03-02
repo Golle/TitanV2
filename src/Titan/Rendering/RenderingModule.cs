@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Titan.Application;
+using Titan.Rendering.D3D12;
 using Titan.Rendering.D3D12New;
 using Titan.Rendering.Vulkan;
 

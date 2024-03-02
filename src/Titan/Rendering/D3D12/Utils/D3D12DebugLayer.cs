@@ -1,53 +1,53 @@
-using Titan.Core.Logging;
+﻿using Titan.Core.Logging;
+using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
-using Titan.Platform.Win32;
+using Titan.Resources;
+using Titan.Systems;
 using static Titan.Platform.Win32.D3D12.D3D12Common;
 using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Rendering.D3D12.Utils;
-internal sealed unsafe class D3D12DebugLayer : IService
-{
-    private ComPtr<ID3D12Debug1> _d3d12Debug;
-    private ComPtr<IDXGIDebug> _dxgiDebug;
 
-    public bool Init(bool gpuBasedValidation = true)
+[UnmanagedResource]
+internal unsafe partial struct D3D12DebugLayer
+{
+    public ComPtr<ID3D12Debug1> D3D12Debug;
+    public ComPtr<IDXGIDebug> DXGIDebug;
+
+    [System(SystemStage.Init)]
+    public static void Init(D3D12DebugLayer* layer)
     {
-        ID3D12Debug1* d3d12Debug;
-        var hr = D3D12GetDebugInterface(ID3D12Debug1.Guid, (void**)&d3d12Debug);
+        const bool GPUValidation = false; // make this configurable when we need it.
+
+        var hr = D3D12GetDebugInterface(ID3D12Debug1.Guid, (void**)layer->D3D12Debug.GetAddressOf());
         if (FAILED(hr))
         {
             Logger.Error<D3D12DebugLayer>($"Failed to get the {nameof(ID3D12Debug1)} interface. HRESULT = {hr}");
-            return false;
+            return;
         }
 
-        d3d12Debug->EnableDebugLayer();
-        d3d12Debug->SetEnableGPUBasedValidation(gpuBasedValidation);
+        layer->D3D12Debug.Get()->EnableDebugLayer();
+        layer->D3D12Debug.Get()->SetEnableGPUBasedValidation(GPUValidation);
 
-        IDXGIDebug* dxgiDebug;
-        hr = DXGICommon.DXGIGetDebugInterface(IDXGIDebug.Guid, (void**)&dxgiDebug);
+        hr = DXGICommon.DXGIGetDebugInterface(IDXGIDebug.Guid, (void**)layer->DXGIDebug.GetAddressOf());
         if (FAILED(hr))
         {
             Logger.Error<D3D12DebugLayer>($"Failed to query the interface {nameof(IDXGIDebug)}. HRESULT = {hr}");
-            return false;
+            return;
         }
-
-        _d3d12Debug = d3d12Debug;
-        _dxgiDebug = dxgiDebug;
-        return true;
+        Logger.Info<D3D12DebugLayer>($"Successfully initialize the D3D12 Debug Layer. GPUValidation = {GPUValidation}");
     }
 
-    public void ReportLiveObjects()
+    [System(SystemStage.PostShutdown)]
+    public static void Shutdown(D3D12DebugLayer* layer)
     {
-        if (_dxgiDebug.IsValid)
+        if (layer->DXGIDebug.IsValid)
         {
-            _dxgiDebug.Get()->ReportLiveObjects(IID.DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS.DXGI_DEBUG_RLO_ALL);
+            layer->DXGIDebug.Get()->ReportLiveObjects(IID.DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS.DXGI_DEBUG_RLO_ALL);
         }
-    }
 
-    public void Shutdown()
-    {
-        _d3d12Debug.Dispose();
-        _dxgiDebug.Dispose();
+        layer->DXGIDebug.Dispose();
+        layer->D3D12Debug.Dispose();
     }
 }

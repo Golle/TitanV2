@@ -1,15 +1,23 @@
+using System.Runtime.CompilerServices;
 using System.Text;
+using Titan.Configurations;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Rendering.D3D12.Adapters;
+using Titan.Rendering.D3D12.Memory;
+using Titan.Resources;
+using Titan.Systems;
 using static Titan.Platform.Win32.D3D12.D3D12Common;
 using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Rendering.D3D12;
-internal sealed unsafe class D3D12Device : IService
+
+[UnmanagedResource]
+internal unsafe partial struct D3D12Device
 {
     //NOTE(Jens): These heaps should be managed by the caller, and not by the device
     private static readonly D3D12_HEAP_PROPERTIES DefaultHeap = new()
@@ -31,29 +39,37 @@ internal sealed unsafe class D3D12Device : IService
         VisibleNodeMask = 0
     };
 
-    private ComPtr<ID3D12Device4> _device;
+    public ComPtr<ID3D12Device4> Device;
 
-    internal ID3D12Device4* Device => _device;
-    public bool Init(D3D12Adapter adapter, D3D_FEATURE_LEVEL featureLevel)
+    public static implicit operator ID3D12Device4*(in D3D12Device device) => device.Device.Get();
+
+    [System(SystemStage.Init)]
+    public static void Init(D3D12Device* device, in D3D12Adapter d3d12Adapter, IConfigurationManager configurationManager)
     {
-        var hr = D3D12CreateDevice(adapter.PrimaryAdapter, featureLevel, _device.UUID, (void**)_device.GetAddressOf());
+        var config = configurationManager.GetConfigOrDefault<D3D12Config>();
+        ref readonly var adapter = ref d3d12Adapter.PrimaryAdapter;
 
+        Logger.Trace<D3D12Device>($"Creating a {nameof(ID3D12Device4)} with FeatureLevel {config.FeatureLevel}.");
+
+        using var _ = new MeasureTime<D3D12Device>("Created device in {0} ms.");
+        var hr = D3D12CreateDevice((IUnknown*)adapter.Adapter.Get(), config.FeatureLevel, ID3D12Device4.Guid, (void**)device->Device.GetAddressOf());
         if (FAILED(hr))
         {
-            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12Device4)}. HRESULT = {hr}");
-            return false;
+            Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12Device4)} with feature level {config.FeatureLevel}. HRESULT = {hr}");
         }
-        return true;
+    }
+
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(D3D12Device* device)
+    {
+        Logger.Trace<D3D12Device>($"Destroying the {nameof(ID3D12Device4)}.");
+        device->Device.Dispose();
     }
 
 
-    public void Shutdown()
+    public readonly ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type)
     {
-        _device.Dispose();
-    }
-
-    public ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type)
-    {
+        var device = Device.Get();
         D3D12_COMMAND_QUEUE_DESC desc = new()
         {
             Flags = D3D12_COMMAND_QUEUE_FLAGS.D3D12_COMMAND_QUEUE_FLAG_NONE,
@@ -61,74 +77,87 @@ internal sealed unsafe class D3D12Device : IService
             Priority = 0,
             Type = type
         };
-        ID3D12CommandQueue* commandQueue;
-        var hr = _device.Get()->CreateCommandQueue(&desc, ID3D12CommandQueue.Guid, (void**)&commandQueue);
+        ID3D12CommandQueue* queue;
+        var hr = device->CreateCommandQueue(&desc, ID3D12CommandQueue.Guid, (void**)&queue);
         if (FAILED(hr))
         {
-            Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12CommandQueue)}. HRESULT = {hr}");
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12CommandQueue)}. HRESULT = {hr}");
             return null;
         }
-        return commandQueue;
+
+        return queue;
     }
 
-    public ID3D12GraphicsCommandList4* CreateCommandList(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12GraphicsCommandList4* CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE type)
     {
         ID3D12GraphicsCommandList4* commandList;
-        var hr = _device.Get()->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAGS.D3D12_COMMAND_LIST_FLAG_NONE, ID3D12GraphicsCommandList4.Guid, (void**)&commandList);
+        var hr = Device.Get()->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAGS.D3D12_COMMAND_LIST_FLAG_NONE, ID3D12GraphicsCommandList4.Guid, (void**)&commandList);
         if (FAILED(hr))
         {
-            Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12GraphicsCommandList4)}. HRESULT = {hr}");
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12GraphicsCommandList4)}. HRESULT = {hr}");
             return null;
         }
 
         return commandList;
     }
 
-    public ID3D12CommandAllocator* CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12CommandAllocator* CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE type)
     {
         ID3D12CommandAllocator* allocator;
-        var hr = _device.Get()->CreateCommandAllocator(type, ID3D12CommandAllocator.Guid, (void**)&allocator);
+        var hr = Device.Get()->CreateCommandAllocator(type, ID3D12CommandAllocator.Guid, (void**)&allocator);
         if (FAILED(hr))
         {
-            Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12CommandAllocator)}. HRESULT = {hr}");
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12CommandAllocator)}. HRESULT = {hr}");
             return null;
         }
 
         return allocator;
     }
 
-    public ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint numberOfDescriptors, bool shaderVisible)
+    public readonly ID3D12Fence* CreateFence()
     {
-        if (type is D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_RTV or D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_DSV)
-        {
-            shaderVisible = false;
-        }
-
-        var flags = shaderVisible
-            ? D3D12_DESCRIPTOR_HEAP_FLAGS.D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-            : D3D12_DESCRIPTOR_HEAP_FLAGS.D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-        D3D12_DESCRIPTOR_HEAP_DESC desc = new()
-        {
-            Flags = flags,
-            NodeMask = 0,
-            NumDescriptors = numberOfDescriptors,
-            Type = type
-        };
-        ID3D12DescriptorHeap* descriptorHeap;
-        var hr = _device.Get()->CreateDescriptorHeap(&desc, ID3D12DescriptorHeap.Guid, (void**)&descriptorHeap);
+        ID3D12Fence* fence;
+        var hr = Device.Get()->CreateFence(0, D3D12_FENCE_FLAGS.D3D12_FENCE_FLAG_NONE, ID3D12Fence.Guid, (void**)&fence);
         if (FAILED(hr))
         {
-            Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12DescriptorHeap)}. HRESULT = {hr}");
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12Fence)}. HRESULT = {hr}");
+            return null;
+        }
+        return fence;
+    }
+
+    public readonly ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint count, bool shaderVisible)
+    {
+        ID3D12DescriptorHeap* heap;
+        D3D12_DESCRIPTOR_HEAP_DESC desc = new()
+        {
+            Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAGS.D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : 0,
+            NodeMask = 0,
+            NumDescriptors = count,
+            Type = type
+        };
+        var hr = Device.Get()->CreateDescriptorHeap(&desc, ID3D12DescriptorHeap.Guid, (void**)&heap);
+        if (FAILED(hr))
+        {
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12DescriptorHeap)}. HRESULT = {hr}");
             return null;
         }
 
-        return descriptorHeap;
+        return heap;
     }
 
-    public uint GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE type)
-        => _device.Get()->GetDescriptorHandleIncrementSize(type);
 
+    public readonly ID3D12PipelineState* CreatePipelineStateObject(D3D12_PIPELINE_STATE_STREAM_DESC desc)
+    {
+        ID3D12PipelineState* pipelineState;
+        var hr = Device.Get()->CreatePipelineState(&desc, ID3D12PipelineState.Guid, (void**)&pipelineState);
+        if (FAILED(hr))
+        {
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12PipelineState)}. HRESULT = {hr}");
+            return null;
+        }
+        return pipelineState;
+    }
 
     public ID3D12Resource* CreateBuffer(uint size, bool isCpuVisible = false, D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
     {
@@ -154,43 +183,13 @@ internal sealed unsafe class D3D12Device : IService
 
         var resourceState = isCpuVisible ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_GENERIC_READ : state;
         ID3D12Resource* resource;
-        var hr = Device->CreateCommittedResource1(&heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, null, null, ID3D12Resource.Guid, (void**)&resource);
+        var hr = Device.Get()->CreateCommittedResource1(&heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, null, null, ID3D12Resource.Guid, (void**)&resource);
         if (FAILED(hr))
         {
             Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12Resource)} with HRESULT {hr}");
             return null;
         }
         return resource;
-    }
-
-    public void CreateShaderResourceView(ID3D12Resource* resource, in D3D12_SHADER_RESOURCE_VIEW_DESC desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
-    {
-        fixed (D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc = &desc)
-        {
-            _device.Get()->CreateShaderResourceView(resource, pDesc, cpuHandle);
-        }
-    }
-
-    public void CreateRenderTargetView(ID3D12Resource* resource, in D3D12_RENDER_TARGET_VIEW_DESC desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
-    {
-        fixed (D3D12_RENDER_TARGET_VIEW_DESC* pDesc = &desc)
-        {
-            CreateRenderTargetView(resource, pDesc, cpuHandle);
-        }
-    }
-    public void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
-        => _device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
-
-    public ID3D12Fence* CreateFence(D3D12_FENCE_FLAGS flags = D3D12_FENCE_FLAGS.D3D12_FENCE_FLAG_NONE, uint initialValue = 0)
-    {
-        ID3D12Fence* fence;
-        var hr = Device->CreateFence(initialValue, flags, ID3D12Fence.Guid, (void**)&fence);
-        if (FAILED(hr))
-        {
-            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12Fence)}. HRESULT = {hr}");
-            return null;
-        }
-        return fence;
     }
 
     public ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format)
@@ -216,7 +215,7 @@ internal sealed unsafe class D3D12Device : IService
 
         ID3D12Resource* resource;
         var heapProperties = DefaultHeap;
-        var hr = Device->CreateCommittedResource1(
+        var hr = Device.Get()->CreateCommittedResource1(
             &heapProperties,
             D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE,
             &resourceDesc,
@@ -234,20 +233,7 @@ internal sealed unsafe class D3D12Device : IService
 
         return resource;
     }
-
-    public ID3D12PipelineState* CreatePipelineStateObject(D3D12_PIPELINE_STATE_STREAM_DESC desc)
-    {
-        ID3D12PipelineState* pipelineState;
-        var hr = Device->CreatePipelineState(&desc, ID3D12PipelineState.Guid, (void**)&pipelineState);
-        if (FAILED(hr))
-        {
-            Logger.Error<D3D12Device>($"Failed to crate the {nameof(ID3D12PipelineState)}. HRESULT = {hr}");
-            return null;
-        }
-        return pipelineState;
-    }
-
-    public ID3D12RootSignature* CreateRootSignature(D3D12_ROOT_SIGNATURE_FLAGS flags, ReadOnlySpan<D3D12_ROOT_PARAMETER1> parameters, ReadOnlySpan<D3D12_STATIC_SAMPLER_DESC> staticSamplers)
+    public readonly ID3D12RootSignature* CreateRootSignature(D3D12_ROOT_SIGNATURE_FLAGS flags, ReadOnlySpan<D3D12_ROOT_PARAMETER1> parameters, ReadOnlySpan<D3D12_STATIC_SAMPLER_DESC> staticSamplers)
     {
         HRESULT hr;
         using ComPtr<ID3DBlob> blob = default;
@@ -285,8 +271,7 @@ internal sealed unsafe class D3D12Device : IService
                 return null;
             }
         }
-
-        hr = Device->CreateRootSignature(0, blob.Get()->GetBufferPointer(), blob.Get()->GetBufferSize(), ID3D12RootSignature.Guid, (void**)&rootSignature);
+        hr = Device.Get()->CreateRootSignature(0, blob.Get()->GetBufferPointer(), blob.Get()->GetBufferSize(), ID3D12RootSignature.Guid, (void**)&rootSignature);
         if (FAILED(hr))
         {
             Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12RootSignature)}. HRESULT = {hr}");
@@ -294,4 +279,36 @@ internal sealed unsafe class D3D12Device : IService
         }
         return rootSignature;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly uint GetDescriptorHandleIncrementSize(DescriptorHeapType type)
+    {
+        var d3d12Type = type switch
+        {
+            DescriptorHeapType.ShaderResourceView => D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            DescriptorHeapType.RenderTargetView => D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+            DescriptorHeapType.DepthStencilView => D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+            DescriptorHeapType.UnorderedAccessView => D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            DescriptorHeapType.Count => D3D12_DESCRIPTOR_HEAP_TYPE.D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+        return Device.Get()->GetDescriptorHandleIncrementSize(d3d12Type);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly uint GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE type)
+        => Device.Get()->GetDescriptorHandleIncrementSize(type);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CreateRenderTargetView(ID3D12Resource* resource, in D3D12_RENDER_TARGET_VIEW_DESC desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+    {
+        fixed (D3D12_RENDER_TARGET_VIEW_DESC* pDesc = &desc)
+        {
+            CreateRenderTargetView(resource, pDesc, cpuHandle);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+        => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 }

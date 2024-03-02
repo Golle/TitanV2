@@ -1,6 +1,9 @@
 using Titan.Rendering.D3D12.Memory;
+using Titan.Rendering.D3D12New.Memory;
 
 namespace Titan.Rendering;
+
+public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures);
 
 public unsafe struct GPUMemoryConfig
 {

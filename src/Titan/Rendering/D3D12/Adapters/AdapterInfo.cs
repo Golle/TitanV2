@@ -3,7 +3,7 @@ using Titan.Core.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
 
-namespace Titan.Rendering.D3D12New.Adapters;
+namespace Titan.Rendering.D3D12.Adapters;
 
 [DebuggerDisplay("{DebugString,nq}")]
 internal unsafe struct AdapterInfo
