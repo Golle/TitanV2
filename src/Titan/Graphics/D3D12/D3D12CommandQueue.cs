@@ -89,7 +89,7 @@ internal unsafe partial struct D3D12CommandQueue
     public readonly HRESULT Signal(ID3D12Fence* fence, ulong value) => Queue.Get()->Signal(fence, value);
 
 
-    public readonly CommandList GetCommandList(void * pipelineState)
+    public readonly CommandList GetCommandList(ID3D12PipelineState* pipelineState = null)
     {
         //NOTE(Jens): We use interlocked here to increase the Next variable, and we do a "hack" to avoid requesting this resource as a mutable resource.
         var index = Interlocked.Increment(ref Unsafe.AsRef(in Next)) - 1;
@@ -97,7 +97,7 @@ internal unsafe partial struct D3D12CommandQueue
         var allocator = Allocators[BufferIndex][index].Get();
         
         allocator->Reset();
-        commandList->Reset(allocator, null);
+        commandList->Reset(allocator, pipelineState);
         return new(commandList);
     }
 }

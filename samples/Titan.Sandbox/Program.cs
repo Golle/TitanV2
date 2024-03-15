@@ -1,7 +1,6 @@
 using Titan;
 using Titan.Application;
 using Titan.Core.Logging;
-using Titan.Events;
 using Titan.Input;
 using Titan.Rendering;
 using Titan.Sandbox;

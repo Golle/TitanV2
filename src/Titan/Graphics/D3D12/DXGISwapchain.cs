@@ -34,10 +34,7 @@ internal unsafe partial struct DXGISwapchain
     public uint SyncInterval;
     public uint PresentFlags;
 
-
     public Texture2D* CurrentBackbuffer => (Texture2D*)(BackBuffers.AsPointer() + FrameIndex);
-
-
 
     [System(SystemStage.Init)]
     public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Allocator allocator, in D3D12Device device, IConfigurationManager configurationManager)
