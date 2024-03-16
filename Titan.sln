@@ -21,7 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Titan.Generators", "src\Tit
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{37009CFB-17C3-48AA-88DD-AD6424F7263A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Titan.Tools.AssetProcessor", "src\Titan.Tools.AssetProcessor\Titan.Tools.AssetProcessor.csproj", "{518742A0-5F7B-4DEC-826A-7849E0D1FD3F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Titan.Tools.AssetProcessor", "src\Titan.Tools.AssetProcessor\Titan.Tools.AssetProcessor.csproj", "{518742A0-5F7B-4DEC-826A-7849E0D1FD3F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Titan.Tools.Interactive", "src\Titan.Tools.Interactive\Titan.Tools.Interactive.csproj", "{8A64AEBE-7E5F-4474-87F8-CD6C6B767889}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +55,10 @@ Global
 		{518742A0-5F7B-4DEC-826A-7849E0D1FD3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{518742A0-5F7B-4DEC-826A-7849E0D1FD3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{518742A0-5F7B-4DEC-826A-7849E0D1FD3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A64AEBE-7E5F-4474-87F8-CD6C6B767889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A64AEBE-7E5F-4474-87F8-CD6C6B767889}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A64AEBE-7E5F-4474-87F8-CD6C6B767889}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A64AEBE-7E5F-4474-87F8-CD6C6B767889}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +70,7 @@ Global
 		{7E48CDC0-F256-4242-8DD1-669F5A435644} = {9F7532EB-294E-4FB9-859E-7B6BB809F916}
 		{EF1E884B-FB3B-4696-9285-8E2281053E97} = {214570D0-FD51-4278-9312-0C051B6ADD26}
 		{518742A0-5F7B-4DEC-826A-7849E0D1FD3F} = {37009CFB-17C3-48AA-88DD-AD6424F7263A}
+		{8A64AEBE-7E5F-4474-87F8-CD6C6B767889} = {37009CFB-17C3-48AA-88DD-AD6424F7263A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AABCBCCB-CBF5-420E-BE4E-DB0EB353C1AD}
