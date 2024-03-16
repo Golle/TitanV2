@@ -1,0 +1,1 @@
+&dotnet publish src\Titan.Tools.AssetProcessor\Titan.Tools.AssetProcessor.csproj -c Release -o release/tools/ -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false
