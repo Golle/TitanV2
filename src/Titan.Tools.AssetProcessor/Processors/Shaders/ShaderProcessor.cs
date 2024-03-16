@@ -1,3 +1,5 @@
+using Titan.Assets;
+using Titan.Assets.Types;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Processors.Shaders;

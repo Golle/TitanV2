@@ -95,8 +95,8 @@ command.SetHandler(async (path, bin, code, name) =>
     }
 
     var exportPipeline = new ExportPipeline()
-        //.With(new RegistryExporter(code, name, Path.GetFileName(bin)))
-        .With(new KeplerBinaryExporter(bin));
+        .With(new RegistryExporter(code, name, Path.GetFileName(bin)))
+        .With(new TitanBinaryExporter(bin));
 
     var exportResult = await exportPipeline.Export(context);
     if (!exportResult)

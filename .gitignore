@@ -8,5 +8,5 @@ release/
 
 # processed assets
 assets/
-
+!src/Titan/Assets
 *.user

@@ -15,7 +15,7 @@ var logging = true;
 do
 {
     Console.WriteLine();
-    Console.Write($"Please select an option. (Logging is ");
+    Console.Write("Please select an option. (Logging is ");
     Console.ForegroundColor = logging ? ConsoleColor.Green : ConsoleColor.Red;
     Console.Write(logging ? "On" : "Off");
     Console.ResetColor();
@@ -26,7 +26,9 @@ do
                       [1] -> Process Engine Assets
                       [2] -> Process Sandbox Assets
                       [3] -> Publish the Sandbox
-                      [4] -> Publish Tools
+                      [4] -> Run Sandbox (Make sure you've published it before)
+                      
+                      [5] -> Publish Tools
                       
                       [L] -> Toggle logging
                       """);
@@ -49,6 +51,10 @@ do
             PublishSandbox(path, logging);
             break;
         case ConsoleKey.D4 or ConsoleKey.NumPad4:
+            RunSandbox(path, logging);
+            break;
+
+        case ConsoleKey.D5 or ConsoleKey.NumPad5:
             PublishTools(path, logging);
             break;
         case ConsoleKey.L:
@@ -76,7 +82,7 @@ static bool ProcessEngineAssets(string workingDirectory, bool logging)
     var timer = Stopwatch.StartNew();
     Console.WriteLine("Processing engine assets");
 
-    const string Arguments = "--path ./content --output ./assets/titan.tbin --code ./src/Titan/ --name Titan.AssetsEngineRegistry";
+    const string Arguments = "--path ./content --output ./assets/titan.tbin --code ./src/Titan/ --name Titan.EngineAssetsRegistry";
     var result = RunProgram(assetProcessorPath, Arguments, workingDirectory, redirectOutput: !logging);
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
@@ -90,7 +96,7 @@ static bool ProcessSandboxAssets(string workingDirectory, bool logging)
     var timer = Stopwatch.StartNew();
     Console.WriteLine("Processing engine assets");
 
-    const string Arguments = "--path ./samples/Titan.Sandbox/content --output ./samples/Titan.Sandbox/assets/titan.tbin --code ./samples/Titan.Sandbox/ --name Titan.Sandbox.SandboxRegistry";
+    const string Arguments = "--path ./samples/Titan.Sandbox/content --output ./samples/Titan.Sandbox/assets/sandbox.tbin --code ./samples/Titan.Sandbox/ --name Titan.Sandbox.SandboxRegistry";
     var result = RunProgram(assetProcessorPath, Arguments, workingDirectory, redirectOutput: !logging);
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
@@ -119,6 +125,24 @@ static bool PublishSandbox(string workingDirectory, bool logging)
     var result = RunProgram("dotnet", Arguments, workingDirectory, !logging);
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
 
+    if (result == 0)
+    {
+        Console.WriteLine("Copy asset files");
+        var destination = Path.Combine(workingDirectory, "release", "sandbox", "assets");
+        Directory.CreateDirectory(destination);
+        File.Copy(Path.Combine(workingDirectory, "assets", "titan.tbin"), Path.Combine(destination, "titan.tbin"), true);
+        File.Copy(Path.Combine(workingDirectory, "samples", "Titan.Sandbox", "assets", "sandbox.tbin"), Path.Combine(destination, "sandbox.tbin"), true);
+        Console.WriteLine("Finished copying asset files");
+    }
+
+    return true;
+}
+
+static bool RunSandbox(string workingDirectory, bool logging)
+{
+    var timer = Stopwatch.StartNew();
+    var result = RunProgram(Path.Combine("release", "sandbox", "Titan.Sandbox.exe"), string.Empty, workingDirectory, !logging);
+    Console.WriteLine($"Finished sandbox after {timer.Elapsed.TotalMilliseconds} ms. Exit Code = {result}");
     return true;
 }
 

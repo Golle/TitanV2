@@ -1,3 +1,5 @@
+using Titan.Assets;
+using Titan.Assets.Types;
 using Titan.Core.Logging;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;

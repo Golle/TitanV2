@@ -2,7 +2,7 @@ using Titan.Tools.AssetProcessor.Processors;
 
 namespace Titan.Tools.AssetProcessor.Export;
 
-internal class KeplerBinaryExporter(string outputFile) : IExporter
+internal class TitanBinaryExporter(string outputFile) : IExporter
 {
     public async Task<bool> Export(IAssetDescriptorContext context)
     {

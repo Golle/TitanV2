@@ -1,7 +1,7 @@
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 
-namespace Titan.Asserts;
+namespace Titan.Core.Asserts;
 
 public static unsafe class TitanAssert
 {

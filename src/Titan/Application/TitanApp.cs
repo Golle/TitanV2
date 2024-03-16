@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Assets;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -15,7 +16,7 @@ namespace Titan.Application;
 internal sealed class TitanApp : IApp, IRunnable
 {
     private readonly ServiceRegistry _registry;
-    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems)
+    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems, IReadOnlyList<AssetRegistryDescriptor> assetRegistries)
     {
         _registry = registry;
 
@@ -25,6 +26,7 @@ internal sealed class TitanApp : IApp, IRunnable
         var unmanagedResourceRegistry = registry.GetService<UnmanagedResourceRegistry>();
         var configurationManager = registry.GetService<ConfigurationManager>();
         var eventSystem = registry.GetService<EventSystem>();
+        var assetsManager = registry.GetService<AssetsManager>();
 
         // Set up all unmanaged resources that have been registered.
         if (!unmanagedResourceRegistry.Init(memoryManager, resources))
@@ -51,6 +53,12 @@ internal sealed class TitanApp : IApp, IRunnable
         {
             Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
             throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
+        }
+
+        if (!assetsManager.Init(assetRegistries,  unmanagedResourceRegistry.GetResourceHandle<AssetsContext>()))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(AssetsManager)}.");
+            throw new InvalidOperationException($"{nameof(AssetsManager)} failed.");
         }
     }
 
