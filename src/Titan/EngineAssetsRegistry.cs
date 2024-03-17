@@ -16,8 +16,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
         => _assets;
     public static ReadOnlySpan<System.UInt32> GetDependencies(in Titan.Assets.AssetDescriptor descriptor)
         => ((ReadOnlySpan<System.UInt32>)_dependencies).Slice((int)descriptor.Dependencies.Index, (int)descriptor.Dependencies.Count);
-    public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset0 => ref _assets[0];
-    public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset1 => ref _assets[1];
+    public static ref readonly Titan.Assets.AssetDescriptor SimplePixelShader => ref _assets[0];
+    public static ref readonly Titan.Assets.AssetDescriptor SimpleVertexShader => ref _assets[1];
     static EngineAssetsRegistry()
     {
         _assets[0] = new Titan.Assets.AssetDescriptor
