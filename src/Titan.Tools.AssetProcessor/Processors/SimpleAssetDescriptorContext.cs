@@ -34,14 +34,14 @@ internal class SimpleAssetDescriptorContext(uint maxBufferSize, uint maxDescript
         return true;
     }
 
-    public bool TryAddShader(AssetType type, in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata)
+    public bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata)
     {
         if (!TryAddName(metadata))
         {
             Logger.Error<SimpleAssetDescriptorContext>($"Muliple assets with the same name. Name = {metadata.Name}");
             return false;
         }
-        ref var asset = ref WriteDataAndCreateAssetDescriptor(data, type, metadata);
+        ref var asset = ref WriteDataAndCreateAssetDescriptor(data, AssetType.Shader, metadata);
         asset.Shader = shader;
         return true;
     }

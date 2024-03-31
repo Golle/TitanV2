@@ -14,6 +14,7 @@ public interface IAppBuilder
     IAppBuilder AddSystems<T>() where T : ISystem;
     IAppBuilder AddResource<T>() where T : unmanaged, IResource;
     IAppBuilder AddRegistry<T>() where T : unmanaged, IAssetRegistry;
+    IAppBuilder AddAssetLoader<T>() where T : unmanaged, IAssetLoader;
     IRunnable Build();
 
     /// <summary>

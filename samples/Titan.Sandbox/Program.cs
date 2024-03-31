@@ -1,14 +1,13 @@
 using Titan;
 using Titan.Application;
 using Titan.Core.Logging;
+using Titan.Graphics.Rendering;
 using Titan.Input;
-using Titan.Rendering;
 using Titan.Sandbox;
 using Titan.Systems;
 using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
-
 
 var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 {
@@ -24,6 +23,7 @@ App.Create(appConfig)
     {
         Debug = true
     })
+    .AddRegistry<SandboxRegistry>()
     .Build()
     .Run();
 
@@ -58,7 +58,7 @@ namespace Titan.Sandbox
             {
                 Logger.Info<ATestSystem>("Turning right");
             }
-            
+
             if (inputState.IsKeyDown(KeyCode.S))
             {
                 Logger.Info<ATestSystem>("Moving backwards");

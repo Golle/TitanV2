@@ -1,4 +1,4 @@
-﻿namespace Titan.Tools.AssetProcessor.Processors.Shaders;
+namespace Titan.Graphics.Resources;
 
 public enum ShaderType
 {

@@ -1,0 +1,6 @@
+
+# release builds
+/release/
+
+# processed assets
+/[Aa]ssets/

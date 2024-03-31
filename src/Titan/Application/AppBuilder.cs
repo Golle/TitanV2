@@ -7,7 +7,6 @@ using Titan.Systems;
 
 namespace Titan.Application;
 
-
 internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
 {
     //NOTE(Jens): Dictionaries will be faster, but probably not worth it.
@@ -18,6 +17,7 @@ internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
     private readonly List<ServiceDescriptor> _services = [];
     private readonly List<SystemDescriptor> _systems = [];
     private readonly List<AssetRegistryDescriptor> _assetRegistries = [];
+    private readonly List<AssetLoaderDescriptor> _assetLoaders = [];
 
     public IAppBuilder AddService<T>(T instance) where T : class, IService
     {
@@ -107,6 +107,18 @@ internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
     public IAppBuilder AddRegistry<T>() where T : unmanaged, IAssetRegistry
         => AddRegistry<T>(false);
 
+    public IAppBuilder AddAssetLoader<T>() where T : unmanaged, IAssetLoader
+    {
+        var descriptor = T.CreateDescriptor();
+        if (_assetLoaders.Any(a => a.AssetId == descriptor.AssetId))
+        {
+            throw new InvalidOperationException($"An asset loader for asset type {(AssetType)descriptor.AssetId} (AssetId = {descriptor.AssetId}) type has already been registed. ");
+        }
+
+        _assetLoaders.Add(descriptor);
+        return this;
+    }
+
     public IAppBuilder AddRegistry<T>(bool engineRegistry) where T : unmanaged, IAssetRegistry
     {
         if (_assetRegistries.Any(static a => a.Id == T.Id))
@@ -127,7 +139,7 @@ internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
     public IRunnable Build()
     {
         var serviceRegistry = new ServiceRegistry(_services);
-        return new TitanApp(serviceRegistry, appConfig, _unmanagedResources, _configurations, _systems, _assetRegistries);
+        return new TitanApp(serviceRegistry, appConfig, _unmanagedResources, _configurations, _systems, _assetRegistries, _assetLoaders);
     }
 
     public T GetService<T>() where T : class, IService

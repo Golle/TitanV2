@@ -1,8 +1,8 @@
 using Titan.Graphics.D3D12.Memory;
 
-namespace Titan.Rendering;
+namespace Titan.Graphics.Rendering;
 
-public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures);
+public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures, uint MaxShaders);
 
 public unsafe struct GPUMemoryConfig
 {

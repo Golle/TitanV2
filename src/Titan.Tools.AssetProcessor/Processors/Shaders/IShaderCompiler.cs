@@ -1,3 +1,5 @@
+using Titan.Graphics.Resources;
+
 namespace Titan.Tools.AssetProcessor.Processors.Shaders;
 
 internal interface IShaderCompiler

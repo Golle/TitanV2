@@ -15,7 +15,7 @@ internal enum DiagnosticsLevel
 internal interface IAssetDescriptorContext
 {
     bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
-    bool TryAddShader(AssetType type, in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
+    bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
     void AddDiagnostics(DiagnosticsLevel level, string message);
 
     Task Complete();

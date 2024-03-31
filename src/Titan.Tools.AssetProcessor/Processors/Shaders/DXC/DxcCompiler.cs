@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Titan.Core.Logging;
+using Titan.Graphics.Resources;
 using Titan.Platform.DXC;
 using Titan.Platform.Win32;
 using static Titan.Platform.Win32.Win32Common;

@@ -1,6 +1,6 @@
 using Titan.Graphics.D3D12;
 
-namespace Titan.Rendering;
+namespace Titan.Graphics.Rendering;
 
 /// <summary>
 /// The common interface for a Texture.

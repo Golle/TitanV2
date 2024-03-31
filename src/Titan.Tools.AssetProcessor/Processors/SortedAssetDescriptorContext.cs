@@ -32,11 +32,11 @@ internal class SortedAssetDescriptorContext : IAssetDescriptorContext
         return AddAsset(data, metadata, descriptor);
     }
 
-    public bool TryAddShader(AssetType type, in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata)
+    public bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata)
     {
         var descriptor = new AssetDescriptor
         {
-            Type = type,
+            Type = AssetType.Shader,
             Shader = shader,
         };
         return AddAsset(data, metadata, descriptor);

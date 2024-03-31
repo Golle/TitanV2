@@ -80,6 +80,7 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
 
     public T* Alloc<T>() where T : unmanaged
         => (T*)Alloc((uint)sizeof(T));
+
     public void* Alloc(uint size)
     {
         lock (_syncObject)
@@ -147,8 +148,24 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
         }
     }
 
-    public bool TryCreatePoolAllocator<T>(out BumpAllocator allocator, uint count) where T : unmanaged
+    public bool TryCreatePoolAllocator<T>(out PoolAllocator<T> allocator, uint count) where T : unmanaged
     {
-        throw new NotImplementedException();
+        Unsafe.SkipInit(out allocator);
+        lock (_syncObject)
+        {
+            var size = (uint)sizeof(T) * count;
+            var mem = (T*)_generalAllocator.Alloc(size);
+            if (mem == null)
+            {
+                Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to create a {nameof(PoolAllocator<T>)}. Size = {size} bytes");
+                return false;
+            }
+
+            allocator = new(mem, count);
+            return true;
+        }
     }
+
+    public void FreeAllocator<T>(in T allocator) where T : unmanaged, IAllocator 
+        => T.Release(MemoryUtils.AsPointer(in allocator), this);
 }

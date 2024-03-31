@@ -9,6 +9,7 @@ internal sealed class AssetsModule : IModule
             .AddResource<AssetsContext>()
             .AddService<IAssetsManager, AssetsManager>(new AssetsManager())
             .AddSystems<AssetSystem>()
+            .AddSystems<AssetLoaderSystem>()
             .AddRegistry<EngineAssetsRegistry>(true)
             ;
 

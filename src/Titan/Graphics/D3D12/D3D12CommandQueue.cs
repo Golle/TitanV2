@@ -1,9 +1,9 @@
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 

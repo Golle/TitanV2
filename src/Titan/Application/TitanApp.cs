@@ -16,10 +16,17 @@ namespace Titan.Application;
 internal sealed class TitanApp : IApp, IRunnable
 {
     private readonly ServiceRegistry _registry;
-    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems, IReadOnlyList<AssetRegistryDescriptor> assetRegistries)
+    public TitanApp(
+        ServiceRegistry registry,
+        AppConfig config,
+        IReadOnlyList<UnmanagedResourceDescriptor> resources,
+        IReadOnlyList<ConfigurationDescriptor> configurations,
+        IReadOnlyList<SystemDescriptor> systems,
+        IReadOnlyList<AssetRegistryDescriptor> assetRegistries,
+        IReadOnlyList<AssetLoaderDescriptor> assetLoaders)
     {
+        using var _ = new MeasureTime<TitanApp>("Titan App base system Init completed in {0} ms");
         _registry = registry;
-
         var memoryManager = registry.GetService<IMemoryManager>();
         var fileSystem = registry.GetService<IFileSystem>();
 
@@ -55,7 +62,7 @@ internal sealed class TitanApp : IApp, IRunnable
             throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
         }
 
-        if (!assetsManager.Init(assetRegistries,  unmanagedResourceRegistry.GetResourceHandle<AssetsContext>()))
+        if (!assetsManager.Init(assetRegistries, unmanagedResourceRegistry.GetResourceHandle<AssetsContext>(), assetLoaders, memoryManager))
         {
             Logger.Error<AppBuilder>($"Failed to init the {nameof(AssetsManager)}.");
             throw new InvalidOperationException($"{nameof(AssetsManager)} failed.");
@@ -116,7 +123,7 @@ internal sealed class TitanApp : IApp, IRunnable
             if (timer.Elapsed.TotalSeconds > 1f)
             {
                 var fps = frameCount / timer.Elapsed.TotalSeconds;
-                //Logger.Info<TitanApp>($"FPS: {fps}");
+                Logger.Info<TitanApp>($"FPS: {fps}");
                 frameCount = 0;
                 timer.Restart();
             }
@@ -130,18 +137,18 @@ internal sealed class TitanApp : IApp, IRunnable
 
     private static void Init(ref SystemsScheduler scheduler, IJobSystem jobSystem)
     {
-        var timer = Stopwatch.StartNew();
-        Logger.Trace<TitanApp>("PreInit");
-        scheduler.PreInitSystems(jobSystem);
-        Logger.Trace<TitanApp>("Init");
-        scheduler.InitSystems(jobSystem);
+        using (new MeasureTime<TitanApp>("Init completed in {0} ms."))
+        {
+            Logger.Trace<TitanApp>("PreInit");
+            scheduler.PreInitSystems(jobSystem);
+            Logger.Trace<TitanApp>("Init");
+            scheduler.InitSystems(jobSystem);
+        }
 
-        timer.Stop();
-        Logger.Trace<TitanApp>($"Init completed in {timer.Elapsed.TotalMilliseconds} ms. Doing a GC Collect.");
-        var gcTimer = Stopwatch.StartNew();
-        GC.Collect();
-        gcTimer.Stop();
-        Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
+        using (new MeasureTime<TitanApp>("GC Collect completed in {0} ms."))
+        {
+            GC.Collect();
+        }
     }
 
     private void Shutdown(ref SystemsScheduler scheduler, IJobSystem jobSystem)
@@ -154,6 +161,10 @@ internal sealed class TitanApp : IApp, IRunnable
 
     private void Cleanup()
     {
+        _registry
+            .GetService<AssetsManager>()
+            .Shutdown();
+
         var memoryManager = _registry.GetService<IMemoryManager>();
         GetResourceHandle<SystemsScheduler>().AsRef.Shutdown(memoryManager);
         _registry.GetService<EventSystem>().Shutdown();

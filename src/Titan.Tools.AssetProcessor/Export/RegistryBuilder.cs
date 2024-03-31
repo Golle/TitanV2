@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Core.Strings;
+using Titan.Graphics.Resources;
 using Titan.Platform.Win32.DXGI;
 using Titan.Tools.AssetProcessor.Metadata;
 
@@ -43,6 +44,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         var content =
             $@"{nameof(AssetDescriptor.Shader)} = new()
             {{
+                {nameof(ShaderDescriptor.Type)} = {typeof(ShaderType).FullName}.{shader.Type}
             }}";
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
@@ -165,7 +167,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 var content = descriptor.Type switch
                 {
                     AssetType.Texture2D => CreateTexture2DDescriptor(descriptor, metadata),
-                    AssetType.PixelShader or AssetType.ComputeShader or AssetType.VertexShader => CreateShaderDescriptor(descriptor, metadata),
+                    AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 

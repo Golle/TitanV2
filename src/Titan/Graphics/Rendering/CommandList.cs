@@ -5,7 +5,7 @@ using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 
-namespace Titan.Rendering;
+namespace Titan.Graphics.Rendering;
 
 internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {

@@ -4,9 +4,9 @@
 [Oo]bj/
 
 # release builds
-release/
+/release/
 
 # processed assets
-assets/
-!src/Titan/Assets
+/[Aa]ssets/
+
 *.user

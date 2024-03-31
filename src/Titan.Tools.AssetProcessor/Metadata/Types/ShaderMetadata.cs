@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Titan.Graphics.Resources;
 using Titan.Tools.AssetProcessor.Processors.Shaders;
 
 namespace Titan.Tools.AssetProcessor.Metadata.Types;

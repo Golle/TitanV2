@@ -39,7 +39,6 @@ public readonly struct RegistryId
     public static implicit operator uint(in RegistryId id) => id.Value;
 }
 
-
 public struct AssetDescriptor
 {
     public AssetId Id;

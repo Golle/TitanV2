@@ -17,6 +17,11 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
         // no op for bump allocator
     }
 
+    public static void Release(void* allocator, IMemoryManager memoryManager)
+    {
+        throw new NotImplementedException();
+    }
+
     public void* Alloc(uint size)
     {
         Debug.Assert(_offset + size <= allocatorSize);
