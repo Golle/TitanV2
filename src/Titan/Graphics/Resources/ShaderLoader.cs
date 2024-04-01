@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Diagnostics;
 using Titan.Assets;
 using Titan.Core;
@@ -19,8 +18,6 @@ internal partial struct ShaderAsset
 [AssetLoader<ShaderAsset>]
 internal unsafe partial struct ShaderLoader
 {
-    private static readonly object _lock = new();
-
     private PoolAllocator<ShaderAsset> _pool;
     private ManagedResource<IMemoryManager> _memoryManager;
 

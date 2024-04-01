@@ -48,13 +48,21 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
         Debug.Assert(Win32Common.SUCCEEDED(hr), "Failed to Close the command list.");
     }
 
-    public void SetViewport(D3D12_VIEWPORT* viewport)
-    {
-        commandList->RSSetViewports(1, viewport);
-    }
 
-    public void SetScissorRect(D3D12_RECT* rect)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetViewport(D3D12_VIEWPORT* viewport) 
+        => commandList->RSSetViewports(1, viewport);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetScissorRect(D3D12_RECT* rect) 
+        => commandList->RSSetScissorRects(1, rect);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void DrawIndexedInstanced(uint indexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, int baseVertexLocation = 0, uint startInstanceLocation = 0)
+        => commandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+
+    public void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW view)
     {
-        commandList->RSSetScissorRects(1, rect);
+        commandList->IASetIndexBuffer(&view);
     }
 }

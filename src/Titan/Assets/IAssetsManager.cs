@@ -27,4 +27,12 @@ public interface IAssetsManager : IService
     void Unload<T>(ref AssetHandle<T> handle) where T : unmanaged, IAsset;
     ref readonly T Get<T>(in AssetHandle<T> handle) where T : unmanaged, IAsset;
     bool IsLoaded<T>(in AssetHandle<T> handke) where T : unmanaged, IAsset;
+
+    /// <summary>
+    /// Loads the resource immediately on the current thread.
+    /// <remarks>This function can only be used during Init system stage.</remarks>
+    /// </summary>
+    /// <param name="descriptor">The asset to load</param>
+    /// <returns>The handle to the asset</returns>
+    AssetHandle<T> LoadImmediately<T>(in AssetDescriptor descriptor) where T : unmanaged, IAsset;
 }

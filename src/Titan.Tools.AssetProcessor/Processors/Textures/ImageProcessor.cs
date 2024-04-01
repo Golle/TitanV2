@@ -1,4 +1,3 @@
-using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 

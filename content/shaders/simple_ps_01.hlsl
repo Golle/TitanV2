@@ -1,6 +1,8 @@
-float4 main(float2 textureCoords: Texture) : SV_TARGET
+#include "sprite.hlsli"
+
+float4 main(VSOutput input) : SV_TARGET
 {
-    float4 color = float4(1,0,1,0); // tex.Sample(splr, textureCoords);
+    float4 color = input.Color; // tex.Sample(splr, textureCoords);
     
     return color;
 }

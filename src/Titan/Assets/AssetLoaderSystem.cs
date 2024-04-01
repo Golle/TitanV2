@@ -7,7 +7,10 @@ namespace Titan.Assets;
 
 internal unsafe partial struct AssetLoaderSystem
 {
-    [System(SystemStage.Init)]
+    /// <summary>
+    /// The init function for all AssetLoaders. This runs as a PreInit step so we have the loaders available in Init.
+    /// </summary>
+    [System(SystemStage.PreInit)]
     public static void Init(in AssetsContext context, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services)
     {
         var initializer = new AssetLoaderInitializer(unmanagedResources, services);
@@ -19,7 +22,11 @@ internal unsafe partial struct AssetLoaderSystem
                 continue;
             }
 
-            if (!loader.Init(initializer))
+            if (loader.Init(initializer))
+            {
+                Logger.Trace<AssetLoaderSystem>($"Asset Loader {loader.Name.GetString()} initialized.");
+            }
+            else
             {
                 Logger.Error<AssetLoaderSystem>($"Failed to init the {loader.Name.GetString()} asset loader.");
             }

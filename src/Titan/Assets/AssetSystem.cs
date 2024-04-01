@@ -5,6 +5,7 @@ using Titan.Core.IO;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
+using Titan.Graphics.Resources;
 using Titan.IO.FileSystem;
 using Titan.Systems;
 
@@ -12,7 +13,7 @@ namespace Titan.Assets;
 
 internal unsafe partial struct AssetSystem
 {
-    [System(SystemStage.Init)]
+    [System(SystemStage.PreInit)]
     public static void Init(AssetsContext* context, IFileSystem fileSystem, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         var assetCount = GetMaxIndex(context->Registers.AsReadOnlySpan()[..(int)context->NumberOfRegisters]) + 1;
@@ -177,35 +178,4 @@ internal unsafe partial struct AssetSystem
         }
         context->FileSystem.Release();
     }
-
-
-    [System]
-    public static void TetThis(IAssetsManager assetsManager)
-    {
-        if (_completed)
-        {
-            return;
-        }
-
-        if (_handle.IsInvalid)
-        {
-            _handle = assetsManager.Load<TestASset>(EngineAssetsRegistry.SimplePixelShader);
-        }
-        else if (assetsManager.IsLoaded(_handle))
-        {
-            Logger.Error<AssetSystem>("IT*S LAODDEDD!!!");
-            _completed = true;
-        }
-    }
-
-
-    private static AssetHandle<TestASset> _handle;
-    private static bool _completed;
-}
-
-
-[Asset((AssetType)1001)]
-public partial struct TestASset
-{
-    private int a;
 }

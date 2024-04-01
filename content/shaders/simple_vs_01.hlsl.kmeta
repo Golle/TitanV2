@@ -2,7 +2,7 @@
   "$type": "ShaderMetadata",
   "entryPoint": "main",
   "shaderType": "Vertex",
-  "shaderVersion": "Version_6_7",
+  "shaderVersion": "Version_6_5",
   "id": "6d5433f4-bd7a-4002-b0dd-0b272b870fcd",
   "name": "SimpleVertexShader",
   "fileSize": 350,
