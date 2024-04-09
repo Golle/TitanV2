@@ -25,7 +25,7 @@ internal unsafe partial struct D3D12CommandQueue
     public Inline3<Inline16<ComPtr<ID3D12CommandAllocator>>> Allocators;
     public Inline3<Inline16<ComPtr<ID3D12GraphicsCommandList4>>> CommandLists;
 
-    [System(SystemStage.Init)]
+    [System(SystemStage.PreInit)]
     public static void Init(in D3D12Device device, D3D12CommandQueue* commandQueue)
     {
         using var _ = new MeasureTime<D3D12CommandQueue>("Init completed in {0} ms");
@@ -70,7 +70,7 @@ internal unsafe partial struct D3D12CommandQueue
     }
 
 
-    [System(SystemStage.Shutdown)]
+    [System(SystemStage.PostShutdown)]
     public static void Shutdown(D3D12CommandQueue* commandQueue)
     {
         var allocators = (ComPtr<ID3D12CommandAllocator>*)commandQueue->Allocators.AsPointer();

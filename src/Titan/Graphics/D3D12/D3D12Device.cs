@@ -5,6 +5,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics.D3D12.Adapters;
 using Titan.Graphics.D3D12.Memory;
+using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
@@ -43,7 +44,7 @@ internal unsafe partial struct D3D12Device
 
     public static implicit operator ID3D12Device4*(in D3D12Device device) => device.Device.Get();
 
-    [System(SystemStage.Init)]
+    [System(SystemStage.PreInit)]
     public static void Init(D3D12Device* device, in D3D12Adapter d3d12Adapter, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
@@ -51,7 +52,7 @@ internal unsafe partial struct D3D12Device
 
         Logger.Trace<D3D12Device>($"Creating a {nameof(ID3D12Device4)} with FeatureLevel {config.FeatureLevel}.");
 
-        using var _ = new MeasureTime<D3D12Device>("Created device in {0} ms.");
+        using var timer = new MeasureTime<D3D12Device>("Created device in {0} ms.");
         var hr = D3D12CreateDevice((IUnknown*)adapter.Adapter.Get(), config.FeatureLevel, ID3D12Device4.Guid, (void**)device->Device.GetAddressOf());
         if (FAILED(hr))
         {
@@ -59,7 +60,7 @@ internal unsafe partial struct D3D12Device
         }
     }
 
-    [System(SystemStage.Shutdown)]
+    [System(SystemStage.PostShutdown)]
     public static void Shutdown(D3D12Device* device)
     {
         Logger.Trace<D3D12Device>($"Destroying the {nameof(ID3D12Device4)}.");
@@ -88,7 +89,7 @@ internal unsafe partial struct D3D12Device
         return queue;
     }
 
-    public readonly ID3D12GraphicsCommandList4* CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12GraphicsCommandList4* CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE type, string? name = null)
     {
         ID3D12GraphicsCommandList4* commandList;
         var hr = Device.Get()->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAGS.D3D12_COMMAND_LIST_FLAG_NONE, ID3D12GraphicsCommandList4.Guid, (void**)&commandList);
@@ -98,10 +99,15 @@ internal unsafe partial struct D3D12Device
             return null;
         }
 
+        if (name != null)
+        {
+            D3D12Helpers.SetName(commandList, name);
+        }
+
         return commandList;
     }
 
-    public readonly ID3D12CommandAllocator* CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12CommandAllocator* CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE type, string? name = null)
     {
         ID3D12CommandAllocator* allocator;
         var hr = Device.Get()->CreateCommandAllocator(type, ID3D12CommandAllocator.Guid, (void**)&allocator);
@@ -109,6 +115,11 @@ internal unsafe partial struct D3D12Device
         {
             Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12CommandAllocator)}. HRESULT = {hr}");
             return null;
+        }
+
+        if (name != null)
+        {
+            D3D12Helpers.SetName(allocator, name);
         }
 
         return allocator;

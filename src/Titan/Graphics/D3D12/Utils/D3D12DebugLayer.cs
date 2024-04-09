@@ -1,4 +1,4 @@
-﻿using Titan.Core.Logging;
+using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
@@ -15,7 +15,7 @@ internal unsafe partial struct D3D12DebugLayer
     public ComPtr<ID3D12Debug1> D3D12Debug;
     public ComPtr<IDXGIDebug> DXGIDebug;
 
-    [System(SystemStage.Init)]
+    [System(SystemStage.Startup, SystemExecutionType.Inline)]
     public static void Init(D3D12DebugLayer* layer)
     {
         const bool GPUValidation = false; // make this configurable when we need it.
@@ -39,7 +39,7 @@ internal unsafe partial struct D3D12DebugLayer
         Logger.Info<D3D12DebugLayer>($"Successfully initialize the D3D12 Debug Layer. GPUValidation = {GPUValidation}");
     }
 
-    [System(SystemStage.PostShutdown)]
+    [System(SystemStage.EndOfLife)]
     public static void Shutdown(D3D12DebugLayer* layer)
     {
         if (layer->DXGIDebug.IsValid)

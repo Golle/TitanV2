@@ -110,6 +110,7 @@ internal sealed class TitanApp : IApp, IRunnable
         var jobSystem = GetService<IJobSystem>();
         ref var scheduler = ref GetResourceHandle<SystemsScheduler>().AsRef;
 
+        Startup(ref scheduler, jobSystem);
         Init(ref scheduler, jobSystem);
 
         var frameCount = 0;
@@ -130,9 +131,28 @@ internal sealed class TitanApp : IApp, IRunnable
         }
 
         Shutdown(ref scheduler, jobSystem);
+        EndOfLife(ref scheduler, jobSystem);
 
         Cleanup();
 
+    }
+
+    private void EndOfLife(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        using (new MeasureTime<TitanApp>("EndOfLife completed in {0} ms"))
+        {
+            Logger.Trace<TitanApp>("End of life");
+            scheduler.EndOfLifeSystems(jobSystem);
+        }
+    }
+
+    private void Startup(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        using (new MeasureTime<TitanApp>("Startup completed in {0} ms."))
+        {
+            Logger.Trace<TitanApp>("Startup");
+            scheduler.StartupSystems(jobSystem);
+        }
     }
 
     private static void Init(ref SystemsScheduler scheduler, IJobSystem jobSystem)

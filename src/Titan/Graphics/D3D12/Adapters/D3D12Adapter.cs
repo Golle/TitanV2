@@ -20,7 +20,7 @@ internal unsafe partial struct D3D12Adapter
     public readonly ref readonly AdapterInfo PrimaryAdapter => ref Adapters[PrimaryAdapterIndex];
 
 
-    [System(SystemStage.Init)]
+    [System(SystemStage.PreInit)]
     public static void Init(D3D12Adapter* adapter, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<RenderingConfig>();
@@ -98,7 +98,7 @@ internal unsafe partial struct D3D12Adapter
         Logger.Trace<D3D12Adapter>($"Found {adapter->AdapterCount} adapters.");
     }
 
-    [System(SystemStage.Shutdown)]
+    [System(SystemStage.PostShutdown)]
     public static void Shutdown(D3D12Adapter* adapter)
     {
         for (var i = 0; i < adapter->AdapterCount; ++i)

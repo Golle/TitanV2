@@ -54,9 +54,11 @@ internal unsafe partial struct SystemsScheduler
         memoryManager.FreeArray(ref _nodes);
     }
 
+    public void StartupSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.Startup].Execute(jobSystem);
     public void PreInitSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.PreInit].Execute(jobSystem);
 
     public void InitSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.Init].Execute(jobSystem);
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateSystems(IJobSystem jobSystem)
@@ -70,4 +72,6 @@ internal unsafe partial struct SystemsScheduler
     public void ShutdownSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.Shutdown].Execute(jobSystem);
 
     public void PostShutdownSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.PostShutdown].Execute(jobSystem);
+
+    public void EndOfLifeSystems(IJobSystem jobSystem) => _stages[(int)SystemStage.EndOfLife].Execute(jobSystem);
 }

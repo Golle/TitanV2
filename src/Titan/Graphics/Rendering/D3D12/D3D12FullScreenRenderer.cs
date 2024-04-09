@@ -96,7 +96,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.SetRenderTarget(backbuffer);
         commandList.ClearRenderTargetView(backbuffer, MemoryUtils.AsPointer(data.ClearColor));
 
-        commandList.SetIndexBuffer();
+        //commandList.SetIndexBuffer();
 
         commandList.DrawIndexedInstanced(4, 1);
 
