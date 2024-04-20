@@ -158,6 +158,25 @@ internal unsafe partial struct D3D12Device
     }
 
 
+    public readonly void CreateShaderResourceView(ID3D12Resource* resource, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+    {
+        Logger.Warning<D3D12Device>($"The method {nameof(CreateShaderResourceView)} only supports texture2d without mips, not really a good solution.");
+        var desc = new D3D12_SHADER_RESOURCE_VIEW_DESC
+        {
+            Format = format,
+            Shader4ComponentMapping = D3D12Constants.D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            ViewDimension = D3D12_SRV_DIMENSION.D3D12_SRV_DIMENSION_TEXTURE2D,
+            Texture2D = new D3D12_TEX2D_SRV
+            {
+                MipLevels = 1,
+                MostDetailedMip = 0,
+                PlaneSlice = 0,
+                ResourceMinLODClamp = 0
+            }
+        };
+        Device.Get()->CreateShaderResourceView(resource, &desc, handle);
+    }
+
     public readonly ID3D12PipelineState* CreatePipelineStateObject(D3D12_PIPELINE_STATE_STREAM_DESC desc)
     {
         ID3D12PipelineState* pipelineState;

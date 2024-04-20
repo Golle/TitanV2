@@ -3,14 +3,13 @@ using System.Runtime.CompilerServices;
 using Titan.Core.Maths;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
+using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
 
 namespace Titan.Graphics.Rendering;
 
 internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {
-
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void SetRenderTarget(Texture2D* texture)
     {
@@ -48,21 +47,43 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
         Debug.Assert(Win32Common.SUCCEEDED(hr), "Failed to Close the command list.");
     }
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetViewport(D3D12_VIEWPORT* viewport) 
+    public void SetViewport(D3D12_VIEWPORT* viewport)
         => commandList->RSSetViewports(1, viewport);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetScissorRect(D3D12_RECT* rect) 
+    public void SetScissorRect(D3D12_RECT* rect)
         => commandList->RSSetScissorRects(1, rect);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void DrawIndexedInstanced(uint indexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, int baseVertexLocation = 0, uint startInstanceLocation = 0)
         => commandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, uint startInstanceLocation = 0)
+        => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW view)
-    {
-        commandList->IASetIndexBuffer(&view);
-    }
+        => commandList->IASetIndexBuffer(&view);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootSignature(ID3D12RootSignature* rootSignature)
+        => commandList->SetGraphicsRootSignature(rootSignature);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetTopology(D3D_PRIMITIVE_TOPOLOGY type)
+        => commandList->IASetPrimitiveTopology(type);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetDescriptorHeap(ID3D12DescriptorHeap* heap)
+        => SetDescriptorHeaps(1, &heap);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetDescriptorHeaps(uint count, ID3D12DescriptorHeap** heaps)
+        => commandList->SetDescriptorHeaps(count, heaps);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor) 
+        => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
 }

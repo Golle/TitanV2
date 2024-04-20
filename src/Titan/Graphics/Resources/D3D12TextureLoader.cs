@@ -7,9 +7,9 @@ using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
-using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
+using Titan.Platform.Win32.DXGI;
 
 namespace Titan.Graphics.Resources;
 
@@ -84,6 +84,8 @@ internal unsafe partial struct D3D12TextureLoader
             Logger.Error<D3D12TextureLoader>("Failed to allocate a SRV handle.");
             return null;
         }
+
+        _device->CreateShaderResourceView(resource, (DXGI_FORMAT)texture2D.DXGIFormat, srv);
 
         if (!_uploadQueue->Upload(resource, buffer))
         {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -19,6 +20,8 @@ internal unsafe partial struct D3D12Allocator
 
     private int _frameIndex;
 
+    [UnscopedRef]
+    public ref readonly DescriptorHeap SRV => ref _heaps[(int)DescriptorHeapType.ShaderResourceView];
     [System(SystemStage.PreInit)]
     public static void Init(D3D12Allocator* allocator, in D3D12Device device, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
