@@ -29,7 +29,7 @@ internal class SimpleAssetDescriptorContext(uint maxBufferSize, uint maxDescript
             Logger.Error<SimpleAssetDescriptorContext>($"Muliple assets with the same name. Name = {metadata.Name}");
             return false;
         }
-        ref var asset = ref WriteDataAndCreateAssetDescriptor(data, AssetType.Texture2D, metadata);
+        ref var asset = ref WriteDataAndCreateAssetDescriptor(data, AssetType.Texture, metadata);
         asset.Texture2D = texture2D;
         return true;
     }

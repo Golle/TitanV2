@@ -23,7 +23,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
         {
             Id = Titan.Assets.AssetId.GetNext(),
             RegistryId = Id,
-            Type = Titan.Assets.AssetType.Texture2D,
+            Type = Titan.Assets.AssetType.Texture,
             File = 
             { 
                 Length = 524288,

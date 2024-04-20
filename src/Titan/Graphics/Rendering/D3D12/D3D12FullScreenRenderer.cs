@@ -29,6 +29,8 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var pixelShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimplePixelShader);
         var vertexShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimpleVertexShader);
 
+        var texture = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.UnnamedAsset0);
+
         var pixelShader = assetsManager.Get(pixelShaderHandle).ShaderByteCode;
         var vertexShader = assetsManager.Get(vertexShaderHandle).ShaderByteCode;
 

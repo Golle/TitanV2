@@ -62,9 +62,9 @@ internal static class AssetLoaderBuilder
                 .EndIndentation()
                 .AppendLine()
 
-                .AppendLine("public static void Shutdown(void* context)")
+                .AppendLine($"public static void Shutdown(void* context, in {TitanTypes.AssetLoaderInitializer} init)")
                 .BeginIndentation()
-                .AppendLine($"=> (({type.Name}*)context)->Shutdown();")
+                .AppendLine($"=> (({type.Name}*)context)->Shutdown(init);")
                 .EndIndentation()
                 .AppendLine()
 

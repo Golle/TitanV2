@@ -166,7 +166,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 var (descriptor, metadata) = _assets[i];
                 var content = descriptor.Type switch
                 {
-                    AssetType.Texture2D => CreateTexture2DDescriptor(descriptor, metadata),
+                    AssetType.Texture => CreateTexture2DDescriptor(descriptor, metadata),
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };

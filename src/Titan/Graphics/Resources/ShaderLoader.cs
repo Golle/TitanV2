@@ -35,10 +35,10 @@ internal unsafe partial struct ShaderLoader
         return true;
     }
 
-    public void Shutdown()
+    public void Shutdown(in AssetLoaderInitializer init)
     {
         Logger.Trace<ShaderLoader>("Shutdown the loader");
-        _memoryManager.Value.FreeAllocator(_pool);
+        init.MemoryManager.FreeAllocator(_pool);
     }
 
     public ShaderAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer)

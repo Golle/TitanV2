@@ -10,7 +10,7 @@ public interface IAssetLoader
 public unsafe interface IAssetLoader<T> : IAssetLoader where T : unmanaged, IAsset
 {
     bool Init(in AssetLoaderInitializer init);
-    void Shutdown();
+    void Shutdown(in AssetLoaderInitializer init);
     T* Load(in AssetDescriptor descriptor, TitanBuffer buffer);
     void Unload(T* asset);
 }

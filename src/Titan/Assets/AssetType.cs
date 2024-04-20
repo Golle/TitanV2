@@ -5,7 +5,7 @@ namespace Titan.Assets;
 /// </summary>
 public enum AssetType
 {
-    Texture2D = 1,
+    Texture = 1,
     Model3D = 2,
     Shader = 3,
     Font = 6,

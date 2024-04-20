@@ -34,8 +34,9 @@ internal unsafe partial struct AssetLoaderSystem
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(in AssetsContext context)
+    public static void Shutdown(in AssetsContext context, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services)
     {
+        var initializer = new AssetLoaderInitializer(unmanagedResources, services); //TODO(Jens): Rename this struct.
         var loaders = context.Loaders.AsPointer();
         var size = context.Loaders.Size;
         for (var i = 0; i < size; ++i)
@@ -45,7 +46,7 @@ internal unsafe partial struct AssetLoaderSystem
                 continue;
             }
 
-            loaders[i].Shutdown();
+            loaders[i].Shutdown(initializer);
         }
     }
 }

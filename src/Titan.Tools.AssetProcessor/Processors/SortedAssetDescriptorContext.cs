@@ -26,7 +26,7 @@ internal class SortedAssetDescriptorContext : IAssetDescriptorContext
     {
         var descriptor = new AssetDescriptor
         {
-            Type = AssetType.Texture2D,
+            Type = AssetType.Texture,
             Texture2D = texture2D
         };
         return AddAsset(data, metadata, descriptor);

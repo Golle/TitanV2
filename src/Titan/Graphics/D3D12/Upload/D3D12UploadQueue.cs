@@ -65,7 +65,7 @@ internal unsafe partial struct D3D12UploadQueue
         if (heapProperties.Type is D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK or D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD)
         {
             // CPU visible resource, we can just map and copy.
-
+            Debug.Fail("not implemented yet.");
             return true;
         }
 
@@ -74,7 +74,7 @@ internal unsafe partial struct D3D12UploadQueue
 
         if (!tempBuffer.IsValid)
         {
-            Logger.Error<D3D12UploadQueue>($"Failed to create a temp buffer on theGPU. Size = {buffer.Size} bytes.");
+            Logger.Error<D3D12UploadQueue>($"Failed to create a temp buffer on the GPU. Size = {buffer.Size} bytes.");
             return false;
         }
 
@@ -105,8 +105,8 @@ internal unsafe partial struct D3D12UploadQueue
         else
         {
             //NOTE(Jens): IN the old code we used footprints, do we need them?
-            //D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-            //Device->Device.Get()->GetCopyableFootprints(&resourceDesc, 0, 1, 0, &footprint, null, null, null);
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+            Device->Device.Get()->GetCopyableFootprints(&resourceDesc, 0, 1, 0, &footprint, null, null, null);
 
             D3D12_TEXTURE_COPY_LOCATION copyDst = new()
             {
@@ -116,8 +116,9 @@ internal unsafe partial struct D3D12UploadQueue
             };
             D3D12_TEXTURE_COPY_LOCATION copySrc = new()
             {
-                Type = D3D12_TEXTURE_COPY_TYPE.D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Type = D3D12_TEXTURE_COPY_TYPE.D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
                 pResource = tempBuffer,
+                PlacedFootprint = footprint,
                 SubresourceIndex = 0
             };
             frame->Allocator.Reset();
