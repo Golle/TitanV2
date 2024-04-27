@@ -3,14 +3,14 @@
 SamplerState LinearSampler : register(s0);
 SamplerState PointSampler : register(s1);
 
-cbuffer PerDrawData : register(b1, space1)
-{
-    float2 ViewportSize; // do we need this?
-    float2 ViewportOffset;
-    float2 ViewportScale;
-    uint BufferIndex; // the offset in the SRV
-    uint LinearSampling; 
-}
+// cbuffer PerDrawData : register(b1, space1)
+// {
+//     float2 ViewportSize; // do we need this?
+//     float2 ViewportOffset;
+//     float2 ViewportScale;
+//     uint BufferIndex; // the offset in the SRV
+//     uint LinearSampling; 
+// }
 
 struct VSOutput
 {

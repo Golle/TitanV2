@@ -104,7 +104,6 @@ internal unsafe partial struct D3D12UploadQueue
         }
         else
         {
-            //NOTE(Jens): IN the old code we used footprints, do we need them?
             D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
             Device->Device.Get()->GetCopyableFootprints(&resourceDesc, 0, 1, 0, &footprint, null, null, null);
 

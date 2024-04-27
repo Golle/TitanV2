@@ -71,13 +71,15 @@ internal unsafe class WicImageReader : IDisposable
         }
 
         var stride = (width * bitsPerPixel + 7) / 8;
-        var imageSize = stride * height;
+        // Align the RowPitch/stride to 256 bits.
+        var alignedStride = (uint)((stride + 255) & ~255);
+        var imageSize = alignedStride * height;
 
-        Logger.Trace<WicImageReader>($"Size: {imageSize} Stride: {stride} BitsPerPixel: {bitsPerPixel}");
+        Logger.Trace<WicImageReader>($"Size: {imageSize} Stride: {stride} Aligned Stride: {alignedStride} BitsPerPixel: {bitsPerPixel}");
         var buffer = new byte[imageSize];
         fixed (byte* pBuffer = buffer)
         {
-            hr = frameDecode.Get()->CopyPixels(null, stride, imageSize, pBuffer);
+            hr = frameDecode.Get()->CopyPixels(null, alignedStride, imageSize, pBuffer);
             if (Win32Common.FAILED(hr))
             {
                 Logger.Error<WicImageReader>($"Failed to CopyPixels with HRESULT {hr}");
@@ -91,7 +93,7 @@ internal unsafe class WicImageReader : IDisposable
             BitsPerPixel = bitsPerPixel,
             Data = buffer,
             Format = dxgiFormat,
-            Stride = stride
+            Stride = alignedStride
         };
     }
     private bool GetBitsPerPixel(Guid guid, out uint bitsPerPixel)

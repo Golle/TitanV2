@@ -11,10 +11,10 @@ namespace Titan.Graphics.Rendering;
 internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void SetRenderTarget(Texture2D* texture)
+    internal void SetRenderTarget(Texture2D* texture, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
     {
         var d3d12Texture = (D3D12Texture2D*)texture;
-        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 0, null);
+        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, depthBuffer);
     }
 
     public void ClearRenderTargetView(Texture2D* texture, Color* color)
@@ -84,6 +84,21 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
         => commandList->SetDescriptorHeaps(count, heaps);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor) 
+    public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
         => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootConstantBufferView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
+        => commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootShaderResourceView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
+        => commandList->SetGraphicsRootShaderResourceView(rootParameterIndex, bufferLocation);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void IASetIndexBuffer(D3D12_INDEX_BUFFER_VIEW indexBufferView)
+        => commandList->IASetIndexBuffer(&indexBufferView);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
+        => commandList->ClearDepthStencilView(depthStencilView, flags, depth, stencil, numberOfRects, rects);
 }

@@ -1,8 +1,8 @@
 // Auto-Generated
 #pragma warning disable
 
-namespace Titan;
-public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
+namespace Titan.Assets;
+public readonly struct EngineRegistry : Titan.Assets.IAssetRegistry
 {
     public static Titan.Assets.RegistryId Id { get; } = Titan.Assets.RegistryId.GetNext();
     private static __ASSETS__ _assets;
@@ -23,7 +23,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
     public static ref readonly Titan.Assets.AssetDescriptor SimplePixelShader => ref _assets[4];
     public static ref readonly Titan.Assets.AssetDescriptor SimpleVertexShader => ref _assets[5];
     public static ref readonly Titan.Assets.AssetDescriptor TitanLogo => ref _assets[6];
-    static EngineAssetsRegistry()
+    static EngineRegistry()
     {
         _assets[0] = new Titan.Assets.AssetDescriptor
         {

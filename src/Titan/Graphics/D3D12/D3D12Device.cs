@@ -157,11 +157,21 @@ internal unsafe partial struct D3D12Device
         return heap;
     }
 
+    public readonly void CreateConstantBufferView(uint sizeInBytes, D3D12_GPU_VIRTUAL_ADDRESS address, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+    {
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC desc = new()
+        {
+            BufferLocation = address,
+            SizeInBytes = sizeInBytes
+        };
+        Device.Get()->CreateConstantBufferView(&desc, handle);
+    }
 
     public readonly void CreateShaderResourceView(ID3D12Resource* resource, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE handle)
     {
         Logger.Warning<D3D12Device>($"The method {nameof(CreateShaderResourceView)} only supports texture2d without mips, not really a good solution.");
-        var desc = new D3D12_SHADER_RESOURCE_VIEW_DESC
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = new()
         {
             Format = format,
             Shader4ComponentMapping = D3D12Constants.D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -177,6 +187,24 @@ internal unsafe partial struct D3D12Device
         Device.Get()->CreateShaderResourceView(resource, &desc, handle);
     }
 
+    public readonly void CreateShaderResourceView1(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle, uint numberOfVertices, uint stride)
+    {
+        Logger.Warning<D3D12Device>($"The method {nameof(CreateShaderResourceView)} only supports texture2d without mips, not really a good solution.");
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = new()
+        {
+            Format = DXGI_FORMAT.DXGI_FORMAT_UNKNOWN,
+            Shader4ComponentMapping = D3D12Constants.D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            ViewDimension = D3D12_SRV_DIMENSION.D3D12_SRV_DIMENSION_BUFFER,
+            Buffer = new()
+            {
+                FirstElement = 0,
+                Flags = D3D12_BUFFER_SRV_FLAGS.D3D12_BUFFER_SRV_FLAG_NONE,
+                NumElements = numberOfVertices,
+                StructureByteStride = stride
+            }
+        };
+        Device.Get()->CreateShaderResourceView(resource, &desc, handle);
+    }
     public readonly ID3D12PipelineState* CreatePipelineStateObject(D3D12_PIPELINE_STATE_STREAM_DESC desc)
     {
         ID3D12PipelineState* pipelineState;
@@ -189,7 +217,7 @@ internal unsafe partial struct D3D12Device
         return pipelineState;
     }
 
-    public ID3D12Resource* CreateBuffer(uint size, bool isCpuVisible = false, D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
+    public readonly ID3D12Resource* CreateBuffer(uint size, bool isCpuVisible = false, D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
     {
         //NOTE(Jens): These should be handled by the caller and not by the device. When we do that change we'll manage all memory by ourselves and not use CommittedResource
         var heap = isCpuVisible ? UploadHeap : DefaultHeap;
@@ -222,7 +250,7 @@ internal unsafe partial struct D3D12Device
         return resource;
     }
 
-    public ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format)
+    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format)
     {
         //NOTE(Jens): Add support for Mip levels etc.
         D3D12_RESOURCE_DESC resourceDesc = new()
@@ -341,4 +369,57 @@ internal unsafe partial struct D3D12Device
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
         => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
+
+    public  readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height)
+    {
+        D3D12_CLEAR_VALUE clearValue = new()
+        {
+            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            DepthStencil = new()
+            {
+                Depth = 1.0f,
+                Stencil = 0
+            }
+        };
+
+        D3D12_RESOURCE_DESC desc = new()
+        {
+            Width = width,
+            Height = height,
+            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            Dimension = D3D12_RESOURCE_DIMENSION.D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+            DepthOrArraySize = 1,
+            MipLevels = 1,
+            SampleDesc =
+            {
+                Count = 1,
+                Quality = 0
+            },
+            Layout = D3D12_TEXTURE_LAYOUT.D3D12_TEXTURE_LAYOUT_UNKNOWN,
+            Flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
+        };
+
+        fixed (D3D12_HEAP_PROPERTIES* heap = &DefaultHeap)
+        {
+            ID3D12Resource* resource;
+            var hr = Device.Get()->CreateCommittedResource(heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, ID3D12Resource.Guid, (void**)&resource);
+            if (FAILED(hr))
+            {
+                Logger.Error<D3D12Device>($"Failed to create the DepthBuffer. HRESULT = {hr}");
+                return null;
+            }
+            return resource;
+        }
+    }
+
+    public readonly void CreateDepthStencilView(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+    {
+        D3D12_DEPTH_STENCIL_VIEW_DESC desc= new()
+        {
+            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            ViewDimension = D3D12_DSV_DIMENSION.D3D12_DSV_DIMENSION_TEXTURE2D,
+            Flags = D3D12_DSV_FLAGS.D3D12_DSV_FLAG_NONE
+        };
+        Device.Get()->CreateDepthStencilView(resource, &desc, cpuHandle);
+    }
 }
