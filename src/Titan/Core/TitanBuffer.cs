@@ -21,7 +21,7 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
             return Empty;
         }
 
-        Debug.Assert(offset < bufferSize);
+        Debug.Assert(offset < _buffer.Length);
         Debug.Assert(offset + size <= Size);
         return new(AsPointer() + offset, size);
     }
@@ -37,7 +37,7 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
         Debug.Assert(offset < Size);
         Debug.Assert(offset + totalSize <= Size);
         var start = AsPointer() + offset;
-        
+
         return new((T*)start, count);
     }
 
