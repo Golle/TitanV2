@@ -3,7 +3,11 @@ namespace Titan.Systems;
 public enum SystemStage
 {
     /// <summary>
-    /// PreInit is run immediately when the System is added. This should only be used for core engine systems that needs to be set up in a specific order.
+    /// When the engine has completed the startup phase this stage will be called, all systems marked as Startup will run synchronosly
+    /// </summary>
+    Startup,
+    /// <summary>
+    /// PreInit is executed right after Startup, using the default executor.
     /// </summary>
     PreInit,
     /// <summary>
@@ -26,6 +30,8 @@ public enum SystemStage
     /// Post shutdown is intended for core engine systems like threads, memory and IO.
     /// </summary>
     PostShutdown,
+
+    EndOfLife,
 
     Count
 }

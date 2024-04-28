@@ -6,6 +6,7 @@ internal static class TitanTypes
 {
 
     public const string Resources = "Titan.Resources";
+    public const string Assets = "Titan.Assets";
     public const string Systems = "Titan.Systems";
     public const string Events = "Titan.Events";
     public const string Configurations = "Titan.Configurations";
@@ -24,11 +25,23 @@ internal static class TitanTypes
     public const string SystemStage = $"{Systems}.SystemStage";
     public const string SystemExecutionType = $"{Systems}.SystemExecutionType";
 
+    public const string Handle = $"{Core}.Handle";
+    public const string TitanBuffer = $"{Core}.TitanBuffer";
+
     public const string EventAttribute = $"{Events}.EventAttribute";
     public const string EventsGenerator = $"{Events}.EventId";
     public const string EventReader = $"{Events}.EventReader";
     public const string EventWriter = $"{Events}.EventWriter";
     public const string IEvent = $"{Events}.IEvent";
+
+    public const string AssetLoaderAttributeMetadataName = $"{Assets}.AssetLoaderAttribute`1";
+    public const string AssetAttribute = $"{Assets}.AssetAttribute";
+    public const string IAsset = $"{Assets}.IAsset";
+    public const string IAssetLoader = $"{Assets}.IAssetLoader";
+    public const string AssetType = $"{Assets}.AssetType";
+    public const string AssetLoaderInitializer = $"{Assets}.AssetLoaderInitializer";
+    public const string AssetDescriptor = $"{Assets}.AssetDescriptor";
+    public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 
@@ -37,6 +50,8 @@ internal static class TitanTypes
     public static readonly string MethodImplOptions = typeof(MethodImplOptions).FullName!;
     public static readonly string MemoryMarshal = typeof(MemoryMarshal).FullName!;
     public static readonly string Unsafe = typeof(Unsafe).FullName!;
+
+
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
 }

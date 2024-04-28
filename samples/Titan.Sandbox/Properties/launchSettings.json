@@ -4,6 +4,11 @@
       "commandName": "Project",
       "nativeDebugging": true,
       "hotReloadEnabled": true
+    },
+    "Titan.Sandbox - No Native Debug": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "hotReloadEnabled": true
     }
   }
 }

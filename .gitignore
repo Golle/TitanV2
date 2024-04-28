@@ -3,6 +3,10 @@
 [Bb]in/
 [Oo]bj/
 
-release/
+# release builds
+/release/
+
+# processed assets
+/[Aa]ssets/
 
 *.user

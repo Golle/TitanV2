@@ -133,8 +133,8 @@ internal unsafe ref struct ExecutionTreeBuilder
             //NOTE(Jens): PreInit and PostShutdown are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
             delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = (SystemStage)i switch
             {
-                SystemStage.PreInit => &SequentialExecutor.Run,
-                SystemStage.PostShutdown => &ReverseSequentialExecutor.Run,
+                SystemStage.Startup => &SequentialExecutor.Run,
+                SystemStage.EndOfLife => &ReverseSequentialExecutor.Run,
                 _ => &OrderedSystemsExecutor.Run
             };
             var stageNodes = nodes.Slice(offset, numberOfNodes);
@@ -144,7 +144,7 @@ internal unsafe ref struct ExecutionTreeBuilder
 
             offset += numberOfNodes;
         }
-        
+
         return true;
 
         static void AdjustDependencyIndices(TitanArray<SystemNode> nodes, uint offset)

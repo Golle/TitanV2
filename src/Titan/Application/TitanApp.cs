@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Assets;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -15,16 +16,24 @@ namespace Titan.Application;
 internal sealed class TitanApp : IApp, IRunnable
 {
     private readonly ServiceRegistry _registry;
-    public TitanApp(ServiceRegistry registry, AppConfig config, IReadOnlyList<UnmanagedResourceDescriptor> resources, IReadOnlyList<ConfigurationDescriptor> configurations, IReadOnlyList<SystemDescriptor> systems)
+    public TitanApp(
+        ServiceRegistry registry,
+        AppConfig config,
+        IReadOnlyList<UnmanagedResourceDescriptor> resources,
+        IReadOnlyList<ConfigurationDescriptor> configurations,
+        IReadOnlyList<SystemDescriptor> systems,
+        IReadOnlyList<AssetRegistryDescriptor> assetRegistries,
+        IReadOnlyList<AssetLoaderDescriptor> assetLoaders)
     {
+        using var _ = new MeasureTime<TitanApp>("Titan App base system Init completed in {0} ms");
         _registry = registry;
-
         var memoryManager = registry.GetService<IMemoryManager>();
         var fileSystem = registry.GetService<IFileSystem>();
 
         var unmanagedResourceRegistry = registry.GetService<UnmanagedResourceRegistry>();
         var configurationManager = registry.GetService<ConfigurationManager>();
         var eventSystem = registry.GetService<EventSystem>();
+        var assetsManager = registry.GetService<AssetsManager>();
 
         // Set up all unmanaged resources that have been registered.
         if (!unmanagedResourceRegistry.Init(memoryManager, resources))
@@ -51,6 +60,12 @@ internal sealed class TitanApp : IApp, IRunnable
         {
             Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
             throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
+        }
+
+        if (!assetsManager.Init(assetRegistries, unmanagedResourceRegistry.GetResourceHandle<AssetsContext>(), assetLoaders, memoryManager))
+        {
+            Logger.Error<AppBuilder>($"Failed to init the {nameof(AssetsManager)}.");
+            throw new InvalidOperationException($"{nameof(AssetsManager)} failed.");
         }
     }
 
@@ -95,6 +110,7 @@ internal sealed class TitanApp : IApp, IRunnable
         var jobSystem = GetService<IJobSystem>();
         ref var scheduler = ref GetResourceHandle<SystemsScheduler>().AsRef;
 
+        Startup(ref scheduler, jobSystem);
         Init(ref scheduler, jobSystem);
 
         var frameCount = 0;
@@ -115,25 +131,44 @@ internal sealed class TitanApp : IApp, IRunnable
         }
 
         Shutdown(ref scheduler, jobSystem);
+        EndOfLife(ref scheduler, jobSystem);
 
         Cleanup();
 
     }
 
+    private void EndOfLife(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        using (new MeasureTime<TitanApp>("EndOfLife completed in {0} ms"))
+        {
+            Logger.Trace<TitanApp>("End of life");
+            scheduler.EndOfLifeSystems(jobSystem);
+        }
+    }
+
+    private void Startup(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    {
+        using (new MeasureTime<TitanApp>("Startup completed in {0} ms."))
+        {
+            Logger.Trace<TitanApp>("Startup");
+            scheduler.StartupSystems(jobSystem);
+        }
+    }
+
     private static void Init(ref SystemsScheduler scheduler, IJobSystem jobSystem)
     {
-        var timer = Stopwatch.StartNew();
-        Logger.Trace<TitanApp>("PreInit");
-        scheduler.PreInitSystems(jobSystem);
-        Logger.Trace<TitanApp>("Init");
-        scheduler.InitSystems(jobSystem);
+        using (new MeasureTime<TitanApp>("Init completed in {0} ms."))
+        {
+            Logger.Trace<TitanApp>("PreInit");
+            scheduler.PreInitSystems(jobSystem);
+            Logger.Trace<TitanApp>("Init");
+            scheduler.InitSystems(jobSystem);
+        }
 
-        timer.Stop();
-        Logger.Trace<TitanApp>($"Init completed in {timer.Elapsed.TotalMilliseconds} ms. Doing a GC Collect.");
-        var gcTimer = Stopwatch.StartNew();
-        GC.Collect();
-        gcTimer.Stop();
-        Logger.Trace<TitanApp>($"GC Collect completed in {gcTimer.Elapsed.TotalMilliseconds} ms");
+        using (new MeasureTime<TitanApp>("GC Collect completed in {0} ms."))
+        {
+            GC.Collect();
+        }
     }
 
     private void Shutdown(ref SystemsScheduler scheduler, IJobSystem jobSystem)
@@ -146,6 +181,10 @@ internal sealed class TitanApp : IApp, IRunnable
 
     private void Cleanup()
     {
+        _registry
+            .GetService<AssetsManager>()
+            .Shutdown();
+
         var memoryManager = _registry.GetService<IMemoryManager>();
         GetResourceHandle<SystemsScheduler>().AsRef.Shutdown(memoryManager);
         _registry.GetService<EventSystem>().Shutdown();

@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "PSMain",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "21500d6d-9b8a-4ec3-a99b-6bbdaa70d519",
+  "name": null,
+  "fileSize": 0,
+  "dependsOn": [],
+  "skip": false
+}

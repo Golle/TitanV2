@@ -260,6 +260,12 @@ public unsafe struct GeneralAllocator : IAllocator
 
     public static void Free(void* allocator, void* ptr)
         => ((GeneralAllocator*)allocator)->Free(ptr);
+
+    public static void Release(void* allocator, IMemoryManager memoryManager)
+    {
+        throw new NotImplementedException();
+    }
+
     public readonly Allocator AsAllocator() => Allocator.Create(ref Unsafe.AsRef(in this));
 
     public static implicit operator Allocator(in GeneralAllocator allocator) => allocator.AsAllocator();

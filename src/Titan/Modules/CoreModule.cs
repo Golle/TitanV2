@@ -1,4 +1,5 @@
 using Titan.Application;
+using Titan.Assets;
 using Titan.Configurations;
 using Titan.Core.IO.Platform;
 using Titan.Core.Logging;
@@ -32,7 +33,7 @@ internal class CoreModule : IModule
             .AddModule<FileSystemModule<Win32FileApi>>()
             .AddModule<MemoryModule<Win32PlatformAllocator>>()
             .AddModule<ThreadingModule<Win32NativeThreadApi>>()
-            
+
             ;
 
         // Base modules, serivces and resources.
@@ -45,6 +46,7 @@ internal class CoreModule : IModule
             .AddResource<EventState>()
 
 
+            .AddModule<AssetsModule>()
             .AddModule<ECSModule>()
             ;
 

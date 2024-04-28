@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -19,6 +19,7 @@ internal static class InlineStructBuilder
             .AppendLine($"{modifier} partial struct {symbol.Name}<T> where T : unmanaged")
             .AppendLine("{")
             .BeginIndentation()
+            .AppendLine($"public int Size => Length;")
             .AppendLine($"private const int Length = {length};")
             .AppendLine("private T _ref;")
             .AppendLine()
@@ -30,6 +31,9 @@ internal static class InlineStructBuilder
             .AppendLine()
             .AppendLine(InlineMethod)
             .AppendLine($"public readonly unsafe T* AsPointer() => (T*){TitanTypes.Unsafe}.AsPointer(ref {TitanTypes.Unsafe}.AsRef(in this));")
+            .AppendLine()
+            .AppendLine(InlineMethod)
+            .AppendLine($"public readonly unsafe T* GetPointer(int index) => (T*){TitanTypes.Unsafe}.AsPointer(ref {TitanTypes.Unsafe}.AsRef(in this)) + index;")
             .AppendLine()
             .AppendLine($"public readonly unsafe ref T this[uint index]")
             .AppendLine("{")

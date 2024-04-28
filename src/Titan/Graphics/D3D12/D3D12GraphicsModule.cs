@@ -17,6 +17,7 @@ internal sealed class D3D12GraphicsModule : IModule
             .AddSystemsAndResource<D3D12Device>()
             .AddSystemsAndResource<D3D12CommandQueue>()
             .AddSystemsAndResource<D3D12Allocator>()
+            .AddSystemsAndResource<Upload.D3D12UploadQueue>()
 
             .AddSystemsAndResource<DXGISwapchain>()
             ;

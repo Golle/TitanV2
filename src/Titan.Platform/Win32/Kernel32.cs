@@ -45,6 +45,15 @@ public unsafe partial struct Kernel32
         uint dwMilliseconds
     );
 
+    public static HANDLE CreateEventW(SecurityAttributes* lpEventAttributes, int bManualReset, int bInitialState, string name)
+    {
+        fixed (char* pName = name)
+        {
+            return CreateEventW(lpEventAttributes, bManualReset, bInitialState, pName);
+        }
+    }
+
+
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     public static partial HANDLE CreateEventW(

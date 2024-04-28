@@ -30,9 +30,14 @@ public interface IMemoryManager : IService
 
     bool TryCreateGeneralAllocator(out GeneralAllocator allocator, uint minSize, uint preAllocatedSize = 0);
     bool TryCreateBumpAllocator(out BumpAllocator allocator, uint size);
-    bool TryCreatePoolAllocator<T>(out BumpAllocator allocator, uint count) where T : unmanaged;
+    bool TryCreatePoolAllocator<T>(out PoolAllocator<T> allocator, uint count) where T : unmanaged;
 
-    
+    /// <summary>
+    /// Helper method to release allocators created from the IMemmoryManager interface.
+    /// </summary>
+    /// <param name="allocator">The allocator (Only PoolAllocators can be released this way atm)</param>
+    void FreeAllocator<T>(in T allocator) where T : unmanaged, IAllocator;
+
     internal bool Init(MemoryConfig config);
     internal void Shutdown();
 }

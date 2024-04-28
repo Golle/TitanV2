@@ -22,7 +22,7 @@ public static class EngineHelper
             return null;
         }
 
-        var engineFolder = Path.Combine(Directory.GetParent(path)!.FullName, TitanFolderName);
+        var engineFolder = Path.Combine(Directory.GetParent(path)!.FullName, TitanFolderName, "Assets");
         if (Directory.Exists(engineFolder))
         {
             return engineFolder;

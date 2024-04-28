@@ -1,7 +1,7 @@
 using Titan.Core.Maths;
 using Titan.Core.Memory;
+using Titan.Graphics.Rendering;
 using Titan.Platform.Win32.D3D;
-using Titan.Rendering;
 
 namespace Titan.Graphics.D3D12;
 
@@ -21,13 +21,14 @@ public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, boo
     public const uint DefaultMaxBuffers = 1024;
     public const uint DefaultMaxPipelineStates = 256;
     public const uint DefaultMaxRootSignatures = 256;
+    public const uint DefaultMaxShaders = 1024;
 
     public GPUMemoryConfig MemoryConfig { get; init; }
-    public ResourceConfig ResourceConfig { get; init; }
+    public ResourceConfig Resources { get; init; }
 
     public static D3D12Config Default => new(D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_1, false, true, DefaultClearColor)
     {
         MemoryConfig = new(DefaultSRVCount, DefaultRTVCount, DefaultDSVCount, DefaultUAVCount, DefaultTempConstantBufferSize, DefaultTempSRVCount),
-        ResourceConfig = new(DefaultMaxTextures, DefaultMaxMaterials, DefaultMaxBuffers, DefaultMaxPipelineStates, DefaultMaxRootSignatures)
+        Resources = new(DefaultMaxTextures, DefaultMaxMaterials, DefaultMaxBuffers, DefaultMaxPipelineStates, DefaultMaxRootSignatures, DefaultMaxShaders)
     };
 }

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,6 +9,7 @@ namespace Titan.Core;
 public readonly struct Handle<T>(int value) where T : unmanaged
 {
     public readonly int Value = value;
+    public static readonly Handle<T> Invalid = default;
 
     public bool Equals(in Handle<T> other)
         => Value == other.Value;
@@ -47,4 +48,19 @@ public readonly struct Handle<T>(int value) where T : unmanaged
     public override string ToString()
         => Value.ToString();
 #endif
+}
+
+public readonly struct Handle(nuint value)
+{
+    public readonly nuint Value = value;
+    public bool IsValid => Value != 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator nuint(in Handle handle) => handle.Value;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator nint(in Handle handle) => (nint)handle.Value;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Handle(nuint handle) => new(handle);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Handle(nint handle) => new((nuint)handle);
 }

@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
+    <!-- if these properties are under the main Property Group Hot Reload stops working. Well done! -->
     <PublishAot>true</PublishAot>
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>

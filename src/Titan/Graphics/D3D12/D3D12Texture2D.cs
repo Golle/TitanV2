@@ -1,7 +1,7 @@
 using Titan.Graphics.D3D12.Memory;
+using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering;
 
 namespace Titan.Graphics.D3D12;
 
