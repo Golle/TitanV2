@@ -11,6 +11,8 @@ public readonly struct Handle<T>(int value) where T : unmanaged
     public readonly int Value = value;
     public static readonly Handle<T> Invalid = default;
 
+    public bool IsValid => Value != 0;
+    public bool IsInvalid => Value == 0;
     public bool Equals(in Handle<T> other)
         => Value == other.Value;
 

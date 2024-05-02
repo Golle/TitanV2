@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Configurations;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
@@ -46,7 +47,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
     public uint Count;
 
     [System(SystemStage.Init)]
-    public static void Init(in D3D12Device device, D3D12FullScreenRenderer* data, IConfigurationManager configurationManager, IAssetsManager assetsManager, in D3D12Allocator allocator, in Window window)
+    public static void Init(in D3D12Device device, D3D12FullScreenRenderer* data, IConfigurationManager configurationManager, IAssetsManager assetsManager, in D3D12Allocator allocator, in Window window, in D3D12ResourceManager resourceManager)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
 
@@ -57,24 +58,28 @@ internal unsafe partial struct D3D12FullScreenRenderer
         data->Texture = assetsManager.Get(textureHandle).D3D12Texture2D;
         var cbSize = (uint)sizeof(TestData);
         data->ConstantBuffer = device.CreateBuffer(cbSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        var geometry = GeomeotryHelper.CreateBox();
-        data->VertexBuffer = device.CreateBuffer(geometry.VerticesSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE);
-        data->IndexBuffer = device.CreateBuffer(geometry.IndicesSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDEX_BUFFER, D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE);
+        Box geometry = GeomeotryHelper.CreateBox();
+        fixed (Vertex* pVertices = geometry.Vertices)
         {
-            byte* planeData;
-            data->VertexBuffer.Get()->Map(0, null, (void**)&planeData);
-            MemoryUtils.Copy(planeData, geometry.Vertices);
-            data->VertexBuffer.Get()->Unmap(0, null);
-        }
-        {
-            byte* planeData;
-            data->IndexBuffer.Get()->Map(0, null, (void**)&planeData);
-            MemoryUtils.Copy(planeData, geometry.Indices);
-            data->IndexBuffer.Get()->Unmap(0, null);
+            var verticesData = new TitanBuffer(pVertices, geometry.VerticesSize);
+            var vbHandle = resourceManager.CreateBuffer(new((uint)geometry.Vertices.Length, sizeof(Vertex), BufferType.Vertex, verticesData)
+            {
+                CpuVisible = false
+            });
+            data->VertexBuffer = ((D3D12Buffer*)resourceManager.Access(vbHandle))->Resource;
         }
 
+        fixed (ushort* pIndices = geometry.Indices)
+        {
+            var buffer = new TitanBuffer(pIndices, geometry.IndicesSize);
+            var ibHandle = resourceManager.CreateBuffer(new CreateBufferArgs((uint)geometry.Indices.Length, sizeof(ushort), BufferType.Index, buffer)
+            {
+                 CpuVisible = false
+            });
+            data->IndexBuffer = ((D3D12Buffer*)resourceManager.Access(ibHandle))->Resource;
+        }
+        
         data->Count = (uint)geometry.Indices.Length;
-
 
         D3D12_INDEX_BUFFER_VIEW indexBufferView = new()
         {
@@ -85,16 +90,16 @@ internal unsafe partial struct D3D12FullScreenRenderer
         data->IndexBufferView = indexBufferView;
 
 
-        // texture
+        // Constant buffer
         var srv = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
         device.CreateConstantBufferView(cbSize, data->ConstantBuffer.Get()->GetGPUVirtualAddress(), srv.CPU);
         data->ConstantBuffer.Get()->Map(0, null, &data->ConstantBufferMap);
 
-        //vertex buffer
+        // Vertex buffer (any mesh really)
         var srv1 = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
         device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)geometry.Vertices.Length, (uint)sizeof(Vertex));
 
-
+        // a depth buffer
         data->DepthBuffer = device.CreateDepthBuffer((uint)window.Width, (uint)window.Height);
         var dsv = allocator.Allocate(DescriptorHeapType.DepthStencilView);
         device.CreateDepthStencilView(data->DepthBuffer, dsv.CPU);
@@ -216,7 +221,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
         Vector3 up = Vector3.UnitY; // Up direction for the camera
 
         // Define projection parameters
-        float fov = MathF.PI/3; // Field of view (in radians)
+        float fov = MathF.PI / 3; // Field of view (in radians)
         float aspectRatio = window.Width / (float)window.Height; // Aspect ratio (width / height)
         float nearPlane = 0.1f; // Near plane distance
         float farPlane = 100f; // Far plane distance

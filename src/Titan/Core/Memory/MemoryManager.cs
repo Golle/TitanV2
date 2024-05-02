@@ -20,6 +20,8 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
     private GeneralAllocator _generalAllocator;
     private readonly object _syncObject = new();
 
+
+
     public bool Init(MemoryConfig config)
     {
         Debug.Assert(config.GeneralPurposeMemory < config.MaxVirtualMemory, $"{nameof(MemoryConfig.MaxVirtualMemory)} must be greater than {nameof(MemoryConfig.GeneralPurposeMemory)}.");
@@ -166,6 +168,12 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
         }
     }
 
-    public void FreeAllocator<T>(in T allocator) where T : unmanaged, IAllocator 
+    public bool TryCreateResourcePool<T>(out ResourcePool<T> pool, uint count) where T : unmanaged
+        => ResourcePool<T>.TryCreate(out pool, this, count);
+
+    public void FreeResourcePool<T>(ref ResourcePool<T> pool) where T : unmanaged 
+        => ResourcePool<T>.Destroy(ref pool, this);
+
+    public void FreeAllocator<T>(in T allocator) where T : unmanaged, IAllocator
         => T.Release(MemoryUtils.AsPointer(in allocator), this);
 }

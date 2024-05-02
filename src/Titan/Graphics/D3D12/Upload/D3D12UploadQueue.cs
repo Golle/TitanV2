@@ -65,7 +65,11 @@ internal unsafe partial struct D3D12UploadQueue
         if (heapProperties.Type is D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK or D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD)
         {
             // CPU visible resource, we can just map and copy.
-            Debug.Fail("not implemented yet.");
+
+            void* data;
+            destination->Map(0, null, &data);
+            MemoryUtils.Copy(data, buffer.AsReadOnlySpan());
+
             return true;
         }
 
