@@ -42,7 +42,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
     public ComPtr<ID3D12Resource> DepthBuffer;
     public ComPtr<ID3D12Resource> IndexBuffer;
     public D3D12_INDEX_BUFFER_VIEW IndexBufferView;
-    public D3D12Texture2D Texture;
+    public Handle<Texture> Texture;
     public DescriptorHandle DepthBufferHandle;
     public uint Count;
 
@@ -54,8 +54,9 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var pixelShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimplePixelShader);
         var vertexShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimpleVertexShader);
 
-        var textureHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Box);
-        data->Texture = assetsManager.Get(textureHandle).D3D12Texture2D;
+        var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Box);
+        data->Texture = assetsManager.Get(assetHandle).Handle;
+
         var cbSize = (uint)sizeof(TestData);
         data->ConstantBuffer = device.CreateBuffer(cbSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         Box geometry = GeomeotryHelper.CreateBox();
@@ -74,11 +75,11 @@ internal unsafe partial struct D3D12FullScreenRenderer
             var buffer = new TitanBuffer(pIndices, geometry.IndicesSize);
             var ibHandle = resourceManager.CreateBuffer(new CreateBufferArgs((uint)geometry.Indices.Length, sizeof(ushort), BufferType.Index, buffer)
             {
-                 CpuVisible = false
+                CpuVisible = false
             });
             data->IndexBuffer = ((D3D12Buffer*)resourceManager.Access(ibHandle))->Resource;
         }
-        
+
         data->Count = (uint)geometry.Indices.Length;
 
         D3D12_INDEX_BUFFER_VIEW indexBufferView = new()
@@ -179,10 +180,11 @@ internal unsafe partial struct D3D12FullScreenRenderer
     }
 
     [System]
-    public static void Render(in D3D12CommandQueue queue, in D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator)
+    public static void Render(in D3D12CommandQueue queue, in D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager)
     {
         var commandList = queue.GetCommandList(data.PipelineState.Get());
-        var backbuffer = swapchain.CurrentBackbuffer;
+        var backbuffer = resourceManager.Access(swapchain.CurrentBackbuffer);
+
         commandList.Transition(backbuffer, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         commandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -194,8 +196,6 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.SetGraphicsRootDescriptorTable(0, allocator.SRV.GPUStart);
         commandList.SetGraphicsRootConstantBufferView(1, data.ConstantBuffer.Get()->GetGPUVirtualAddress());
         //commandList.SetGraphicsRootShaderResourceView(2, data.VertexBufferView.BufferLocation);
-
-        var i = data.Texture.SRV.Index;
 
         D3D12_VIEWPORT viewport = new()
         {
@@ -233,9 +233,11 @@ internal unsafe partial struct D3D12FullScreenRenderer
         // Combine view and projection matrices to get view-projection matrix
         var viewProjectionMatrix = viewMatrix * projectionMatrix;
 
+
+        var tex = (D3D12Texture*)resourceManager.Access(data.Texture);
         var d = (TestData*)data.ConstantBufferMap;
         d->Color = Color.White;
-        d->TextureIndex = data.Texture.SRV.Index;
+        d->TextureIndex = tex->SRV.Index;
         d->ViewProjectionMatrix = viewProjectionMatrix;
         d->Time += 0.0003f;
         commandList.SetViewport(&viewport);

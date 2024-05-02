@@ -9,7 +9,7 @@ internal class D3D12RenderingModule : IModule
         builder
             .AddSystemsAndResource<D3D12FullScreenRenderer>()
             .AddAssetLoader<ShaderLoader>()
-            .AddAssetLoader<D3D12TextureLoader>()
+            .AddAssetLoader<TextureLoader>()
             ;
 
         return true;

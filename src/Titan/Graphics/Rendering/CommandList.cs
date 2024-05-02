@@ -11,23 +11,23 @@ namespace Titan.Graphics.Rendering;
 internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void SetRenderTarget(Texture2D* texture, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
+    internal void SetRenderTarget(Texture* texture, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
     {
-        var d3d12Texture = (D3D12Texture2D*)texture;
+        var d3d12Texture = (D3D12Texture*)texture;
         commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, depthBuffer);
     }
 
-    public void ClearRenderTargetView(Texture2D* texture, Color* color)
+    public void ClearRenderTargetView(Texture* texture, Color* color)
     {
         Debug.Assert(commandList != null);
-        var d3d12Texture = (D3D12Texture2D*)texture;
+        var d3d12Texture = (D3D12Texture*)texture;
         commandList->ClearRenderTargetView(d3d12Texture->RTV.CPU, (float*)color, 0, null);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void Transition(Texture2D* texture, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+    internal void Transition(Texture* texture, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
     {
-        var d3d12Texture = (D3D12Texture2D*)texture;
+        var d3d12Texture = (D3D12Texture*)texture;
         //NOTE(Jens): remove this method and use the one with Handle<Texture> when we have proper render target implementation
         Unsafe.SkipInit(out D3D12_RESOURCE_BARRIER barrier);
 

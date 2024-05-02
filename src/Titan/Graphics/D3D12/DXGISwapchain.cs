@@ -23,7 +23,7 @@ internal unsafe partial struct DXGISwapchain
 
     public ComPtr<IDXGISwapChain3> Swapchain;
     public ComPtr<ID3D12Fence> Fence;
-    public Inline3<D3D12Texture2D> BackBuffers;
+    public Inline3<Handle<Texture>> BackBuffers;
 
     public HANDLE FenceEvent;
     public uint FrameIndex;
@@ -34,10 +34,10 @@ internal unsafe partial struct DXGISwapchain
     public uint SyncInterval;
     public uint PresentFlags;
 
-    public Texture2D* CurrentBackbuffer => (Texture2D*)(BackBuffers.AsPointer() + FrameIndex);
+    public Handle<Texture> CurrentBackbuffer => BackBuffers[FrameIndex];
 
     [System(SystemStage.Init)]
-    public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Allocator allocator, in D3D12Device device, IConfigurationManager configurationManager)
+    public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Device device, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager)
     {
         Debug.Assert(BufferCount <= 3, "The Backbuffers are stored in Inline3 struct, change this if we want to run more than 3 backbuffers.");
         var config = configurationManager.GetConfigOrDefault<RenderingConfig>();
@@ -101,7 +101,7 @@ internal unsafe partial struct DXGISwapchain
             }
         }
 
-        if (!swapchain->InitBackbuffers(allocator, device, width, height, true))
+        if (!swapchain->InitBackbuffers(resourceManager, device, width, height, true))
         {
             Logger.Error<DXGISwapchain>("Failed to init backbuffers. FATAL");
         }
@@ -112,29 +112,35 @@ internal unsafe partial struct DXGISwapchain
         swapchain->FrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
-    private bool InitBackbuffers(in D3D12Allocator allocator, in D3D12Device device, uint width, uint height, bool createDescriptor)
+    private bool InitBackbuffers(in D3D12ResourceManager resourceManager, in D3D12Device device, uint width, uint height, bool createDescriptor)
     {
         for (var i = 0; i < BufferCount; ++i)
         {
-            ref var backbuffer = ref BackBuffers[i];
-            var hr = Swapchain.Get()->GetBuffer((uint)i, ID3D12Resource.Guid, (void**)backbuffer.Resource.GetAddressOf());
+            //ref var backbuffer = ref BackBuffers[i];
+
+            ID3D12Resource* resource;
+            var hr = Swapchain.Get()->GetBuffer((uint)i, ID3D12Resource.Guid, (void**)&resource);
             if (FAILED(hr))
             {
                 Logger.Error<DXGISwapchain>($"Failed to get backbuffer at index {i}. HRESULT = {hr}");
                 return false;
             }
 
+
             if (createDescriptor)
             {
-                backbuffer.RTV = allocator.Allocate(DescriptorHeapType.RenderTargetView);
+                //TODO(Jens): This needs some work to support resizing.
+                BackBuffers[i] = resourceManager.CreateTexture(new CreateTextureArgs
+                {
+                    Format = DefaultFormat,
+                    Height = height,
+                    Width = width,
+                    RenderTargetView = true
+                }, resource);
+                D3D12Helpers.SetName(resource, $"Backbuffer_{i}");
             }
-
-            backbuffer.Texture2D.Width = width;
-            backbuffer.Texture2D.Height = height;
-            //backbuffer.Texture2D.Format = (TextureFormat)DefaultFormat;
-            device.CreateRenderTargetView(backbuffer.Resource.Get(), null, backbuffer.RTV);
-            D3D12Helpers.SetName(backbuffer.Resource, $"Backbuffer_{i}");
         }
+
         return true;
     }
     private static bool HasTearingSupport(IDXGIFactory7* factory)
@@ -194,14 +200,14 @@ internal unsafe partial struct DXGISwapchain
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(DXGISwapchain* swapchain, in D3D12CommandQueue commandQueue)
+    public static void Shutdown(DXGISwapchain* swapchain, in D3D12CommandQueue commandQueue, in D3D12ResourceManager resourceManager)
     {
         swapchain->FlushGPU(commandQueue);
 
         Kernel32.CloseHandle(swapchain->FenceEvent);
         for (var i = 0; i < BufferCount; ++i)
         {
-            swapchain->BackBuffers[i].Resource.Dispose();
+            resourceManager.DestroyTexture(swapchain->BackBuffers[i]);
         }
 
         swapchain->Fence.Dispose();

@@ -124,6 +124,7 @@ public unsafe struct PoolAllocator<T> : IAllocator where T : unmanaged
     [StructLayout(LayoutKind.Sequential, Size = 8)]
     private struct FreeItem
     {
+        //TODO(Jens): Replace this with an offset from the memory start address. That will reduce the size by half, at the cost of storing a long in the pool itself.
         public FreeItem* Next;
     }
 }
