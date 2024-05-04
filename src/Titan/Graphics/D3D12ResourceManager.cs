@@ -1,56 +1,19 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
-using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Resources;
 using Titan.Systems;
 
 namespace Titan.Graphics;
-
-public struct Texture
-{
-    public uint Width;
-    public uint Height;
-}
-
-internal struct D3D12Texture
-{
-    public Texture Texture;
-    public ComPtr<ID3D12Resource> Resource;
-    public DescriptorHandle SRV;
-    public DescriptorHandle RTV;
-}
-
-public enum BufferType
-{
-    Vertex,
-    Index,
-    Constant
-}
-
-public struct Buffer
-{
-    public uint Count;
-    public uint Stride;
-    public BufferType Type;
-    public uint Size => Count * Stride;
-}
-
-public struct D3D12Buffer
-{
-    public Buffer Buffer;
-    public ComPtr<ID3D12Resource> Resource;
-    public uint StartOffset;
-}
 
 public record struct CreateBufferArgs(uint Count, int Stride, BufferType Type, TitanBuffer InitialData = default)
 {
@@ -65,6 +28,13 @@ public record struct CreateTextureArgs
     public TitanBuffer InitialData { get; init; }
     public bool ShaderVisible { get; init; } // maybe we want specific shader visibility?
     public bool RenderTargetView { get; init; }
+}
+
+public record struct CreateDepthBufferArgs
+{
+    public required uint Width { get; init; }
+    public required uint Height { get; init; }
+    public float ClearValue { get; init; }
 }
 
 [UnmanagedResource]
@@ -178,6 +148,39 @@ public unsafe partial struct D3D12ResourceManager
     }
 
 
+    public readonly Handle<Texture> CreateDepthBuffer(in CreateDepthBufferArgs args)
+    {
+        var handle = _textures.SafeAlloc();
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to allocate a slot for the texture");
+            return Handle<Texture>.Invalid;
+        }
+
+        var texture = _textures.AsPtr(handle);
+        texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height);
+        if (!texture->Resource.IsValid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to create the DepthBuffer.");
+            _textures.SafeFree(handle);
+            return Handle<Texture>.Invalid;
+        }
+
+        texture->DSV = _allocator->Allocate(DescriptorHeapType.DepthStencilView);
+        if (!texture->DSV.IsValid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to allocate a Depth Stencil descriptor.");
+            texture->Resource.Dispose();
+            _textures.SafeFree(handle);
+            return Handle<Texture>.Invalid;
+        }
+
+        _device->CreateDepthStencilView(texture->Resource, texture->DSV.CPU);
+
+
+        return handle.Value;
+    }
+
     public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
         => CreateTexture(args, null);
 
@@ -266,16 +269,20 @@ public unsafe partial struct D3D12ResourceManager
         Debug.Assert(handle.IsValid);
         var texture = _textures.AsPtr(handle.Value);
         texture->Resource.Dispose();
-        if (texture->RTV.IsValid)
-        {
-            _allocator->Free(texture->RTV);
-        }
 
-        if (texture->SRV.IsValid)
-        {
-            _allocator->Free(texture->SRV);
-        }
+        FreeDescriptor(texture->RTV, _allocator);
+        FreeDescriptor(texture->SRV, _allocator);
+        FreeDescriptor(texture->DSV, _allocator);
+
         *texture = default;
         _textures.SafeFree(handle.Value);
+
+        static void FreeDescriptor(in DescriptorHandle descriptor, D3D12Allocator* allocator)
+        {
+            if (descriptor.IsValid)
+            {
+                allocator->Free(descriptor);
+            }
+        }
     }
 }

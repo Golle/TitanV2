@@ -39,11 +39,10 @@ internal unsafe partial struct D3D12FullScreenRenderer
     public Color ClearColor;
 
     public ComPtr<ID3D12Resource> VertexBuffer;
-    public ComPtr<ID3D12Resource> DepthBuffer;
+    public Handle<Texture> DepthBuffer;
     public ComPtr<ID3D12Resource> IndexBuffer;
     public D3D12_INDEX_BUFFER_VIEW IndexBufferView;
     public Handle<Texture> Texture;
-    public DescriptorHandle DepthBufferHandle;
     public uint Count;
 
     [System(SystemStage.Init)]
@@ -100,11 +99,12 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var srv1 = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
         device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)geometry.Vertices.Length, (uint)sizeof(Vertex));
 
-        // a depth buffer
-        data->DepthBuffer = device.CreateDepthBuffer((uint)window.Width, (uint)window.Height);
-        var dsv = allocator.Allocate(DescriptorHeapType.DepthStencilView);
-        device.CreateDepthStencilView(data->DepthBuffer, dsv.CPU);
-        data->DepthBufferHandle = dsv;
+        data->DepthBuffer = resourceManager.CreateDepthBuffer(new CreateDepthBufferArgs
+        {
+            Height = (uint)window.Height,
+            Width = (uint)window.Width,
+            ClearValue = 1.0f
+        });
 
         var pixelShader = assetsManager.Get(pixelShaderHandle).ShaderByteCode;
         var vertexShader = assetsManager.Get(vertexShaderHandle).ShaderByteCode;
@@ -184,14 +184,15 @@ internal unsafe partial struct D3D12FullScreenRenderer
     {
         var commandList = queue.GetCommandList(data.PipelineState.Get());
         var backbuffer = resourceManager.Access(swapchain.CurrentBackbuffer);
+        var depthBuffer = resourceManager.Access(data.DepthBuffer);
 
         commandList.Transition(backbuffer, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         commandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         commandList.SetGraphicsRootSignature(data.RootSignature);
-        commandList.SetRenderTarget(backbuffer, MemoryUtils.AsPointer(data.DepthBufferHandle.CPU));
+        commandList.SetRenderTarget(backbuffer, depthBuffer);
         commandList.ClearRenderTargetView(backbuffer, MemoryUtils.AsPointer(data.ClearColor));
-        commandList.ClearDepthStencilView(data.DepthBufferHandle.CPU, D3D12_CLEAR_FLAGS.D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, null);
+        commandList.ClearDepthStencilView(depthBuffer, D3D12_CLEAR_FLAGS.D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, null);
         commandList.SetDescriptorHeap(allocator.SRV.Heap);
         commandList.SetGraphicsRootDescriptorTable(0, allocator.SRV.GPUStart);
         commandList.SetGraphicsRootConstantBufferView(1, data.ConstantBuffer.Get()->GetGPUVirtualAddress());
@@ -201,8 +202,8 @@ internal unsafe partial struct D3D12FullScreenRenderer
         {
             Width = window.Width,
             Height = window.Height,
-            MaxDepth = 1.2f * 1000,
-            MinDepth = -1.2f * 1000,
+            MaxDepth = 1.2f * 100,
+            MinDepth = -1.2f * 100,
             TopLeftX = 0,
             TopLeftY = 0
         };

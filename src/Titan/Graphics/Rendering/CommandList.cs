@@ -10,11 +10,24 @@ namespace Titan.Graphics.Rendering;
 
 internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void SetRenderTarget(Texture* texture, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
+    internal void SetRenderTarget(Texture* texture)
     {
+        Debug.Assert(texture != null);
         var d3d12Texture = (D3D12Texture*)texture;
-        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, depthBuffer);
+        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, null);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SetRenderTarget(Texture* texture, Texture* depthBuffer)
+    {
+        Debug.Assert(depthBuffer != null);
+        Debug.Assert(texture != null);
+        var d3d12Texture = (D3D12Texture*)texture;
+        var d3d12DepthBuffer = (D3D12Texture*)depthBuffer;
+
+        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, &d3d12DepthBuffer->DSV.CPU);
     }
 
     public void ClearRenderTargetView(Texture* texture, Color* color)
@@ -101,4 +114,13 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
         => commandList->ClearDepthStencilView(depthStencilView, flags, depth, stencil, numberOfRects, rects);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ClearDepthStencilView(Texture* depthBuffer, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
+    {
+        Debug.Assert(depthBuffer != null);
+        var d3d12DepthBuffer = (D3D12Texture*)depthBuffer;
+
+        commandList->ClearDepthStencilView(d3d12DepthBuffer->DSV.CPU, flags, depth, stencil, numberOfRects, rects);
+    }
 }
