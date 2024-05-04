@@ -95,7 +95,7 @@ public unsafe partial struct D3D12ResourceManager
         }
     }
 
-    [System(SystemStage.Shutdown)]
+    [System(SystemStage.PostShutdown)]
     internal static void Shutdown(D3D12ResourceManager* manager, IMemoryManager memoryManager)
     {
         memoryManager.FreeResourcePool(ref manager->_buffers);
@@ -181,6 +181,9 @@ public unsafe partial struct D3D12ResourceManager
     public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
         => CreateTexture(args, null);
 
+    /// <summary>
+    /// Internal texture creation used for the Backbuffer
+    /// </summary>
     internal readonly Handle<Texture> CreateTexture(in CreateTextureArgs args, ID3D12Resource* backbuffer)
     {
         var handle = _textures.SafeAlloc();
@@ -258,9 +261,21 @@ public unsafe partial struct D3D12ResourceManager
         return (Texture*)_textures.AsPtr(texture.Value);
     }
 
-    public readonly void DestroyTexture(Handle<Texture> texture)
+    public readonly void DestroyTexture(Handle<Texture> handle)
     {
+        Debug.Assert(handle.IsValid);
+        var texture = _textures.AsPtr(handle.Value);
+        texture->Resource.Dispose();
+        if (texture->RTV.IsValid)
+        {
+            _allocator->Free(texture->RTV);
+        }
 
+        if (texture->SRV.IsValid)
+        {
+            _allocator->Free(texture->SRV);
+        }
+        *texture = default;
+        _textures.SafeFree(handle.Value);
     }
-
 }

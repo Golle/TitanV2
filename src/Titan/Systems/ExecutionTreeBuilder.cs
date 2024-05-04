@@ -30,7 +30,6 @@ internal unsafe ref struct ExecutionTreeBuilder
     public void AddSystem(in SystemDescriptor descriptor, Span<uint> mutableResources, Span<uint> readOnlyResources)
     {
         ref var system = ref _systems[_count++];
-        system.Context = null; //TODO(Jens): Implement later.
         system.Descriptor = descriptor;
         system.Mutable = _allocator.AllocateArray<uint>(mutableResources.Length);
         system.ReadOnly = _allocator.AllocateArray<uint>(readOnlyResources.Length);
@@ -69,11 +68,12 @@ internal unsafe ref struct ExecutionTreeBuilder
                 var dependencyCount = 0;
                 ref var node = ref nodes[outer];
                 ref var outerSystem = ref _systems[outer];
-                node.JobDescriptor = JobDescriptor.Create(outerSystem.Descriptor.Execute, outerSystem.Context, false);
+                node.JobDescriptor = JobDescriptor.Create(outerSystem.Descriptor.Execute, null, false);
                 node.ExecutionType = outerSystem.Descriptor.ExecutionType;
 #if DEBUG
                 node.SystemDescriptor = outerSystem.Descriptor;
 #endif
+
                 for (var inner = 0; inner < systemCount; ++inner)
                 {
                     // Don' compare with self
@@ -200,8 +200,5 @@ internal unsafe ref struct ExecutionTreeBuilder
         public SystemDescriptor Descriptor;
         public TitanArray<uint> Mutable;
         public TitanArray<uint> ReadOnly;
-
-        //NOTE(Jens): This has not been implemented yet. We need this when we want to keep a state for a system.
-        public void* Context;
     }
 }

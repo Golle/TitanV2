@@ -137,7 +137,7 @@ internal sealed class TitanApp : IApp, IRunnable
 
     }
 
-    private void EndOfLife(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    private static void EndOfLife(ref SystemsScheduler scheduler, IJobSystem jobSystem)
     {
         using (new MeasureTime<TitanApp>("EndOfLife completed in {0} ms"))
         {
@@ -146,7 +146,7 @@ internal sealed class TitanApp : IApp, IRunnable
         }
     }
 
-    private void Startup(ref SystemsScheduler scheduler, IJobSystem jobSystem)
+    private static void Startup(ref SystemsScheduler scheduler, IJobSystem jobSystem)
     {
         using (new MeasureTime<TitanApp>("Startup completed in {0} ms."))
         {
