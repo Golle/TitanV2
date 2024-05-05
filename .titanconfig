@@ -1,0 +1,9 @@
+{
+    "Project": "samples/Titan.Sandbox/Titan.Sandbox.csproj",
+    "Content": "samples/Titan.Sandbox/content",
+    "Assets": "samples/Titan.Sandbox/assets",
+    "Output": "release/sandbox",
+    "Binary": "sandbox.tbin",
+    "CodePath": "",
+    "AssetRegistryName": "Titan.Sandbox.SandboxRegistry"
+}

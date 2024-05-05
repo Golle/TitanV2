@@ -370,15 +370,15 @@ internal unsafe partial struct D3D12Device
     public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
         => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 
-    public  readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height)
+    public  readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, float depthClearValue = 1.0f, byte stencilClearValue = 0)
     {
         D3D12_CLEAR_VALUE clearValue = new()
         {
             Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
             DepthStencil = new()
             {
-                Depth = 1.0f,
-                Stencil = 0
+                Depth = depthClearValue,
+                Stencil = stencilClearValue
             }
         };
 
