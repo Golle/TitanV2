@@ -30,11 +30,14 @@ internal sealed class AssetPipeline
             }
         });
 
-        if (success)
+        if (!success)
         {
-            await context.Complete();
+            return false;
         }
-        return success;
+
+        await context.Complete();
+
+        return true;
     }
 
     public async Task<bool> Process(AssetFileMetadata metadata, IAssetDescriptorContext context)

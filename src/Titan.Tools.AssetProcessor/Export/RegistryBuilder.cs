@@ -38,6 +38,21 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
+
+    private static string CreateMeshDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var mesh = ref assetDescriptor.Mesh;
+        var content =
+            $@"{nameof(AssetDescriptor.Mesh)} = new()
+            {{
+                {nameof(MeshDescriptor.IndexCount)} = {mesh.IndexCount},
+                {nameof(MeshDescriptor.VertexCount)} = {mesh.VertexCount},
+                {nameof(MeshDescriptor.SubMeshCount)} = {mesh.SubMeshCount},
+                {nameof(MeshDescriptor.MaterialCount)} = {mesh.MaterialCount},
+            }}";
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+
+    }
     private static string CreateShaderDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
     {
         ref readonly var shader = ref assetDescriptor.Shader;
@@ -168,6 +183,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 {
                     AssetType.Texture => CreateTexture2DDescriptor(descriptor, metadata),
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
+                    AssetType.Mesh => CreateMeshDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 

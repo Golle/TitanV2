@@ -42,13 +42,24 @@ internal class SortedAssetDescriptorContext : IAssetDescriptorContext
         return AddAsset(data, metadata, descriptor);
     }
 
+    public bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.Mesh,
+            Mesh = mesh
+        };
+
+        return AddAsset(data, metadata, descriptor);
+    }
+
     private bool AddAsset(ReadOnlySpan<byte> data, AssetFileMetadata metadata, AssetDescriptor descriptor)
     {
         lock (_assets)
         {
             if (_assets.Any(a => a.Metadata.Name != null && a.Metadata.Name == metadata.Name))
             {
-                Logger.Error<SimpleAssetDescriptorContext>($"Multiple assets with the same name. Name = {metadata.Name}");
+                Logger.Error<SortedAssetDescriptorContext>($"Multiple assets with the same name. Name = {metadata.Name}");
                 return false;
             }
 
@@ -101,8 +112,8 @@ internal class SortedAssetDescriptorContext : IAssetDescriptorContext
     }
 
     public ReadOnlyMemory<(AssetDescriptor Descriptor, AssetFileMetadata Metadata)> GetAssets()
-        => _finalizedAssets ?? Array.Empty<(AssetDescriptor Descriptor, AssetFileMetadata Metadata)>();
+        => _finalizedAssets ?? [];
 
     public ReadOnlyMemory<byte> GetData()
-        => _finalizedData ?? Array.Empty<byte>();
+        => _finalizedData ?? [];
 }

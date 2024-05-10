@@ -62,12 +62,11 @@ command.SetHandler(async (path, bin, code, name) =>
     //var context = new SimpleAssetDescriptorContext(MaxDataBuffer, MaxAssetDescriptors);
     var context = new SortedAssetDescriptorContext();
     var pipeline = new AssetPipeline()
-        .With(new ImageProcessor())
-        .With(new AsepriteProcessor())
-        .With(new ShaderProcessor())
-        .With(new ObjModelProcessor())
-        .With<MtlProcessor>()
-        .With(new FontProcessor());
+        .With<ImageProcessor>()
+        .With<AsepriteProcessor>()
+        .With<ShaderProcessor>()
+        .With<ObjModelProcessor>()
+        .With<FontProcessor>();
 
     var pipelineResult = await pipeline.Run(metadataFiles, context);
     if (!pipelineResult)

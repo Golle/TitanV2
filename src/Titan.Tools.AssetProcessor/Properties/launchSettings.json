@@ -1,12 +1,12 @@
 {
   "profiles": {
     "Index - Sandbox": {
-        "commandName": "Project",
-        "commandLineArgs": "--path O:\\git\\TitanV2\\samples\\Titan.Sandbox\\content --output O:\\git\\TitanV2\\samples\\Titan.Sandbox\\assets\\data_01.tbin --code O:\\git\\TitanV2\\samples\\Titan.Sandbox\\ --name Titan.Sandbox.SandboxRegistry"
+      "commandName": "Project",
+      "commandLineArgs": "--path O:\\git\\TitanV2\\samples\\Titan.Sandbox\\content --output O:\\git\\TitanV2\\samples\\Titan.Sandbox\\assets\\sandbox.tbin --code O:\\git\\TitanV2\\samples\\Titan.Sandbox\\ --name Titan.Sandbox.SandboxRegistry"
     },
     "Index - Engine": {
-        "commandName": "Project",
-        "commandLineArgs": "--path O:\\git\\TitanV2\\content --output O:\\git\\TitanV2\\assets\\titan.tbin --code O:\\git\\TitanV2\\src\\Titan\\ --name Titan.Assets.EngineRegistry"
+      "commandName": "Project",
+      "commandLineArgs": "--path O:\\git\\TitanV2\\content --output O:\\git\\TitanV2\\assets\\titan.tbin --code O:\\git\\TitanV2\\src\\Titan\\ --name Titan.Assets.EngineRegistry"
     }
   }
 }

@@ -16,6 +16,7 @@ internal interface IAssetDescriptorContext
 {
     bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
+    bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     void AddDiagnostics(DiagnosticsLevel level, string message);
 
     Task Complete();
@@ -23,4 +24,5 @@ internal interface IAssetDescriptorContext
     ReadOnlyMemory<byte> GetData();
     bool HasErrors { get; }
     IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics { get; }
+    
 }

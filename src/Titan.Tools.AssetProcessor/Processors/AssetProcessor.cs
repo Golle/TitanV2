@@ -9,19 +9,17 @@ internal abstract class AssetProcessor<TMetadata> : IAssetProcessor where TMetad
     public Type Type => typeof(TMetadata);
     public async Task Process(AssetFileMetadata metadata, IAssetDescriptorContext context)
     {
+        if (metadata.Skip)
+        {
+            Logger.Info<IAssetProcessor>($"Skipping Asset. Skip = {metadata.Skip}. Id = {metadata.Id} File = {metadata.ContentFileRelativePath}");
+            return;
+        }
         if (metadata is TMetadata meta)
         {
-            if (metadata.Skip)
-            {
-                Logger.Info<IAssetProcessor>($"Skipping Asset. Skip = {metadata.Skip}. Id = {meta.Id} File = {meta.ContentFileRelativePath}");
-            }
-            else
-            {
-                var timer = Stopwatch.StartNew();
-                Logger.Info($"Processing {metadata.Id}", GetType());
-                await OnProcess(meta, context);
-                Logger.Info($"Processing {metadata.Id} finished in {timer.Elapsed.TotalMilliseconds}", GetType());
-            }
+            var timer = Stopwatch.StartNew();
+            Logger.Info($"Processing {metadata.Id}", GetType());
+            await OnProcess(meta, context);
+            Logger.Info($"Processing {metadata.Id} finished in {timer.Elapsed.TotalMilliseconds}", GetType());
         }
     }
 

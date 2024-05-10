@@ -51,7 +51,7 @@ public struct AssetDescriptor
     [UnscopedRef]
     public ref Texture2DDescriptor Texture2D => ref _descriptors.Texture2D;
     [UnscopedRef]
-    public ref Model3DDescriptor Model3D => ref _descriptors.Model3D;
+    public ref MeshDescriptor Mesh => ref _descriptors.Mesh;
     [UnscopedRef]
     public ref ShaderDescriptor Shader => ref _descriptors.Shader;
 
@@ -64,7 +64,7 @@ public struct AssetDescriptor
         [FieldOffset(0)]
         public Texture2DDescriptor Texture2D;
         [FieldOffset(0)]
-        public Model3DDescriptor Model3D;
+        public MeshDescriptor Mesh;
         [FieldOffset(0)]
         public ShaderDescriptor Shader;
     }

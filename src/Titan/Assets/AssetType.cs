@@ -6,7 +6,7 @@ namespace Titan.Assets;
 public enum AssetType
 {
     Texture = 1,
-    Model3D = 2,
+    Mesh = 2,
     Shader = 3,
     Font = 6,
     Material = 8,

@@ -6,7 +6,7 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadataBuilder) : IContentFiles
 {
     private const string MetadataFileExtension = ".kmeta";
-    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli"];
+    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".mtl"];
 
     public async Task<bool> VerifyMetadataFiles()
     {
