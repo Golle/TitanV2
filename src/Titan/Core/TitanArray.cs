@@ -71,4 +71,7 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
         Debug.Assert(offset + count <= Length);
         return new(ptr + offset, count);
     }
+
+    public TitanBuffer AsBuffer()
+        => new(ptr, (uint)(sizeof(T) * Length));
 }

@@ -10,7 +10,6 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
 {
     protected override async Task OnProcess(ObjModelMetadata metadata, IAssetDescriptorContext context)
     {
-        Logger.Warning<ObjModelMetadata>($"Processing {metadata.Id}");
         try
         {
             var lines = await File.ReadAllTextAsync(metadata.ContentFileFullPath);
@@ -68,15 +67,16 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
 
                     var vertexCount = faceVertices[i];
                     var firstVertex = IndexToVertex(indices[indexOffset], wavefrontObj);
-                    for (var j = 1; j < vertexCount - 2; ++j)
+                    for (var j = 1; j < vertexCount - 1; ++j)
                     {
                         var secondVertex = IndexToVertex(indices[indexOffset + j], wavefrontObj);
                         var thirdVertex = IndexToVertex(indices[indexOffset + j + 1], wavefrontObj);
 
                         //NOTE(Jens): This will add the same vertices several times. This is fine for the first version, but in the future we want to compress this and use indices.
+                        
                         vertices.Add(firstVertex);
+                        vertices.Add(thirdVertex); //OBJ file has the wrong order (need to verify this). So we swap third and second to make it compatible with D3D12
                         vertices.Add(secondVertex);
-                        vertices.Add(thirdVertex);
                     }
 
                     indexOffset += vertexCount;
@@ -95,8 +95,8 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                 {
                     IndexCount = -1,
                     MaterialCount = -1,
-                    SubMeshCount = meshes.Count,
-                    VertexCount = vertices.Count
+                    SubMeshCount = (uint)meshes.Count,
+                    VertexCount = (uint)vertices.Count
                 }, stream.ToArray(), metadata))
                 {
                     Logger.Error<ObjModelProcessor>("Failed to add mesh.");

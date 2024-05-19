@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Titan.Core.Logging;
 
 namespace Titan.Tools.AssetProcessor.Parsers.WavefrontObj;
 [DebuggerDisplay("{Line}:{Column}: {ToString(),nq}")]
@@ -76,7 +75,15 @@ internal static class ObjTokenizer
                     token.Value = cursor.Current.ToString();
                     break;
                 case >= '0' and <= '9':
-                    Numeric(ref cursor, ref token);
+                    //NOTE(Jens): using numbers is allowed in identifiers. for example "mtllib 111.mtl" :| this will not parse correctly.
+                    if (IsNumber(ref cursor))
+                    {
+                        Numeric(ref cursor, ref token);
+                    }
+                    else
+                    {
+                        Identifier(ref cursor, ref token);
+                    }
                     break;
                 default:
                     Identifier(ref cursor, ref token);
@@ -87,6 +94,22 @@ internal static class ObjTokenizer
         } while (cursor.Advance());
 
         return tokens.ToArray();
+    }
+
+    private static bool IsNumber(ref Cursor cursor)
+    {
+        static bool IsNumeric(char c) => c is >= '0' and <= '9';
+        static bool IsDot(char c) => c is '.';
+        static bool IsNumberLiteral(char c) => IsNumeric(c) || IsDot(c);
+
+        var i = 0u;
+        while (IsNumberLiteral(cursor.Peek(i)) )
+        {
+            i++;
+        }
+
+        // if it's a new line, whitespace or slash it should be a number, any other case will be treated as an identifier. Weird logic, yes.
+        return cursor.Peek(i) is '\n' or '\r' or ' ' or '/';
     }
 
     private static void Numeric(ref Cursor cursor, ref Token token)
@@ -117,7 +140,7 @@ internal static class ObjTokenizer
 
     private static void Identifier(ref Cursor cursor, ref Token token)
     {
-        static bool IsValidIdentifier(char c) => c != ' ' && c != '\n';
+        static bool IsValidIdentifier(char c) => c != ' ' && c != '\n' && c != '\r';
 
         token.Type = TokenType.Identifier;
 

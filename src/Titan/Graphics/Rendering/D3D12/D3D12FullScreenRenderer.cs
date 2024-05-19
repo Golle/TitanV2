@@ -10,6 +10,7 @@ using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Graphics.Resources;
+using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
@@ -43,7 +44,10 @@ internal unsafe partial struct D3D12FullScreenRenderer
     public ComPtr<ID3D12Resource> IndexBuffer;
     public D3D12_INDEX_BUFFER_VIEW IndexBufferView;
     public Handle<Texture> Texture;
+    public AssetHandle<MeshAsset> Mesh;
     public uint Count;
+
+    public Vector3 CameraPosition;
 
     [System(SystemStage.Init)]
     public static void Init(in D3D12Device device, D3D12FullScreenRenderer* data, IConfigurationManager configurationManager, IAssetsManager assetsManager, in D3D12Allocator allocator, in Window window, in D3D12ResourceManager resourceManager)
@@ -56,36 +60,22 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Box);
         data->Texture = assetsManager.Get(assetHandle).Handle;
 
+        var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.TheModel);
+        //var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.Female);
+        data->Mesh = meshHandle;
+        ref readonly var mesh = ref assetsManager.Get(meshHandle);
+        data->VertexBuffer = ((D3D12Buffer*)resourceManager.Access(mesh.VertexBuffer))->Resource;
+        data->IndexBuffer = ((D3D12Buffer*)resourceManager.Access(mesh.IndexBuffer))->Resource;
+        data->Count = mesh.IndexCount;
+
         var cbSize = (uint)sizeof(TestData);
         data->ConstantBuffer = device.CreateBuffer(cbSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        Box geometry = GeomeotryHelper.CreateBox();
-        fixed (Vertex* pVertices = geometry.Vertices)
-        {
-            var verticesData = new TitanBuffer(pVertices, geometry.VerticesSize);
-            var vbHandle = resourceManager.CreateBuffer(new((uint)geometry.Vertices.Length, sizeof(Vertex), BufferType.Vertex, verticesData)
-            {
-                CpuVisible = false
-            });
-            data->VertexBuffer = ((D3D12Buffer*)resourceManager.Access(vbHandle))->Resource;
-        }
-
-        fixed (ushort* pIndices = geometry.Indices)
-        {
-            var buffer = new TitanBuffer(pIndices, geometry.IndicesSize);
-            var ibHandle = resourceManager.CreateBuffer(new CreateBufferArgs((uint)geometry.Indices.Length, sizeof(ushort), BufferType.Index, buffer)
-            {
-                CpuVisible = false
-            });
-            data->IndexBuffer = ((D3D12Buffer*)resourceManager.Access(ibHandle))->Resource;
-        }
-
-        data->Count = (uint)geometry.Indices.Length;
 
         D3D12_INDEX_BUFFER_VIEW indexBufferView = new()
         {
             BufferLocation = data->IndexBuffer.Get()->GetGPUVirtualAddress(),
-            Format = DXGI_FORMAT.DXGI_FORMAT_R16_UINT,
-            SizeInBytes = geometry.IndicesSize
+            Format = DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
+            SizeInBytes = sizeof(uint) * mesh.IndexCount
         };
         data->IndexBufferView = indexBufferView;
 
@@ -97,7 +87,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         // Vertex buffer (any mesh really)
         var srv1 = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
-        device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)geometry.Vertices.Length, (uint)sizeof(Vertex));
+        device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)mesh.IndexCount, (uint)sizeof(Vertex));
 
         data->DepthBuffer = resourceManager.CreateDepthBuffer(new CreateDepthBufferArgs
         {
@@ -153,7 +143,8 @@ internal unsafe partial struct D3D12FullScreenRenderer
             })
             .Razterizer(D3D12_RASTERIZER_DESC.Default() with
             {
-                CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE,
+                //CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE,
+                CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK,
                 //FillMode = D3D12_FILL_MODE.D3D12_FILL_MODE_WIREFRAME
             })
             .RenderTargetFormat(renderTargets)
@@ -177,10 +168,12 @@ internal unsafe partial struct D3D12FullScreenRenderer
         }
 
         Logger.Trace<D3D12FullScreenRenderer>($"Loaded shaders: PixelShader = {pixelShader.IsValid} VertexShader = {vertexShader.IsValid}");
+
+        data->CameraPosition = Vector3.UnitZ * 10;
     }
 
     [System]
-    public static void Render(in D3D12CommandQueue queue, in D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager)
+    public static void Render(in D3D12CommandQueue queue, ref D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, IAssetsManager assetsManager, in InputState inputState)
     {
         var commandList = queue.GetCommandList(data.PipelineState.Get());
         var backbuffer = resourceManager.Access(swapchain.CurrentBackbuffer);
@@ -202,8 +195,8 @@ internal unsafe partial struct D3D12FullScreenRenderer
         {
             Width = window.Width,
             Height = window.Height,
-            MaxDepth = 1.2f * 100,
-            MinDepth = -1.2f * 100,
+            MaxDepth = 1f,
+            MinDepth = 0f,
             TopLeftX = 0,
             TopLeftY = 0
         };
@@ -217,35 +210,72 @@ internal unsafe partial struct D3D12FullScreenRenderer
         };
 
         // Define camera parameters
-        Vector3 cameraPosition = new Vector3(0, 0, -2); // Position of the camera
+        //Vector3 cameraPosition = new Vector3(0, 0, -10); // Position of the camera
         Vector3 target = Vector3.Zero; // Target the camera is looking at
         Vector3 up = Vector3.UnitY; // Up direction for the camera
+        Vector3 forward = Vector3.UnitZ;
+        Vector3 right = Vector3.UnitX;
 
         // Define projection parameters
-        float fov = MathF.PI / 3; // Field of view (in radians)
+        float fov = MathF.PI / 4; // Field of view (in radians)
         float aspectRatio = window.Width / (float)window.Height; // Aspect ratio (width / height)
-        float nearPlane = 0.1f; // Near plane distance
-        float farPlane = 100f; // Far plane distance
+        float nearPlane = 1f; // Near plane distance
+        float farPlane = 1000f; // Far plane distance
+
+        var worldMatrix = Matrix4x4.Identity;
         // Create projection matrix
         var projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(fov, aspectRatio, nearPlane, farPlane);
         // Create view matrix
-        var viewMatrix = Matrix4x4.CreateLookAt(cameraPosition, target, up);
+        var viewMatrix = Matrix4x4.CreateLookAt(data.CameraPosition, target, up);
 
         // Combine view and projection matrices to get view-projection matrix
-        var viewProjectionMatrix = viewMatrix * projectionMatrix;
+        var viewProjectionMatrix = worldMatrix * viewMatrix * projectionMatrix;
+        if (inputState.IsKeyDown(KeyCode.Down) || inputState.IsKeyDown(KeyCode.S))
+        {
+            data.CameraPosition -= forward * 0.1f;
+        }
+        if (inputState.IsKeyDown(KeyCode.Up) || inputState.IsKeyDown(KeyCode.W))
+        {
+            data.CameraPosition += forward * 0.1f;
+        }
 
+        if (inputState.IsKeyDown(KeyCode.Left) || inputState.IsKeyDown(KeyCode.A))
+        {
+            data.CameraPosition -= right * 0.1f;
+        }
 
+        if (inputState.IsKeyDown(KeyCode.Right) || inputState.IsKeyDown(KeyCode.D))
+        {
+            data.CameraPosition += right * 0.1f;
+        }
+
+        if (inputState.IsKeyDown(KeyCode.V))
+        {
+            data.CameraPosition += up * 0.1f;
+        }
+
+        if (inputState.IsKeyDown(KeyCode.C))
+        {
+            data.CameraPosition -= up * 0.1f;
+        }
+        
         var tex = (D3D12Texture*)resourceManager.Access(data.Texture);
         var d = (TestData*)data.ConstantBufferMap;
         d->Color = Color.White;
         d->TextureIndex = tex->SRV.Index;
-        d->ViewProjectionMatrix = viewProjectionMatrix;
+        d->ViewProjectionMatrix = Matrix4x4.Transpose(viewProjectionMatrix);
         d->Time += 0.0003f;
         commandList.SetViewport(&viewport);
         commandList.SetScissorRect(&rect);
         //commandList.SetIndexBuffer();
         commandList.IASetIndexBuffer(data.IndexBufferView);
-        commandList.DrawIndexedInstanced(data.Count, 1, 0, 0, 0);
+        //commandList.DrawInstanced();
+        var mesh = assetsManager.Get(data.Mesh);
+        for (var i = 0; i < mesh.SubMeshCount; ++i)
+        {
+            commandList.DrawIndexedInstanced((uint)mesh.SubMeshes[i].VertexCount, 1, (uint)mesh.SubMeshes[i].VertexOffset, mesh.SubMeshes[i].VertexOffset, 0);
+            //commandList.DrawIndexedInstanced(3/*(uint)mesh.SubMeshes[i].VertexCount*/, 1, 0, 0, 0);
+        }
         //commandList.DrawInstanced(, 1);
 
         commandList.Transition(backbuffer, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT);

@@ -78,6 +78,11 @@ internal class ObjParser
 
                 case TokenType.VertexTexture:
                     context.Textures.Add(ParseVector2(ref cursor));
+                    //NOTE(Jens): in some cases the VT has a third component which is 0.00. We skip that.
+                    if (cursor.Is(TokenType.Float) && float.Parse(cursor.Current.Value, CultureInfo.InvariantCulture) == 0)
+                    {
+                        cursor.Advance();
+                    }
                     break;
 
                 case TokenType.Face:

@@ -39,3 +39,4 @@ internal partial struct MaterialLoader
         throw new NotImplementedException();
     }
 }
+

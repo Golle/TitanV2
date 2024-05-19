@@ -1,6 +1,6 @@
 Texture2D Textures[] : register(t0, space0);
 ByteAddressBuffer BufferTable[] : register(t0, space1);
-ByteAddressBuffer VertexTable[] : register(t0, space2);
+// ByteAddressBuffer VertexTable[] : register(t0, space2);
 
 
 struct Vertex

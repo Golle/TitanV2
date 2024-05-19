@@ -1,7 +1,9 @@
 using Titan;
 using Titan.Application;
+using Titan.Assets;
 using Titan.Core.Logging;
 using Titan.Graphics.Rendering;
+using Titan.Graphics.Resources;
 using Titan.Input;
 using Titan.Sandbox;
 using Titan.Systems;
@@ -62,6 +64,17 @@ namespace Titan.Sandbox
             if (inputState.IsKeyDown(KeyCode.S))
             {
                 Logger.Info<ATestSystem>("Moving backwards");
+            }
+        }
+
+
+        private static AssetHandle<MeshAsset> _assetHandle;
+        [System]
+        public static void LoadModelTest(IAssetsManager assetsManager)
+        {
+            if (_assetHandle.IsInvalid)
+            {
+                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);;
             }
         }
     }

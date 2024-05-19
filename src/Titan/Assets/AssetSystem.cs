@@ -151,7 +151,6 @@ internal unsafe partial struct AssetSystem
 
     private static void CreateResourceAsync(Asset* asset)
     {
-        Logger.Error<AssetSystem>("Creating resource! lolalsdlasd!");
         var loader = asset->GetLoader();
         Debug.Assert(loader != null);
         var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);

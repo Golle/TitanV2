@@ -17,6 +17,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
     public static ReadOnlySpan<System.UInt32> GetDependencies(in Titan.Assets.AssetDescriptor descriptor)
         => ((ReadOnlySpan<System.UInt32>)_dependencies).Slice((int)descriptor.Dependencies.Index, (int)descriptor.Dependencies.Count);
     public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset0 => ref _assets[0];
+    public static ref readonly Titan.Assets.AssetDescriptor TileLowRed => ref _assets[1];
     static SandboxRegistry()
     {
         _assets[0] = new Titan.Assets.AssetDescriptor
@@ -44,8 +45,32 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
             }
         };
+        _assets[1] = new Titan.Assets.AssetDescriptor
+        {
+            Id = Titan.Assets.AssetId.GetNext(),
+            RegistryId = Id,
+            Type = Titan.Assets.AssetType.Mesh,
+            File = 
+            { 
+                Length = 20896,
+                Offset = 524288,
+#if !RELEASE
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj")
+#else
+            AssetPath = Titan.Core.Strings.StringRef.Empty
+#endif
+            },
+            Dependencies = new(0, 0),
+            Mesh = new()
+            {
+                IndexCount = -1,
+                VertexCount = 1044,
+                SubMeshCount = 2,
+                MaterialCount = -1,
+            }
+        };
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(1)]
+    [System.Runtime.CompilerServices.InlineArrayAttribute(2)]
     private struct __ASSETS__
     {
         private Titan.Assets.AssetDescriptor _ref;
