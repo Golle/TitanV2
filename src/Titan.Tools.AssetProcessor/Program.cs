@@ -58,9 +58,7 @@ command.SetHandler(async (path, bin, code, name) =>
         return;
     }
 
-    //PrintMetadata(metadataFiles, path);
-    //var context = new SimpleAssetDescriptorContext(MaxDataBuffer, MaxAssetDescriptors);
-    var context = new SortedAssetDescriptorContext();
+    var context = new SortedAssetDescriptorContext(metadataFiles);
     var pipeline = new AssetPipeline()
         .With<ImageProcessor>()
         .With<AsepriteProcessor>()

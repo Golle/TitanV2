@@ -1,4 +1,5 @@
 using Titan.Assets.Types;
+using Titan.Core.Memory;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
@@ -12,8 +13,23 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
 
             var image = imageReader.LoadImage(metadata.ContentFileFullPath);
 
+
+            //NOTE(Jens): The images I've been testing with are upside down and flipped. 
+
             if (image != null)
             {
+                var flippedImage = new byte[image.Data.Length];
+
+                var stride = (int)image.Stride;
+                for (var y = 0; y < image.Height; ++y)
+                {
+
+                    var sourceIndex = (int)((image.Height - 1 - y) * stride);
+                    var destinationIndex = y * stride;
+                    image.Data.AsSpan(sourceIndex, stride)
+                        .CopyTo(flippedImage.AsSpan(destinationIndex, stride));
+                }
+
                 var descriptor = new Texture2DDescriptor
                 {
                     Width = image.Width,
@@ -22,7 +38,7 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
                     BitsPerPixel = (ushort)image.BitsPerPixel,
                     Stride = (ushort)image.Stride
                 };
-                if (!context.TryAddTexture2D(descriptor, image.Data, metadata))
+                if (!context.TryAddTexture2D(descriptor, flippedImage, metadata))
                 {
                     context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the texture to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
                 }

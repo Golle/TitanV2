@@ -13,7 +13,7 @@ internal struct SortedAsset
     public required byte[] Data;
 }
 
-internal class SortedAssetDescriptorContext : IAssetDescriptorContext
+internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) : IAssetDescriptorContext
 {
     private readonly List<SortedAsset> _assets = new();
     private readonly List<(DiagnosticsLevel Level, string Message)> _diagnostics = new();
@@ -81,6 +81,9 @@ internal class SortedAssetDescriptorContext : IAssetDescriptorContext
             _diagnostics.Add((level, message));
         }
     }
+
+    public IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename) 
+        => metadataFiles.Where(m => m.ContentFileRelativePath.EndsWith(filename, true, null));
 
     // ReSharper disable InconsistentlySynchronizedField
     public Task Complete()

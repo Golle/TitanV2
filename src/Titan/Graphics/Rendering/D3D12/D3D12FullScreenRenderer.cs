@@ -34,6 +34,7 @@ public struct TestData
 internal unsafe partial struct D3D12FullScreenRenderer
 {
     public ComPtr<ID3D12PipelineState> PipelineState;
+    public ComPtr<ID3D12PipelineState> PipelineStateWireframe;
     public ComPtr<ID3D12RootSignature> RootSignature;
     public ComPtr<ID3D12Resource> ConstantBuffer;
     public void* ConstantBufferMap;
@@ -57,11 +58,11 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var pixelShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimplePixelShader);
         var vertexShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.SimpleVertexShader);
 
-        var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Box);
+        var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.BookTexture);
         data->Texture = assetsManager.Get(assetHandle).Handle;
 
-        var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.TheModel);
-        //var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.Female);
+        var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.Book);
+
         data->Mesh = meshHandle;
         ref readonly var mesh = ref assetsManager.Get(meshHandle);
         data->VertexBuffer = ((D3D12Buffer*)resourceManager.Access(mesh.VertexBuffer))->Resource;
@@ -128,38 +129,74 @@ internal unsafe partial struct D3D12FullScreenRenderer
         D3D12_RT_FORMAT_ARRAY renderTargets;
         renderTargets.RTFormats[0] = (int)DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
         renderTargets.NumRenderTargets = 1;
-        var stream = new D3D12PipelineSubobjectStream()
-            .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend))
-            .DepthStencil(depthStencilDesc)
-            .PS(new D3D12_SHADER_BYTECODE
-            {
-                pShaderBytecode = pixelShader.AsPointer(),
-                BytecodeLength = pixelShader.Size
-            })
-            .VS(new D3D12_SHADER_BYTECODE
-            {
-                pShaderBytecode = vertexShader.AsPointer(),
-                BytecodeLength = vertexShader.Size
-            })
-            .Razterizer(D3D12_RASTERIZER_DESC.Default() with
-            {
-                //CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE,
-                CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK,
-                //FillMode = D3D12_FILL_MODE.D3D12_FILL_MODE_WIREFRAME
-            })
-            .RenderTargetFormat(renderTargets)
-            .RootSignature(data->RootSignature)
-            .Sample(new DXGI_SAMPLE_DESC
-            {
-                Count = 1,
-                Quality = 0
-            })
-            .SampleMask(uint.MaxValue)
-            .Topology(D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)
-            .AsStreamDesc();
+
+        {
+            var stream = new D3D12PipelineSubobjectStream()
+                .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend))
+                .DepthStencil(depthStencilDesc)
+                .PS(new D3D12_SHADER_BYTECODE
+                {
+                    pShaderBytecode = pixelShader.AsPointer(),
+                    BytecodeLength = pixelShader.Size
+                })
+                .VS(new D3D12_SHADER_BYTECODE
+                {
+                    pShaderBytecode = vertexShader.AsPointer(),
+                    BytecodeLength = vertexShader.Size
+                })
+                .Razterizer(D3D12_RASTERIZER_DESC.Default() with
+                {
+                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK
+                })
+                .RenderTargetFormat(renderTargets)
+                .RootSignature(data->RootSignature)
+                .Sample(new DXGI_SAMPLE_DESC
+                {
+                    Count = 1,
+                    Quality = 0
+                })
+                .SampleMask(uint.MaxValue)
+                .Topology(D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)
+                .AsStreamDesc();
 
 
-        data->PipelineState = device.CreatePipelineStateObject(stream);
+            data->PipelineState = device.CreatePipelineStateObject(stream);
+        }
+
+        {
+            var stream = new D3D12PipelineSubobjectStream()
+                .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend))
+                .DepthStencil(depthStencilDesc)
+                .PS(new D3D12_SHADER_BYTECODE
+                {
+                    pShaderBytecode = pixelShader.AsPointer(),
+                    BytecodeLength = pixelShader.Size
+                })
+                .VS(new D3D12_SHADER_BYTECODE
+                {
+                    pShaderBytecode = vertexShader.AsPointer(),
+                    BytecodeLength = vertexShader.Size
+                })
+                .Razterizer(D3D12_RASTERIZER_DESC.Default() with
+                {
+                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE,
+                    FillMode = D3D12_FILL_MODE.D3D12_FILL_MODE_WIREFRAME
+                })
+                .RenderTargetFormat(renderTargets)
+                .RootSignature(data->RootSignature)
+                .Sample(new DXGI_SAMPLE_DESC
+                {
+                    Count = 1,
+                    Quality = 0
+                })
+                .SampleMask(uint.MaxValue)
+                .Topology(D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)
+                .AsStreamDesc();
+
+
+            data->PipelineStateWireframe = device.CreatePipelineStateObject(stream);
+
+        }
         data->ClearColor = config.ClearColor;
 
         if (!data->PipelineState.IsValid)
@@ -169,13 +206,15 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         Logger.Trace<D3D12FullScreenRenderer>($"Loaded shaders: PixelShader = {pixelShader.IsValid} VertexShader = {vertexShader.IsValid}");
 
-        data->CameraPosition = Vector3.UnitZ * 10;
+        data->CameraPosition = Vector3.UnitZ * -10;
     }
 
     [System]
     public static void Render(in D3D12CommandQueue queue, ref D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, IAssetsManager assetsManager, in InputState inputState)
     {
-        var commandList = queue.GetCommandList(data.PipelineState.Get());
+        var pipelineState = inputState.IsKeyDown(KeyCode.Space) ? data.PipelineStateWireframe : data.PipelineState;
+
+        var commandList = queue.GetCommandList(pipelineState);
         var backbuffer = resourceManager.Access(swapchain.CurrentBackbuffer);
         var depthBuffer = resourceManager.Access(data.DepthBuffer);
 
@@ -219,7 +258,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
         // Define projection parameters
         float fov = MathF.PI / 4; // Field of view (in radians)
         float aspectRatio = window.Width / (float)window.Height; // Aspect ratio (width / height)
-        float nearPlane = 1f; // Near plane distance
+        float nearPlane = 0.1f; // Near plane distance
         float farPlane = 1000f; // Far plane distance
 
         var worldMatrix = Matrix4x4.Identity;
@@ -258,7 +297,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
         {
             data.CameraPosition -= up * 0.1f;
         }
-        
+
         var tex = (D3D12Texture*)resourceManager.Access(data.Texture);
         var d = (TestData*)data.ConstantBufferMap;
         d->Color = Color.White;

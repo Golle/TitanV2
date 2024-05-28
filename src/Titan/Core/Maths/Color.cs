@@ -1,6 +1,9 @@
+using System.Diagnostics;
+
 namespace Titan.Core.Maths;
 //NOTE(Jens): maybe we should have a color with an uint, and a ColorF for float values. This will occupy 16 bytes, but 4 bytes would be enough.
 
+[DebuggerDisplay("R: {R} G: {G} B: {B} A: {A}")]
 public struct Color
 {
     private const float ByteMax = byte.MaxValue;

@@ -190,7 +190,7 @@ internal class ObjParser
         var count = 0;
         if (IsLine(ref cursor))
         {
-            throw new NotImplementedException("Lines have not been implemented.");
+            throw new ParserException("Lines have not been implemented.", cursor.Current);
             //ParseLineFace(ref cursor, ref context);
             //var pos = ParseInt(ref cursor);
 

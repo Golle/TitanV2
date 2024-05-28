@@ -35,8 +35,11 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                 throw new FileNotFoundException("Missing material file", mtlFile);
             }
 
+
+
             var mtlFileLines = await File.ReadAllLinesAsync(mtlFile);
             var parsedMaterials = MtlParser.Parse(mtlFileLines);
+
             HandleObject(wavefrontObj.Objects[0]);
 
             void HandleObject(ObjectGroup obj)
