@@ -120,5 +120,5 @@ internal static class MtlParser
 
     private static float ParseFloat(ReadOnlySpan<char> value) => float.Parse(value, CultureInfo.InvariantCulture);
 
-    private static ReadOnlySpan<char> GetValues(string line) => line[(line.IndexOf(' ') + 1)..];
+    private static ReadOnlySpan<char> GetValues(string line) => line.AsSpan(line.IndexOf(' ') + 1);
 }
