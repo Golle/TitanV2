@@ -124,7 +124,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
             DepthEnable = 1,
             DepthWriteMask = D3D12_DEPTH_WRITE_MASK.D3D12_DEPTH_WRITE_MASK_ALL,
             DepthFunc = D3D12_COMPARISON_FUNC.D3D12_COMPARISON_FUNC_LESS,
-            StencilEnable = 0,
+            StencilEnable = 0
         };
         D3D12_RT_FORMAT_ARRAY renderTargets;
         renderTargets.RTFormats[0] = (int)DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -134,6 +134,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
             var stream = new D3D12PipelineSubobjectStream()
                 .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend))
                 .DepthStencil(depthStencilDesc)
+                .DepthStencilfFormat(DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT)
                 .PS(new D3D12_SHADER_BYTECODE
                 {
                     pShaderBytecode = pixelShader.AsPointer(),
@@ -167,6 +168,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
             var stream = new D3D12PipelineSubobjectStream()
                 .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend))
                 .DepthStencil(depthStencilDesc)
+                .DepthStencilfFormat(DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT)
                 .PS(new D3D12_SHADER_BYTECODE
                 {
                     pShaderBytecode = pixelShader.AsPointer(),
