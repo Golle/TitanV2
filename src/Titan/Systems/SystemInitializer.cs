@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
+using Titan.ECS;
+using Titan.ECS.Archetypes;
 using Titan.Events;
 using Titan.Resources;
 using Titan.Services;
@@ -53,4 +55,8 @@ public unsafe ref struct SystemInitializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ManagedResource<T> GetService<T>() where T : class, IService
         => _serviceRegistry.GetHandle<T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public EntityManager CreateEntityManager()
+        => new(_unmanagedResources.GetResourcePointer<EntitySystem>(), _unmanagedResources.GetResourcePointer<ComponentSystem>());
 }

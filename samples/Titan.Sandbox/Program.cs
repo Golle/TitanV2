@@ -2,9 +2,11 @@ using Titan;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Core.Logging;
+using Titan.ECS;
 using Titan.Graphics.Rendering;
 using Titan.Graphics.Resources;
 using Titan.Input;
+using Titan.Resources;
 using Titan.Sandbox;
 using Titan.Systems;
 using Titan.Windows;
@@ -16,7 +18,6 @@ var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
     EnginePath = EngineHelper.GetEngineFolder("Titan.sln"),
     ContentPath = EngineHelper.GetContentPath("Titan.Sandbox.csproj", "Assets")
 };
-
 
 App.Create(appConfig)
     .AddModule<GameModule>()
@@ -35,11 +36,40 @@ namespace Titan.Sandbox
     {
         public static bool Build(IAppBuilder builder, AppConfig config)
         {
-            builder.AddSystems<ATestSystem>();
+            builder
+                .AddSystems<ATestSystem>()
+                .AddSystemsAndResource<EntityTestSystem>();
             return true;
         }
     }
 
+    [UnmanagedResource]
+    internal partial struct EntityTestSystem
+    {
+        private Entity _entity;
+        private bool _done;
+
+        [System(SystemStage.Update)]
+        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);
+        private void InstanceMethod(in EntityManager entityManager)
+        {
+            if (_done)
+            {
+                return;
+            }
+
+            if (_entity.IsValid)
+            {
+                entityManager.DestroyEntity(_entity);
+                _entity = default;
+                _done = true;
+            }
+            else
+            {
+                _entity = entityManager.CreateEntity();
+            }
+        }
+    }
 
     internal partial struct ATestSystem
     {
@@ -74,7 +104,7 @@ namespace Titan.Sandbox
         {
             if (_assetHandle.IsInvalid)
             {
-                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);;
+                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed); ;
             }
         }
     }

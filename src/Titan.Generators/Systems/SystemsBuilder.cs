@@ -16,7 +16,8 @@ internal enum ArgumentKind
     Unmanaged,
     Managed,
     EventWriter,
-    EventReader
+    EventReader,
+    EntityManager
 }
 
 internal readonly struct ParameterInfo(ModifierType modifier, string type, ArgumentKind argumentKind)
@@ -67,6 +68,11 @@ internal static class SystemsBuilder
                     return new ParameterInfo(ModifierType.Value, string.Empty, ArgumentKind.EventWriter);
                 }
 
+                if (displayString == TitanTypes.EntityManager)
+                {
+                    return new ParameterInfo(ModifierType.Value, string.Empty, ArgumentKind.EntityManager);
+                }
+
                 if (p.Type is IPointerTypeSymbol pointerType)
                 {
                     return new ParameterInfo(ModifierType.Pointer, pointerType.PointedAtType.ToDisplayString(), ArgumentKind.Unmanaged);
@@ -92,6 +98,7 @@ internal static class SystemsBuilder
                 ArgumentKind.EventReader => $"{TitanTypes.EventReader}<{parameter.Type}>",
                 ArgumentKind.Managed => $"{TitanTypes.ManagedResource}<{parameter.Type}>",
                 ArgumentKind.Unmanaged => $"{parameter.Type}*",
+                ArgumentKind.EntityManager => TitanTypes.EntityManager,
                 _ => throw new NotImplementedException($"The kind {parameter.ArgumentKind} has not been implemented.")
             };
             //var type = parameter.IsUnmanaged
@@ -129,6 +136,9 @@ internal static class SystemsBuilder
                 case ArgumentKind.EventWriter:
                     builder.AppendLine($"_p{i} = initializer.CreateEventWriter();");
                     break;
+                case ArgumentKind.EntityManager:
+                    builder.AppendLine($"_p{i} = initializer.CreateEntityManager();");
+                    break;
             }
         }
 
@@ -136,7 +146,6 @@ internal static class SystemsBuilder
             .EndIndentation()
                 .AppendLine("}")
                 .AppendLine();
-
 
 
         var arguments = string.Join(", ", parameters.Select(static (p, i) =>

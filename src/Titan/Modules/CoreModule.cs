@@ -5,6 +5,7 @@ using Titan.Core.IO.Platform;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Platform;
 using Titan.Core.Threading.Platform;
+using Titan.ECS;
 using Titan.Events;
 using Titan.IO;
 using Titan.Resources;

@@ -1,67 +1,21 @@
-using System.Diagnostics;
-using Titan.Core;
-using Titan.Core.Logging;
-using Titan.Core.Memory;
-using Titan.Modules;
+using Titan.ECS.Archetypes;
 
 namespace Titan.ECS;
 
-internal sealed unsafe class EntityManager : IEntityManager
+public readonly unsafe struct EntityManager
 {
-    private IMemoryManager? _memoryManager;
-    private TitanArray<Entity> _freeEntities;
+    private readonly ComponentSystem* _componentSystem;
+    private readonly EntitySystem* _entitySystem;
 
-    private volatile int _freeListCount;
-    private uint _maxEntities;
-
-    public bool Init(IMemoryManager memoryManager, ECSConfig config)
+    internal EntityManager(EntitySystem* entitySystem, ComponentSystem* componentSystem)
     {
-        if (!memoryManager.TryAllocArray(out _freeEntities, config.MaxEntities))
-        {
-            Logger.Error<EntityManager>($"Failed to allocate memory. Entities = {config.MaxEntities} Size = {sizeof(Entity) * config.MaxEntities}");
-            return false;
-        }
-
-        _maxEntities = config.MaxEntities;
-        _memoryManager = memoryManager;
-        _freeListCount = (int)_maxEntities;
-
-
-        // init the entities, this will be sorted in following order [5, 4, 3, 2, 1].
-        // When an Entity is created it will remove it from the back of the list, so it will always start with index 0.
-        for (var i = 0u; i < _maxEntities; ++i)
-        {
-            _freeEntities[i] = new Entity(_maxEntities - i, 1);
-        }
-
-        return true;
+        _componentSystem = componentSystem;
+        _entitySystem = entitySystem;
     }
 
-
-    public void Shutdown()
-    {
-        if (_memoryManager != null)
-        {
-            _memoryManager.FreeArray(ref _freeEntities);
-        }
-        _memoryManager = null;
-    }
-
-    public Entity Create()
-    {
-        var index = Interlocked.Decrement(ref _freeListCount);
-        if (index < 0u)
-        {
-            return Entity.Invalid;
-        }
-        return _freeEntities[index];
-    }
-
-    public void Destroy(Entity entity)
-    {
-        Debug.Assert(entity.IsValid);
-        // ReSharper disable once NonAtomicCompoundOperator
-        var index = _freeListCount++; // copy value first
-        _freeEntities[index] = new(entity.Id, unchecked((byte)(entity.Version + 1)));
-    }
+    public Entity CreateEntity() => _entitySystem->Create();
+    public void DestroyEntity(in Entity entity) => _entitySystem->Destroy(entity);
+    public void AddComponent<T>(in Entity entity) where T : unmanaged, IComponent => _componentSystem->AddComponent<T>(entity);
+    public void RemoveComponent<T>(in Entity entity) where T : unmanaged, IComponent => _componentSystem->RemoveComponent<T>(entity);
 }
+
