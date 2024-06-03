@@ -30,6 +30,7 @@ public interface IMemoryManager : IService
 
     bool TryCreateGeneralAllocator(out GeneralAllocator allocator, uint minSize, uint preAllocatedSize = 0);
     bool TryCreateBumpAllocator(out BumpAllocator allocator, uint size);
+    bool TryCreateAtomicBumpAllocator(out AtomicBumpAllocator allocator, uint size);
     bool TryCreatePoolAllocator<T>(out PoolAllocator<T> allocator, uint count) where T : unmanaged;
     bool TryCreateResourcePool<T>(out ResourcePool<T> pool, uint count) where T : unmanaged;
 

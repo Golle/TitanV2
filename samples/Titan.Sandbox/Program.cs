@@ -3,6 +3,7 @@ using Titan.Application;
 using Titan.Assets;
 using Titan.Core.Logging;
 using Titan.ECS;
+using Titan.ECS.Components;
 using Titan.Graphics.Rendering;
 using Titan.Graphics.Resources;
 using Titan.Input;
@@ -49,7 +50,7 @@ namespace Titan.Sandbox
         private Entity _entity;
         private bool _done;
 
-        [System(SystemStage.Update)]
+        [System]
         public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);
         private void InstanceMethod(in EntityManager entityManager)
         {
@@ -61,12 +62,23 @@ namespace Titan.Sandbox
             if (_entity.IsValid)
             {
                 entityManager.DestroyEntity(_entity);
+                entityManager.RemoveComponent<TransformRect>(_entity);
                 _entity = default;
                 _done = true;
             }
             else
             {
                 _entity = entityManager.CreateEntity();
+                entityManager.AddComponent<Transform3D>(_entity);
+                entityManager.AddComponent<TransformRect>(_entity);
+                
+                for (var i = 0; i < 10000; ++i)
+                {
+                    var entity = entityManager.CreateEntity();
+                    entityManager.AddComponent<Transform3D>(entity);
+                    entityManager.AddComponent<TransformRect>(entity);
+                }
+
             }
         }
     }

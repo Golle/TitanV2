@@ -5,5 +5,5 @@ public sealed class ComponentAttribute : Attribute;
 
 public interface IComponent
 {
-    static abstract ComponentId ComponentId { get; }
+    static abstract ComponentType Type { get; }
 }

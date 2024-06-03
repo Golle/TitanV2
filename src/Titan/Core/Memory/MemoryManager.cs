@@ -7,7 +7,7 @@ namespace Titan.Core.Memory;
 
 public record MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory) : IConfiguration, IDefault<MemoryConfig>
 {
-    public static readonly uint DefaultMaxVirtualMemory = MemoryUtils.MegaBytes(512);
+    public static readonly uint DefaultMaxVirtualMemory = MemoryUtils.GigaBytes(2);
     public static readonly uint DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(128);
 
     public static MemoryConfig Default => new(DefaultMaxVirtualMemory, DefaultGeneralPurposeMemory);
@@ -19,8 +19,6 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
     private VirtualMemory _globalMemory;
     private GeneralAllocator _generalAllocator;
     private readonly object _syncObject = new();
-
-
 
     public bool Init(MemoryConfig config)
     {
@@ -141,6 +139,24 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
             if (mem == null)
             {
                 Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to create a {nameof(BumpAllocator)}. Size = {size} bytes");
+
+                return false;
+            }
+
+            allocator = new((byte*)mem, size);
+            return true;
+        }
+    }
+
+    public bool TryCreateAtomicBumpAllocator(out AtomicBumpAllocator allocator, uint size)
+    {
+        Unsafe.SkipInit(out allocator);
+        lock (_syncObject)
+        {
+            var mem = _generalAllocator.Alloc(size);
+            if (mem == null)
+            {
+                Logger.Error<MemoryManager<TPlatformAllocator>>($"Failed to create a {nameof(AtomicBumpAllocator)}. Size = {size} bytes");
 
                 return false;
             }

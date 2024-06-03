@@ -46,7 +46,7 @@ internal static class TitanTypes
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";
     public const string IComponent = $"{ECS}.IComponent";
-    public const string ComponentId = $"{ECS}.ComponentId";
+    public const string ComponentType = $"{ECS}.ComponentType";
     public const string EntityManager = $"{ECS}.EntityManager";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";

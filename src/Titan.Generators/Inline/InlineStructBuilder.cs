@@ -27,7 +27,7 @@ internal static class InlineStructBuilder
             .AppendLine($"public {TitanTypes.Span}<T> AsSpan() => {TitanTypes.MemoryMarshal}.CreateSpan(ref _ref, Length);")
             .AppendLine()
             .AppendLine(InlineMethod)
-            .AppendLine($"public {TitanTypes.ReadOnlySpan}<T> AsReadOnlySpan() => {TitanTypes.MemoryMarshal}.CreateReadOnlySpan(ref _ref, Length);")
+            .AppendLine($"public readonly {TitanTypes.ReadOnlySpan}<T> AsReadOnlySpan() => {TitanTypes.MemoryMarshal}.CreateReadOnlySpan(ref {TitanTypes.Unsafe}.AsRef(in _ref), Length);")
             .AppendLine()
             .AppendLine(InlineMethod)
             .AppendLine($"public readonly unsafe T* AsPointer() => (T*){TitanTypes.Unsafe}.AsPointer(ref {TitanTypes.Unsafe}.AsRef(in this));")
