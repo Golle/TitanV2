@@ -48,6 +48,7 @@ internal static class TitanTypes
     public const string IComponent = $"{ECS}.IComponent";
     public const string ComponentType = $"{ECS}.ComponentType";
     public const string EntityManager = $"{ECS}.EntityManager";
+    public const string Entity = $"{ECS}.Entity";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 
@@ -60,5 +61,5 @@ internal static class TitanTypes
 
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
-    
+
 }

@@ -1,3 +1,4 @@
+using System.Numerics;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
@@ -49,6 +50,19 @@ namespace Titan.Sandbox
     {
         private Entity _entity;
         private bool _done;
+
+        [System]
+        [EntityConfig(Not = [typeof(TransformRect)])]
+        public static void EntityFunction(ReadOnlySpan<Entity> entities, Span<Transform3D> transforms)
+        {
+            for (var i = 0; i < entities.Length; ++i)
+            {
+                ref readonly var entity = ref entities[i];
+                ref var transform = ref transforms[i];
+                Logger.Trace<EntityTestSystem>($"Entity: {entity.IdNoVersion} Tranform: {transform.Position}");
+                transform.Position += Vector3.One * 0.01f;
+            }
+        }
 
         [System]
         public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);

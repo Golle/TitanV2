@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -17,7 +18,10 @@ internal enum ArgumentKind
     Managed,
     EventWriter,
     EventReader,
-    EntityManager
+    EntityManager,
+    ReadOnlyComponent,
+    MutableComponent,
+    EntityCollection
 }
 
 internal readonly struct ParameterInfo(ModifierType modifier, string type, ArgumentKind argumentKind)
@@ -57,6 +61,34 @@ internal static class SystemsBuilder
             .Select(static p =>
             {
                 var displayString = p.Type.ToDisplayString();
+
+                var isReadOnlySpan = displayString.StartsWith(TitanTypes.ReadOnlySpan);
+                var isSpan = displayString.StartsWith(TitanTypes.Span);
+
+                if (isReadOnlySpan || isSpan)
+                {
+                    var typeArgument = ((INamedTypeSymbol)p.Type).TypeArguments[0];
+                    var typeName = ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString();
+                    if (typeName == TitanTypes.Entity)
+                    {
+                        return isReadOnlySpan
+                            ? new ParameterInfo(ModifierType.Value, typeName, ArgumentKind.EntityCollection)
+                            : throw new InvalidOperationException("Span is not allowed on entity type.");
+                    }
+
+                    var isComponent = typeArgument.Interfaces.Any(static symbol => symbol.ToDisplayString() == TitanTypes.IComponent);
+                    if (!isComponent)
+                    {
+                        throw new InvalidOperationException("Span/ReadOnlySpan is only allowed on Components");
+                    }
+
+                    var argumentKind = isSpan
+                        ? ArgumentKind.MutableComponent
+                        : ArgumentKind.ReadOnlyComponent;
+
+                    return new ParameterInfo(ModifierType.Value, typeName, argumentKind);
+                }
+
                 if (displayString.StartsWith(TitanTypes.EventReader))
                 {
                     var type = ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString();
@@ -88,6 +120,14 @@ internal static class SystemsBuilder
             })
             .ToArray();
 
+        var isEntitySystem = parameters.Any(p => p.ArgumentKind is ArgumentKind.ReadOnlyComponent or ArgumentKind.MutableComponent or ArgumentKind.EntityCollection);
+
+        if (isEntitySystem)
+        {
+
+
+        }
+
         for (var i = 0; i < parameters.Length; ++i)
         {
             var parameter = parameters[i];
@@ -99,12 +139,17 @@ internal static class SystemsBuilder
                 ArgumentKind.Managed => $"{TitanTypes.ManagedResource}<{parameter.Type}>",
                 ArgumentKind.Unmanaged => $"{parameter.Type}*",
                 ArgumentKind.EntityManager => TitanTypes.EntityManager,
+                ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent
+                    => null,
                 _ => throw new NotImplementedException($"The kind {parameter.ArgumentKind} has not been implemented.")
             };
             //var type = parameter.IsUnmanaged
             //    ? $"{parameter.Type}*"
             //    : $"{TitanTypes.ManagedResource}<{parameter.Type}>";
-            builder.AppendLine($"private static {type} _p{i};");
+            if (type is not null)
+            {
+                builder.AppendLine($"private static {type} _p{i};");
+            }
         }
 
         builder.AppendLine();
@@ -150,6 +195,11 @@ internal static class SystemsBuilder
 
         var arguments = string.Join(", ", parameters.Select(static (p, i) =>
         {
+            if (p.ArgumentKind is ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent)
+            {
+                return "default /*PLACEHOLDER*/";
+            }
+
             if (p.ArgumentKind is ArgumentKind.Managed)
             {
                 return $"_p{i}.Value";
