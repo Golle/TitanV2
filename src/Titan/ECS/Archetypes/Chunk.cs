@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Titan.Core.Memory;
 
 namespace Titan.ECS.Archetypes;
@@ -87,6 +86,8 @@ internal unsafe struct Chunk
     internal struct ChunkHeader
     {
         public Chunk* Next;
+        public Chunk* Previous;
         public ushort NumberOfEntities;
+        
     }
 }

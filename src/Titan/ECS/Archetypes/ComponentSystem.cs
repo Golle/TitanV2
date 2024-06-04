@@ -6,6 +6,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
+using Titan.Input;
 using Titan.Resources;
 using Titan.Systems;
 
@@ -132,15 +133,20 @@ internal unsafe partial struct ComponentSystem
     }
 
     [System(SystemStage.PostUpdate)]
-    public static void ExecuteCommands(ComponentSystem* system)
+    public static void ExecuteCommands(ComponentSystem* system, in InputState inputState)
     {
+        ref var registry = ref system->Registry;
+
+        if (inputState.IsKeyReleased(KeyCode.K))
+        {
+            registry.PrintArchetypeStats();
+        }
         var commands = system->Commands.GetCommands();
         if (commands.IsEmpty)
         {
             return;
         }
 
-        var registry = system->Registry;
 
         var timer = Stopwatch.StartNew();
         foreach (ref readonly var command in commands)
@@ -167,6 +173,7 @@ internal unsafe partial struct ComponentSystem
     public static void Shutdown(ComponentSystem* manager, IMemoryManager memoryManager)
     {
         //TODO(Jens): implement this
+        Logger.Warning<ComponentSystem>("Shutdown has not been implemented yet. memory leaks are imminent.");
     }
 
 

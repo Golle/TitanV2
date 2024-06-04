@@ -45,6 +45,7 @@ internal unsafe struct ChunkAllocator
     /// <returns>The pointer to the chunk or null if out of memory</returns>
     public Chunk* Allocate()
     {
+        Logger.Trace<ChunkAllocator>("Chunk allocated");
         var chunk = _freeList;
         if (chunk is not null)
         {
@@ -71,6 +72,7 @@ internal unsafe struct ChunkAllocator
     /// <param name="chunk">The pointer to the chunk, must not be null</param>
     public void Free(Chunk* chunk)
     {
+        Logger.Trace<ChunkAllocator>("Chunk returned");
         Debug.Assert(chunk != null, "Trying to free a null chunk");
         VerifyNotDuplicate(chunk);
 
@@ -93,6 +95,6 @@ internal unsafe struct ChunkAllocator
         do
         {
             Debug.Assert((nuint)freeList != (nuint)chunk);
-        } while ((freeList = _freeList->Next) != null);
+        } while ((freeList = freeList->Next) != null);
     }
 }

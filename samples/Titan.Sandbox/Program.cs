@@ -65,22 +65,29 @@ namespace Titan.Sandbox
                 entityManager.RemoveComponent<TransformRect>(_entity);
                 _entity = default;
                 _done = true;
+                foreach (var entity in _entities)
+                {
+                    entityManager.RemoveComponent<Transform3D>(entity);
+                }
             }
             else
             {
                 _entity = entityManager.CreateEntity();
                 entityManager.AddComponent<Transform3D>(_entity);
                 entityManager.AddComponent<TransformRect>(_entity);
-                
+
                 for (var i = 0; i < 10000; ++i)
                 {
                     var entity = entityManager.CreateEntity();
                     entityManager.AddComponent<Transform3D>(entity);
                     entityManager.AddComponent<TransformRect>(entity);
+                    _entities.Add(entity);
                 }
 
             }
         }
+        private static List<Entity> _entities = new List<Entity>();
+
     }
 
     internal partial struct ATestSystem
