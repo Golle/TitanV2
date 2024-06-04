@@ -43,6 +43,9 @@ internal unsafe struct Chunk
         return DataStart + (offset + index * size);
     }
 
+    public readonly void* GetDataRow(ushort offset)
+        => DataStart + offset;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort Alloc(in Entity entity)
     {
@@ -64,7 +67,7 @@ internal unsafe struct Chunk
         var lastComponentIndex = Header.NumberOfEntities;
         var entities = Entities;
         var data = DataStart;
-        
+
         // move the last entity and save it for later use (needs to be returned so we can change the metadata for that entity)
         var movedEndity = entities[index] = entities[lastComponentIndex];
         for (var i = 0; i < layout.NumberOfComponents; ++i)
@@ -88,6 +91,6 @@ internal unsafe struct Chunk
         public Chunk* Next;
         public Chunk* Previous;
         public ushort NumberOfEntities;
-        
+
     }
 }

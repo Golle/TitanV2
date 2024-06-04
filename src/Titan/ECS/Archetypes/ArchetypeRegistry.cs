@@ -1,9 +1,9 @@
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.ECS.Components;
 
 namespace Titan.ECS.Archetypes;
 
@@ -224,5 +224,63 @@ internal unsafe struct ArchetypeRegistry
         {
             Logger.Info<ArchetypeRegistry>($"Id/Signature: {arch.Id.Signature} Component Size: {arch.Id.ComponentsSize} Number of Entities: {arch.EntitiesCount} Number of Chunks : {arch.ChunkCount}");
         }
+    }
+
+
+    public bool EnumerateArchetypes(ref uint index, ulong signature, Archetype** archetypeOut)
+    {
+        while (index < _archetypes.Length)
+        {
+            var archetype = _archetypes.GetPointer(index++);
+            if (archetype->Id.Signature % signature == 0)
+            {
+                *archetypeOut = archetype;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    public CachedQuery ConstructQuery()
+    {
+        var comp1 = Transform3D.Type.Id;
+        var comp2 = TransformRect.Type.Id;
+        var numberOfComponents = 2;
+
+        Span<uint> compIds = [comp1, comp2]
+            ;
+        compIds.Sort();
+
+        var signature = comp1 * comp2;
+        var archetypes = stackalloc Archetype*[1024];
+        var offsets = stackalloc ushort[1024 * numberOfComponents];
+
+        var count = 0;
+        for (var index = 0; index < _archetypeCount; ++index)
+        {
+            var arch = _archetypes.GetPointer(index);
+            if (arch->Id.Signature % signature == 0)
+            {
+                archetypes[count] = arch;
+                var offsetStart = offsets + (count * numberOfComponents);
+                var offsetIndex = 0;
+
+                ref readonly var layout = ref arch->Layout;
+                for (var i = 0; i < layout.NumberOfComponents; ++i)
+                {
+                    if (layout.Ids[i] == compIds[offsetIndex])
+                    {
+                        *(offsetStart + offsetIndex) = layout.Offsets[i];
+                        offsetIndex++;
+                    }
+                }
+                count++;
+            }
+        }
+
+        return default;
+
     }
 }

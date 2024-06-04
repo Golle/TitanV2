@@ -41,7 +41,7 @@ internal readonly unsafe struct ArchetypeId
 
         newComponents
             .AsSpan()[..newCount]
-            .Sort(static (rh, lh) => lh.Id.CompareTo(rh.Id));
+            .Sort(static (lh, rh) => lh.Id.CompareTo(rh.Id));
 
         return new ArchetypeId(newComponents, Signature * type.Id, newCount, ComponentsSize + type.Size);
     }

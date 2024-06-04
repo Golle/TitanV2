@@ -28,7 +28,7 @@ internal unsafe struct Archetype
     public readonly ArchetypeId Id;
     public readonly ArchetypeLayout Layout;
     public readonly ChunkAllocator* Allocator;
-    private Chunk* _chunkStart;
+    public Chunk* ChunkStart;
 
     public int ChunkCount;
     public int EntitiesCount;
@@ -41,7 +41,7 @@ internal unsafe struct Archetype
         Id = id;
         Layout = new ArchetypeLayout(id);
         Allocator = allocator;
-        _chunkStart = AllocAndInitChunk();
+        ChunkStart = AllocAndInitChunk();
     }
 
     public ArchetypeRecord Add(Entity entity)
@@ -79,11 +79,11 @@ internal unsafe struct Archetype
 
     private void ReleaseChunk(Chunk* chunk)
     {
-        if (_chunkStart == chunk)
+        if (ChunkStart == chunk)
         {
             // special case where we have to update the archetypes start
-            _chunkStart = chunk->Header.Next;
-            _chunkStart->Header.Previous = null;
+            ChunkStart = chunk->Header.Next;
+            ChunkStart->Header.Previous = null;
         }
         else
         {
@@ -101,7 +101,7 @@ internal unsafe struct Archetype
 
     private Chunk* GetChunk()
     {
-        var chunk = _chunkStart;
+        var chunk = ChunkStart;
         Debug.Assert(chunk != null, "No chunk in the archetype, this is an invalid state there should always be one.");
 
         while (chunk->Header.NumberOfEntities >= Layout.EntitiesPerChunk)

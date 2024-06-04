@@ -76,10 +76,10 @@ internal static class SystemsBuilder
                             : throw new InvalidOperationException("Span is not allowed on entity type.");
                     }
 
-                    var isComponent = typeArgument.Interfaces.Any(static symbol => symbol.ToDisplayString() == TitanTypes.IComponent);
+                    var isComponent = typeArgument.GetAttributes().Any(static a => a.AttributeClass?.ToDisplayString() == TitanTypes.ComponentAttribute);
                     if (!isComponent)
                     {
-                        throw new InvalidOperationException("Span/ReadOnlySpan is only allowed on Components");
+                        throw new InvalidOperationException($"Span/ReadOnlySpan is only allowed on Components. Type = {typeArgument.ToDisplayString()}");
                     }
 
                     var argumentKind = isSpan
