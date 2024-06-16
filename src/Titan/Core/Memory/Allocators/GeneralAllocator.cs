@@ -73,7 +73,7 @@ public unsafe struct GeneralAllocator : IAllocator
         Debug.Assert(size > 0);
         Debug.Assert(_memoryBlock.MaxSize > 0);
         var totalSize = MemoryUtils.AlignToUpper(size) + HeaderSize;
-
+        
         var node = GetFreeNode(totalSize);
         Debug.Assert(node != null);
 
@@ -86,7 +86,6 @@ public unsafe struct GeneralAllocator : IAllocator
             header->Previous = node;
             header->Next = node->Next;
             header->BlockSize = remainingSize;
-
             node->Next = header;
             if (header->Next != null)
             {
@@ -106,6 +105,8 @@ public unsafe struct GeneralAllocator : IAllocator
         {
             MemoryUtils.Init(data, size);
         }
+        
+        AssertCircularMemmory();
         return data;
     }
 
@@ -140,6 +141,7 @@ public unsafe struct GeneralAllocator : IAllocator
             _allocations->BlockSize = _memoryBlock.Size;
             _allocations->State = AllocationState.Free;
             _lastAllocation = _allocations;
+
             return;
         }
 
@@ -152,6 +154,7 @@ public unsafe struct GeneralAllocator : IAllocator
                 var previousSize = _memoryBlock.Size;
                 _memoryBlock.Resize(newSize);
                 Debug.Assert(_lastAllocation != null, "This should not happen, since this can't be reached without any allocations occuring.");
+                Debug.Assert(_lastAllocation->BlockSize != 0, "The block size of the last allocation is 0. Suspecting overwrites.");
                 var mem = (Header*)((byte*)_lastAllocation + _lastAllocation->BlockSize);
                 mem->Next = null;
                 mem->Previous = _lastAllocation;
@@ -212,6 +215,7 @@ public unsafe struct GeneralAllocator : IAllocator
             var nextNext = next->Next;
             current->Next = nextNext;
             current->BlockSize += next->BlockSize;
+            
             if (nextNext != null)
             {
                 nextNext->Previous = current;
@@ -269,4 +273,29 @@ public unsafe struct GeneralAllocator : IAllocator
     public readonly Allocator AsAllocator() => Allocator.Create(ref Unsafe.AsRef(in this));
 
     public static implicit operator Allocator(in GeneralAllocator allocator) => allocator.AsAllocator();
+
+    [Conditional("DEBUG")]
+    public void AssertCircularMemmory()
+    {
+        //NOTE(Jens): We can disable this if it slows things down to much. 
+        if (_allocations == null)
+        {
+            return;
+        }
+        
+        // maybe we can replace this with a stack alloc version.
+        Set.Clear();
+        //var set = new HashSet<nuint>();
+        var alloc = _allocations;
+        while (alloc != null)
+        {
+            Debug.Assert(alloc->BlockSize != 0);
+            Debug.Assert(Set.Add((nuint)alloc), "The memory address is already in the list, circual dependencies.");
+            Debug.Assert(alloc->Previous is null || !Set.Add((nuint)alloc->Previous), "The previous element points at some memory that is not in the list.");
+            alloc = alloc->Next;
+        }
+    }
+#if DEBUG
+    private static HashSet<nuint> Set = new(10_000);
+#endif
 }

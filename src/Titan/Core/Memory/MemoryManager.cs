@@ -8,7 +8,7 @@ namespace Titan.Core.Memory;
 public record MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory) : IConfiguration, IDefault<MemoryConfig>
 {
     public static readonly uint DefaultMaxVirtualMemory = MemoryUtils.GigaBytes(2);
-    public static readonly uint DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(128);
+    public static readonly uint DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(256);
 
     public static MemoryConfig Default => new(DefaultMaxVirtualMemory, DefaultGeneralPurposeMemory);
 }
