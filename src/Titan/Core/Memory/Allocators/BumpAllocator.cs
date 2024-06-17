@@ -19,7 +19,8 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 
     public static void Release(void* allocator, IMemoryManager memoryManager)
     {
-        throw new NotImplementedException();
+        Debug.Assert(allocator != null);
+        memoryManager.Free(allocator);
     }
 
     public void* Alloc(uint size)
@@ -75,6 +76,4 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
     public readonly Allocator AsAllocator() => Allocator.Create(ref Unsafe.AsRef(in this));
 
     public static implicit operator Allocator(in BumpAllocator allocator) => allocator.AsAllocator();
-
-
 }

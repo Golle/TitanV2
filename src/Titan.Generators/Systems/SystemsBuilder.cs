@@ -1,6 +1,4 @@
-using System.Diagnostics;
-using System.Text;
-using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Titan.Generators.Systems;
 
@@ -24,115 +22,122 @@ internal enum ArgumentKind
     EntityCollection
 }
 
-internal readonly struct ParameterInfo(ModifierType modifier, string type, ArgumentKind argumentKind)
-{
-    public readonly ModifierType Modifier = modifier;
-    public readonly string Type = type;
-
-    public readonly ArgumentKind ArgumentKind = argumentKind;
-}
 internal static class SystemsBuilder
 {
-    private const int MaxArguments = 20;
-    public static string Build(in SystemType systemType, SourceProductionContext context)
+    private const string QueryFieldName = "_query";
+
+    public static void Build(FormattedBuilder builder, in SystemType system, string name, Dictionary<string, ulong> componentIds)
     {
-        var builder = new FormattedBuilder(new StringBuilder());
-        builder
-            .AppendLine("// Auto-Generated")
-            .AppendLine();
+        var accessibility = system
+            .Type
+            .DeclaredAccessibility
+            .AsString();
 
-        AppendNamespace(systemType.Type, builder);
+        var parameters = system
+            .Parameters;
 
-        var modifier = systemType.Type.DeclaredAccessibility.AsString();
-        var name = systemType.Type.Name;
-        var method = systemType.Method.Name;
-        //NOTE(Jens): 2 methods called the same will cause a conflict. Do we care?
-        var systemTypeName = $"{name}_{method}";
+        var components = parameters
+            .Where(static p => p.Kind is ArgumentKind.ReadOnlyComponent or ArgumentKind.MutableComponent)
+            .Select(p => (Parameter: p, Id: componentIds[p.Type]))
+            .OrderBy(static p => p.Id)
+            .ToImmutableArray();
 
-        builder.AppendLine($"{modifier} unsafe struct {systemTypeName}")
-            .AppendLine("{")
-            .BeginIndentation();
-
-        //Debugger.Launch();
-        // Create members
-        var parameters = systemType
-            .Method
+        var isEntitySystem = system
             .Parameters
-            .Select(static p =>
-            {
-                var displayString = p.Type.ToDisplayString();
+            .Any(static p => p.Kind is ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent);
 
-                var isReadOnlySpan = displayString.StartsWith(TitanTypes.ReadOnlySpan);
-                var isSpan = displayString.StartsWith(TitanTypes.Span);
-
-                if (isReadOnlySpan || isSpan)
-                {
-                    var typeArgument = ((INamedTypeSymbol)p.Type).TypeArguments[0];
-                    var typeName = ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString();
-                    if (typeName == TitanTypes.Entity)
-                    {
-                        return isReadOnlySpan
-                            ? new ParameterInfo(ModifierType.Value, typeName, ArgumentKind.EntityCollection)
-                            : throw new InvalidOperationException("Span is not allowed on entity type.");
-                    }
-
-                    var isComponent = typeArgument.GetAttributes().Any(static a => a.AttributeClass?.ToDisplayString() == TitanTypes.ComponentAttribute);
-                    if (!isComponent)
-                    {
-                        throw new InvalidOperationException($"Span/ReadOnlySpan is only allowed on Components. Type = {typeArgument.ToDisplayString()}");
-                    }
-
-                    var argumentKind = isSpan
-                        ? ArgumentKind.MutableComponent
-                        : ArgumentKind.ReadOnlyComponent;
-
-                    return new ParameterInfo(ModifierType.Value, typeName, argumentKind);
-                }
-
-                if (displayString.StartsWith(TitanTypes.EventReader))
-                {
-                    var type = ((INamedTypeSymbol)p.Type).TypeArguments[0].ToDisplayString();
-                    return new ParameterInfo(ModifierType.Value, type, ArgumentKind.EventReader);
-                }
-
-                if (displayString == TitanTypes.EventWriter)
-                {
-                    return new ParameterInfo(ModifierType.Value, string.Empty, ArgumentKind.EventWriter);
-                }
-
-                if (displayString == TitanTypes.EntityManager)
-                {
-                    return new ParameterInfo(ModifierType.Value, string.Empty, ArgumentKind.EntityManager);
-                }
-
-                if (p.Type is IPointerTypeSymbol pointerType)
-                {
-                    return new ParameterInfo(ModifierType.Pointer, pointerType.PointedAtType.ToDisplayString(), ArgumentKind.Unmanaged);
-                }
-
-                var modifier = p.RefKind switch
-                {
-                    RefKind.In or RefKind.RefReadOnlyParameter => ModifierType.In,
-                    RefKind.Ref => ModifierType.Ref,
-                    _ => ModifierType.Value
-                };
-                return new ParameterInfo(modifier, displayString, p.Type.IsUnmanagedType ? ArgumentKind.Unmanaged : ArgumentKind.Managed);
-            })
-            .ToArray();
-
-        var isEntitySystem = parameters.Any(p => p.ArgumentKind is ArgumentKind.ReadOnlyComponent or ArgumentKind.MutableComponent or ArgumentKind.EntityCollection);
 
         if (isEntitySystem)
         {
-
-
+            //Debugger.Launch();
         }
 
+        builder
+            .AppendAutoGenerated()
+            .AppendLine()
+            .AppendNoWarnings()
+            .AppendLine()
+            .AppendNamespace(system.Type.ContainingNamespace)
+            .AppendLine()
+            .AppendLine($"{accessibility} unsafe struct {name}")
+            .AppendOpenBracer()
+            ;
+
+        AppendResourcesFields(builder, parameters);
+
+        if (isEntitySystem)
+        {
+            AppendQueryField(builder);
+            AppendSignature(builder, components);
+            AppendStaticConstructor(builder, name, components);
+            AppendInitMethod(builder, parameters);
+            AppendEntityExecuteMethod(builder, parameters, components);
+        }
+        else
+        {
+            AppendInitMethod(builder, parameters);
+            AppendExecuteMethod(builder, system, parameters);
+        }
+
+
+        AppendQueryMethod(builder, isEntitySystem);
+
+        builder
+            .AppendCloseBracer();
+    }
+
+    private static void AppendExecuteMethod(FormattedBuilder builder, in SystemType system, ImmutableArray<SystemParameter> parameters)
+    {
+        builder
+            .AppendLine("public static void Execute(void * context/* Context is currently not used, placeholder for future dev.*/)")
+            .BeginIndentation();
+
+        var arguments = string.Join(", ", parameters.Select(static (p, i) =>
+        {
+            if (p.Kind is ArgumentKind.Managed)
+            {
+                return $"_{i}.Value";
+            }
+
+            var mod = p.Modifier switch
+            {
+                ModifierType.Ref => "ref *",
+                ModifierType.In => "in *",
+                _ => string.Empty
+            };
+            return $"{mod}_{i}";
+        }));
+
+        builder
+            .AppendLine($"=> {system.Type.ToDisplayString()}.{system.Method.Name}({arguments});")
+            .EndIndentation()
+            .AppendLine();
+    }
+
+    private static void AppendEntityExecuteMethod(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
+    {
+        builder
+            .AppendLine("public static void Execute(void * context/* Context is currently not used, placeholder for future dev.*/)")
+            .AppendOpenBracer()
+
+            .AppendLine("// Complex logic goes here!")
+            ;
+
+        builder
+            .AppendCloseBracer()
+            .AppendLine();
+
+
+    }
+
+    private static void AppendResourcesFields(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters)
+    {
         for (var i = 0; i < parameters.Length; ++i)
         {
             var parameter = parameters[i];
 
-            var type = parameter.ArgumentKind switch
+            //builder.AppendLine($"// private static {parameter.Type} _{i};");
+            var type = parameter.Kind switch
             {
                 ArgumentKind.EventWriter => TitanTypes.EventWriter,
                 ArgumentKind.EventReader => $"{TitanTypes.EventReader}<{parameter.Type}>",
@@ -141,103 +146,108 @@ internal static class SystemsBuilder
                 ArgumentKind.EntityManager => TitanTypes.EntityManager,
                 ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent
                     => null,
-                _ => throw new NotImplementedException($"The kind {parameter.ArgumentKind} has not been implemented.")
+                _ => throw new NotImplementedException($"The kind {parameter.Kind} has not been implemented.")
             };
-            //var type = parameter.IsUnmanaged
-            //    ? $"{parameter.Type}*"
-            //    : $"{TitanTypes.ManagedResource}<{parameter.Type}>";
-            if (type is not null)
+
+            if (type is null)
             {
-                builder.AppendLine($"private static {type} _p{i};");
+                continue;
             }
+
+            builder
+                .AppendLine($"private static {type} _{i};");
         }
 
-        builder.AppendLine();
+        builder
+            .AppendLine();
+    }
 
-        // Create init function
-        builder.AppendLine($"public static void Init(ref {TitanTypes.SystemInitializer} initializer)")
-            .AppendLine("{")
-            .BeginIndentation();
+    private static void AppendInitMethod(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters)
+    {
+        const string ArgumentName = "initializer";
+        builder
+            .AppendLine($"public static void Init(ref {TitanTypes.SystemInitializer} {ArgumentName})")
+            .AppendOpenBracer();
 
         for (var i = 0; i < parameters.Length; ++i)
         {
             var parameter = parameters[i];
-            switch (parameter.ArgumentKind)
+            var line = parameter.Kind switch
             {
-                case ArgumentKind.Unmanaged:
-                    var resourceFunction = parameter.Modifier switch
-                    {
-                        ModifierType.Ref or ModifierType.Pointer => "GetMutableResource",
-                        _ => "GetReadOnlyResource"
-                    };
-                    builder.AppendLine($"_p{i} = initializer.{resourceFunction}<{parameter.Type}>();");
-                    break;
-                case ArgumentKind.Managed:
-                    builder.AppendLine($"_p{i} = initializer.GetService<{parameter.Type}>();");
-                    break;
-                case ArgumentKind.EventReader:
-                    builder.AppendLine($"_p{i} = initializer.CreateEventReader<{parameter.Type}>();");
-                    break;
-                case ArgumentKind.EventWriter:
-                    builder.AppendLine($"_p{i} = initializer.CreateEventWriter();");
-                    break;
-                case ArgumentKind.EntityManager:
-                    builder.AppendLine($"_p{i} = initializer.CreateEntityManager();");
-                    break;
-            }
-        }
+                ArgumentKind.Unmanaged when parameter.Modifier is ModifierType.Ref or ModifierType.Pointer
+                    => $"{ArgumentName}.GetMutableResource<{parameter.Type}>()",
 
-        builder
-            .EndIndentation()
-                .AppendLine("}")
-                .AppendLine();
+                ArgumentKind.Unmanaged when parameter.Modifier is ModifierType.In or ModifierType.Value
+                    => $"{ArgumentName}.GetReadOnlyResource<{parameter.Type}>()",
 
+                ArgumentKind.EventReader
+                    => $"{ArgumentName}.CreateEventReader<{parameter.Type}>()",
 
-        var arguments = string.Join(", ", parameters.Select(static (p, i) =>
-        {
-            if (p.ArgumentKind is ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent)
-            {
-                return "default /*PLACEHOLDER*/";
-            }
+                ArgumentKind.EventWriter
+                    => $"{ArgumentName}.CreateEventWriter()",
 
-            if (p.ArgumentKind is ArgumentKind.Managed)
-            {
-                return $"_p{i}.Value";
-            }
+                ArgumentKind.EntityManager
+                    => $"{ArgumentName}.CreateEntityManager()",
 
-            var mod = p.Modifier switch
-            {
-                ModifierType.In => "in *",
-                ModifierType.Ref => "ref *",
-                _ => string.Empty
+                ArgumentKind.Managed
+                    => $"{ArgumentName}.GetService<{parameter.Type}>()",
+
+                _ => null
             };
 
-            return $"{mod}_p{i}";
-        }));
 
+            if (line is not null)
+            {
+                builder.AppendLine($"_{i} = {line};");
+            }
+        }
 
-        // Create execute function
         builder
-            .AppendLine("public static void Execute(void * context)")
-                .BeginIndentation()
-                .AppendLine($"=> {systemType.Type}.{systemType.Method.Name}({arguments});")
-                .EndIndentation();
+            .AppendCloseBracer()
+            .AppendLine();
 
+    }
+
+    private static void AppendStaticConstructor(FormattedBuilder builder, string name, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
+    {
+        var componentString = string.Join(", ", components.Select(static c => $"{c.Parameter.Type}.Type"));
+        builder.AppendLine($"static {name}()")
+            .AppendOpenBracer()
+            .AppendLine($"_query = new([{componentString}], Signature);")
+            .AppendCloseBracer()
+            .AppendLine();
+    }
+
+    private static void AppendSignature(FormattedBuilder builder, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
+    {
+        var signature = 1UL;
+        foreach (ref readonly var systemParameter in components.AsSpan())
+        {
+            signature *= systemParameter.Id;
+        }
+
+        builder
+            .AppendLine($"public const ulong Signature = {signature}UL;")
+            .AppendLine();
+    }
+
+    private static void AppendQueryField(FormattedBuilder builder) =>
+        builder
+            .AppendLine($"private static readonly {TitanTypes.CachedQuery} {QueryFieldName};")
+            .AppendLine();
+
+
+    private static void AppendQueryMethod(FormattedBuilder builder, bool isEntitySystem)
+    {
+        builder
+            .AppendLine($"public static {TitanTypes.CachedQuery}* GetQuery()")
+            .BeginIndentation();
+
+        builder
+            .AppendLine(isEntitySystem ? $"=> {TitanTypes.MemoryUtils}.AsPointer({QueryFieldName});" : "=> null;");
 
         builder
             .EndIndentation()
-                .AppendLine("}");
-
-        context.AddSource($"{systemTypeName}.g.cs", builder.ToString());
-        return systemTypeName;
-    }
-
-    private static void AppendNamespace(ISymbol type, FormattedBuilder builder)
-    {
-        if (type.ContainingNamespace.IsGlobalNamespace)
-        {
-            return;
-        }
-        builder.AppendLine($"namespace {type.ContainingNamespace.ToDisplayString()};");
+            .AppendLine();
     }
 }

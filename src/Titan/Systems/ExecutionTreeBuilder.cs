@@ -130,7 +130,7 @@ internal unsafe ref struct ExecutionTreeBuilder
             var numberOfNodes = (uint)_stageCounter[i];
             Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}", typeof(ExecutionTreeBuilder));
 
-            //NOTE(Jens): PreInit and PostShutdown are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
+            //NOTE(Jens): Startup and EndOfLife are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
             delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = (SystemStage)i switch
             {
                 SystemStage.Startup => &SequentialExecutor.Run,

@@ -29,16 +29,17 @@ public class AssetLoaderGenerator : IIncrementalGenerator
                     .Single();
 
                 return new AssetLoaderType(loaderType, assetType);
-            });
+            })
+            ;
 
-        var valueProvider = context
-            .CompilationProvider
-            .Combine(structDeclarations.Collect());
+        var assetLoaderProvider = structDeclarations
+            .Collect()
+            ;
 
         context
-            .RegisterSourceOutput(valueProvider, static (productionContext, source) => Execute(source.Left, source.Right!, productionContext));
+            .RegisterImplementationSourceOutput(assetLoaderProvider, static (productionContext, source) => Execute(source, productionContext));
 
-        static void Execute(Compilation _, ImmutableArray<AssetLoaderType> loaders, SourceProductionContext context)
+        static void Execute(ImmutableArray<AssetLoaderType> loaders, SourceProductionContext context)
         {
             foreach (var loader in loaders)
             {

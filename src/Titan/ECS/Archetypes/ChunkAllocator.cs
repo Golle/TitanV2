@@ -16,6 +16,10 @@ internal unsafe struct ChunkAllocator
     {
         var maxSize = (uint)(maxChunks * sizeof(Chunk));
         var preAllocatedSize = (uint)(preAllocatedChunks * sizeof(Chunk));
+
+        Logger.Warning<ChunkAllocator>($"The chunk allocator uses a {nameof(GeneralAllocator)}, this is not recommended since that will add a header to each allocation(12 bytes).");
+        //NOTE(Jens): Allocations will not be aligned due to the extra header added. Need a new type of allocator or just use expandable virtual memory. 
+
         if (!memoryManager.TryCreateGeneralAllocator(out _allocator, maxSize, preAllocatedSize))
         {
             Logger.Error<ChunkAllocator>($"Failed to create the internal allocator. Max Chunks = {maxChunks} Max Size = {maxSize} bytes Pre Allocated Chunks = {preAllocatedChunks} Pre Allocated Size = {preAllocatedChunks * sizeof(Chunk)} bytes");
@@ -45,7 +49,6 @@ internal unsafe struct ChunkAllocator
     /// <returns>The pointer to the chunk or null if out of memory</returns>
     public Chunk* Allocate()
     {
-        Logger.Trace<ChunkAllocator>("Chunk allocated");
         var chunk = _freeList;
         if (chunk is not null)
         {
@@ -72,7 +75,7 @@ internal unsafe struct ChunkAllocator
     /// <param name="chunk">The pointer to the chunk, must not be null</param>
     public void Free(Chunk* chunk)
     {
-        Logger.Trace<ChunkAllocator>("Chunk returned");
+        //Logger.Trace<ChunkAllocator>("Chunk returned");
         Debug.Assert(chunk != null, "Trying to free a null chunk");
         VerifyNotDuplicate(chunk);
 

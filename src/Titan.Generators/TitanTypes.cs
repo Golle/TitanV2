@@ -49,9 +49,11 @@ internal static class TitanTypes
     public const string ComponentType = $"{ECS}.ComponentType";
     public const string EntityManager = $"{ECS}.EntityManager";
     public const string Entity = $"{ECS}.Entity";
+    public const string CachedQuery = $"{ECS}.Archetypes.CachedQuery";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 
+    public const string MemoryUtils = $"{Core}.Memory.MemoryUtils";
 
     public static readonly string MethodImplAttribute = typeof(MethodImplAttribute).FullName!;
     public static readonly string MethodImplOptions = typeof(MethodImplOptions).FullName!;
@@ -61,5 +63,4 @@ internal static class TitanTypes
 
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
-
 }

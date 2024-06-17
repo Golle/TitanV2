@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Titan.Generators;
 
@@ -29,4 +30,6 @@ internal class FormattedBuilder(StringBuilder builder)
     }
 
     public override string ToString() => builder.ToString();
+
+    public void Reset() => builder.Clear();
 }

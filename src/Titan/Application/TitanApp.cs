@@ -5,6 +5,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
+using Titan.ECS.Archetypes;
 using Titan.Events;
 using Titan.IO.FileSystem;
 using Titan.Resources;
@@ -60,6 +61,13 @@ internal sealed class TitanApp : IApp, IRunnable
         {
             Logger.Error<AppBuilder>($"Failed to init the {nameof(SystemsScheduler)}.");
             throw new InvalidOperationException($"{nameof(SystemsScheduler)} failed.");
+        }
+
+        ref var queryRegistry = ref unmanagedResourceRegistry.GetResource<QueryRegistry>();
+        if (!queryRegistry.RegisterQueries(memoryManager, systems))
+        {
+            Logger.Error<AppBuilder>($"Failed to register the cached queries in {nameof(QueryRegistry)}.");
+            throw new InvalidOperationException($"{nameof(QueryRegistry)} failed.");
         }
 
         if (!assetsManager.Init(assetRegistries, unmanagedResourceRegistry.GetResourceHandle<AssetsContext>(), assetLoaders, memoryManager))

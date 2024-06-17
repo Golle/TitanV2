@@ -52,16 +52,10 @@ namespace Titan.Sandbox
         private bool _done;
 
         [System]
-        [EntityConfig(Not = [typeof(TransformRect)])]
-        public static void EntityFunction(ReadOnlySpan<Entity> entities, Span<Transform3D> transforms)
+        [EntityConfig(Not = [typeof(SomeOtherComponent)])]
+        public static void EntityFunction(ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects)
         {
-            for (var i = 0; i < entities.Length; ++i)
-            {
-                ref readonly var entity = ref entities[i];
-                ref var transform = ref transforms[i];
-                Logger.Trace<EntityTestSystem>($"Entity: {entity.IdNoVersion} Tranform: {transform.Position}");
-                transform.Position += Vector3.One * 0.01f;
-            }
+            // Do the things
         }
 
         [System]
@@ -141,4 +135,10 @@ namespace Titan.Sandbox
             }
         }
     }
+
+    public partial struct SomeOtherComponent
+    {
+        public int A;
+    }
+
 }

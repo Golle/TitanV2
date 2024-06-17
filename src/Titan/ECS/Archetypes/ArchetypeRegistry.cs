@@ -1,51 +1,72 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Core.Memory.Allocators;
 using Titan.ECS.Components;
+using Titan.Resources;
+using Titan.Systems;
 
 namespace Titan.ECS.Archetypes;
 
-internal unsafe struct ArchetypeRegistry
+[UnmanagedResource]
+internal unsafe partial struct ArchetypeRegistry
 {
     private TitanArray<EntityData> _data;
     private TitanArray<Archetype> _archetypes;
     private uint _archetypeCount;
-    private ChunkAllocator* _allocator;
 
-    public bool Init(IMemoryManager memoryManager, ChunkAllocator* allocator, uint maxEntities, uint maxArchetypes)
+    private ChunkAllocator _allocator;
+    private ChunkAllocator* Allocator => MemoryUtils.AsPointer(_allocator);
+
+    public readonly uint ArchetypeCount => _archetypeCount;
+
+    [System(SystemStage.Init)]
+    public static void Init(ArchetypeRegistry* registry, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
-        if (!memoryManager.TryAllocArray(out _archetypes, maxArchetypes))
+        var config = configurationManager.GetConfigOrDefault<ECSConfig>();
+        if (!registry->_allocator.Init(memoryManager, config.MaxChunks, config.PreAllocatedChunks))
         {
-            Logger.Error<ArchetypeRegistry>($"Failed to allocate memory for the Archetypes. Count = {maxArchetypes} Size = {maxArchetypes * sizeof(Archetype)} bytes");
-            return false;
+            Logger.Error<ArchetypeRegistry>($"Failed to init the {nameof(ChunkAllocator)}.");
+            return;
+        }
+        if (!memoryManager.TryAllocArray(out registry->_archetypes, config.MaxArchetypes))
+        {
+            Logger.Error<ArchetypeRegistry>($"Failed to allocate memory for the Archetypes. Count = {config.MaxArchetypes} Size = {config.MaxArchetypes * sizeof(Archetype)} bytes");
+            return;
         }
 
-        if (!memoryManager.TryAllocArray(out _data, maxEntities))
+        if (!memoryManager.TryAllocArray(out registry->_data, config.MaxEntities))
         {
-            Logger.Error<ArchetypeRegistry>($"Failed to allocate memory for the {nameof(EntityData)}. Count = {maxEntities} Size = {maxEntities * sizeof(EntityData)} bytes");
-            return false;
+            Logger.Error<ArchetypeRegistry>($"Failed to allocate memory for the {nameof(EntityData)}. Count = {config.MaxEntities} Size = {config.MaxEntities * sizeof(EntityData)} bytes");
+            return;
         }
 
-        // Ensure these are empty
-        MemoryUtils.InitArray(_data);
-        MemoryUtils.InitArray(_archetypes);
-
-        _allocator = allocator;
-        return true;
+        //// Ensure these are empty
+        MemoryUtils.InitArray(registry->_data);
+        MemoryUtils.InitArray(registry->_archetypes);
     }
 
-    public void Shutdown(IMemoryManager memoryManager)
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(ArchetypeRegistry* registry, IMemoryManager memoryManager)
     {
-        if (_data.IsValid)
+        if (registry->_data.IsValid)
         {
-            memoryManager.FreeArray(ref _data);
+            memoryManager.FreeArray(ref registry->_data);
+        }
+
+        if (registry->_archetypes.IsValid)
+        {
+            memoryManager.FreeArray(ref registry->_archetypes);
         }
     }
 
     public void AddComponent(in Entity entity, in ComponentType type, void* componentData)
     {
+        return;
         var entityId = entity.IdNoVersion;
         ref var data = ref _data[entityId];
         if (data.IsValid)
@@ -89,6 +110,7 @@ internal unsafe struct ArchetypeRegistry
 
     public void RemoveComponent(in Entity entity, in ComponentType type)
     {
+        return;
         var id = entity.IdNoVersion;
         ref var data = ref _data[id];
         ref var source = ref data.Record;
@@ -198,7 +220,7 @@ internal unsafe struct ArchetypeRegistry
     private Archetype* CreateArchetype(in ArchetypeId id)
     {
         var archetype = _archetypes.GetPointer(_archetypeCount++);
-        *archetype = new Archetype(id, _allocator);
+        *archetype = new Archetype(id, Allocator);
         return archetype;
     }
 
@@ -243,7 +265,56 @@ internal unsafe struct ArchetypeRegistry
     }
 
 
-    public CachedQuery ConstructQuery()
+    public void CreateQuery(ref BumpAllocator allocator, CachedQuery* query, Archetype** archetypeBuffer, ushort* offsetBuffer)
+    {
+        var signature = query->Signature;
+        var components = query->Components;
+        var numberOfComponents = components.Length;
+
+        var count = 0;
+        for (var index = 0; index < _archetypeCount; ++index)
+        {
+            var arch = _archetypes.GetPointer(index);
+            if (arch->Id.Signature % signature == 0)
+            {
+                archetypeBuffer[count] = arch;
+                var offsetStart = offsetBuffer + (count * numberOfComponents);
+                var offsetIndex = 0;
+
+                ref readonly var layout = ref arch->Layout;
+                for (var i = 0; i < layout.NumberOfComponents; ++i)
+                {
+                    if (layout.Ids[i] == components[offsetIndex].Id)
+                    {
+                        *(offsetStart + offsetIndex) = layout.Offsets[i];
+                        offsetIndex++;
+                    }
+                }
+                count++;
+            }
+        }
+
+        query->Count = (ushort)count;
+
+        if (query->Count == 0)
+        {
+            //not really necessary since they wont be accessed or checked if count is 0
+            query->Archetypes = null;
+            query->Offsets = null;
+            return;
+        }
+
+        var offsetSize = count * sizeof(ushort) * numberOfComponents;
+        var archetypeSize = count * sizeof(Archetype*);
+
+        query->Archetypes = (Archetype**)allocator.Alloc((uint)archetypeSize);
+        query->Offsets = (ushort*)allocator.Alloc((uint)offsetSize);
+
+        MemoryUtils.Copy(query->Archetypes, archetypeBuffer, archetypeSize);
+        MemoryUtils.Copy(query->Offsets, offsetBuffer, offsetSize);
+    }
+
+    public CachedQuery ConstructQuery(IMemoryManager memoryManager, Archetype** archetypeBuffer, ushort* offsetBuffer, uint archetypeCount)
     {
         var comp1 = Transform3D.Type.Id;
         var comp2 = TransformRect.Type.Id;
@@ -254,8 +325,6 @@ internal unsafe struct ArchetypeRegistry
         compIds.Sort();
 
         var signature = comp1 * comp2;
-        var archetypes = stackalloc Archetype*[1024];
-        var offsets = stackalloc ushort[1024 * numberOfComponents];
 
         var count = 0;
         for (var index = 0; index < _archetypeCount; ++index)
@@ -263,8 +332,8 @@ internal unsafe struct ArchetypeRegistry
             var arch = _archetypes.GetPointer(index);
             if (arch->Id.Signature % signature == 0)
             {
-                archetypes[count] = arch;
-                var offsetStart = offsets + (count * numberOfComponents);
+                archetypeBuffer[count] = arch;
+                var offsetStart = offsetBuffer + (count * numberOfComponents);
                 var offsetIndex = 0;
 
                 ref readonly var layout = ref arch->Layout;
@@ -280,7 +349,22 @@ internal unsafe struct ArchetypeRegistry
             }
         }
 
+        if (count == 0)
+        {
+            //return new CachedQuery(null, null, 0, (ushort)numberOfComponents);
+            return default;
+        }
+
+        var offsetSize = count * (sizeof(ushort) * 4);
+        var archetypeSize = count * sizeof(Archetype*);
+        var archetypeMem = (Archetype**)memoryManager.Alloc((uint)(offsetSize + archetypeSize));
+        var offsetMem = (ushort*)(archetypeMem + count);
+
+        MemoryUtils.Copy(archetypeMem, archetypeBuffer, sizeof(Archetype*) * count);
+        MemoryUtils.Copy(offsetMem, offsetBuffer, sizeof(ushort));
+
         return default;
+        //return new CachedQuery(archetypeMem, offsetMem, (ushort)count, (ushort)numberOfComponents);
 
     }
 }

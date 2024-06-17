@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Titan.Core.Strings;
+using Titan.ECS.Archetypes;
 
 namespace Titan.Systems;
 
@@ -11,4 +12,5 @@ public unsafe struct SystemDescriptor
     public SystemExecutionType ExecutionType;
     public delegate*<ref SystemInitializer, void> Init;
     public delegate*<void*, void> Execute;
+    public delegate*<CachedQuery*> GetQuery;
 }

@@ -76,7 +76,7 @@ public unsafe struct GeneralAllocator : IAllocator
         
         var node = GetFreeNode(totalSize);
         Debug.Assert(node != null);
-
+        AssertCircularMemmory();
         var remainingSize = node->BlockSize - totalSize;
         // if the remaining size is greater than MinBlockSize, split the node into 2. 
         if (remainingSize > MinBlockSize)
@@ -205,7 +205,6 @@ public unsafe struct GeneralAllocator : IAllocator
         MergeWithNext(header->Previous);
     }
 
-
     private void MergeWithNext(Header* current)
     {
         //NOTE(Jens): if both current and next are free, merge them
@@ -283,19 +282,18 @@ public unsafe struct GeneralAllocator : IAllocator
             return;
         }
         
+        Debug.Assert(_allocations == _memoryBlock.Mem);
         // maybe we can replace this with a stack alloc version.
-        Set.Clear();
-        //var set = new HashSet<nuint>();
+        
+        var set = new HashSet<nuint>(1000);
         var alloc = _allocations;
         while (alloc != null)
         {
             Debug.Assert(alloc->BlockSize != 0);
-            Debug.Assert(Set.Add((nuint)alloc), "The memory address is already in the list, circual dependencies.");
-            Debug.Assert(alloc->Previous is null || !Set.Add((nuint)alloc->Previous), "The previous element points at some memory that is not in the list.");
+            Debug.Assert(set.Add((nuint)alloc), "The memory address is already in the list, circual dependencies.");
+            Debug.Assert(alloc->Previous is null || !set.Add((nuint)alloc->Previous), "The previous element points at some memory that is not in the list.");
+            
             alloc = alloc->Next;
         }
     }
-#if DEBUG
-    private static HashSet<nuint> Set = new(10_000);
-#endif
 }

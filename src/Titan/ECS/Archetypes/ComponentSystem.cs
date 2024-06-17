@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using Titan.Configurations;
 using Titan.Core;
@@ -15,36 +14,23 @@ namespace Titan.ECS.Archetypes;
 [UnmanagedResource]
 internal unsafe partial struct ComponentSystem
 {
-    private ChunkAllocator _chunkAllocator;
-    private ArchetypeRegistry _registry;
-
+    private ArchetypeRegistry* _registry;
     private ComponentCommands _commands;
 
     [System(SystemStage.Init)]
-    public static void Init(ComponentSystem* manager, IMemoryManager memoryManager, IConfigurationManager configurationManager)
+    public static void Init(ComponentSystem* manager, in UnmanagedResourceRegistry unmanagedResources, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<ECSConfig>();
 
         Logger.Trace<ComponentSystem>($"Init {nameof(ComponentSystem)}. Max Archetypes = {config.MaxArchetypes} Max Chunks = {config.MaxChunks} Pre Allocated Chunks = {config.PreAllocatedChunks}");
-
-
-        if (!manager->_chunkAllocator.Init(memoryManager, config.MaxChunks, config.PreAllocatedChunks))
-        {
-            Logger.Error<ComponentSystem>($"Failed to init the {nameof(ChunkAllocator)}. Max Chunks = {config.MaxChunks} Pre-Allocated chunks = {config.PreAllocatedChunks}");
-            return;
-        }
-
-        if (!manager->_registry.Init(memoryManager, &manager->_chunkAllocator, config.MaxEntities, config.MaxArchetypes))
-        {
-            Logger.Error<ComponentSystem>($"Failed to init the {nameof(ArchetypeRegistry)}. Max Entities = {config.MaxEntities} Max Archetypes = {config.MaxArchetypes}");
-            return;
-        }
 
         if (!manager->_commands.Init(memoryManager, config.MaxCommands, config.MaxCommandComponentSize))
         {
             Logger.Error<ComponentSystem>($"Failed to init the {nameof(ComponentCommands)}. Max Commands = {config.MaxCommands} Max Commands Components buffer = {config.MaxCommandComponentSize} bytes");
             return;
         }
+
+        manager->_registry = unmanagedResources.GetResourcePointer<ArchetypeRegistry>();
     }
 
     [System(SystemStage.PostUpdate)]
@@ -54,7 +40,7 @@ internal unsafe partial struct ComponentSystem
 
         if (inputState.IsKeyReleased(KeyCode.K))
         {
-            registry.PrintArchetypeStats();
+            registry->PrintArchetypeStats();
         }
         var commands = system->_commands.GetCommands();
         if (commands.IsEmpty)
@@ -69,10 +55,10 @@ internal unsafe partial struct ComponentSystem
             switch (command.Type)
             {
                 case EntityCommandType.AddComponent:
-                    registry.AddComponent(command.Entity, command.ComponentType, command.Data);
+                    registry->AddComponent(command.Entity, command.ComponentType, command.Data);
                     break;
                 case EntityCommandType.RemoveComponent:
-                    registry.RemoveComponent(command.Entity, command.ComponentType);
+                    registry->RemoveComponent(command.Entity, command.ComponentType);
                     break;
                 case EntityCommandType.DestroyEntity:
                     Logger.Warning<ComponentSystem>("Destroy is not implemented.");
@@ -105,7 +91,7 @@ internal unsafe partial struct ComponentSystem
 
     [System]
     [EntityConfig(Not = [typeof(TransformRect)])]
-    public static void EntityTestSystem(ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ComponentSystem* sys)
+    public static void EntityTestSystem(ReadOnlySpan<Entity> entities, Span<Transform3D> t1, ComponentSystem* sys, IMemoryManager memoryManager)
     {
         if (_counter++ > 4)
         {
@@ -118,13 +104,56 @@ internal unsafe partial struct ComponentSystem
         ref var reg = ref sys->_registry;
 
         var timer = Stopwatch.StartNew();
-        reg.ConstructQuery();
+
+        var archetypeBuffer = stackalloc Archetype*[(int)reg->ArchetypeCount];
+        var offsetBuffer = stackalloc ushort[(int)reg->ArchetypeCount * 4];
+
+        var query = reg->ConstructQuery(memoryManager, archetypeBuffer, offsetBuffer, signature);
+
         timer.Stop();
         Logger.Error<ComponentSystem>($"Constructo query. Elapsed = {timer.Elapsed.TotalMicroseconds} micro seconds ({timer.Elapsed.TotalMilliseconds} ms)");
         Archetype* archetype;
         var index = 0u;
-        var a = Stopwatch.StartNew();
-        while (reg.EnumerateArchetypes(ref index, signature, &archetype))
+
+
+        QueryState state = default;
+        var data = stackalloc void*[2];
+
+        var totalCount = 0L;
+        var numEntities = 0;
+        var componentsRead = 0;
+        Logger.Info<ComponentSystem>("Do the query");
+        var timer1 = Stopwatch.StartNew();
+        while (query.EnumerateData(ref state, data))
+        {
+            var count = state.Count;
+            numEntities += count;
+            var transforms = new Span<Transform3D>(data[0], count);
+            var rects = new Span<TransformRect>(data[1], count);
+
+            totalCount += transforms.Length;
+            totalCount += rects.Length;
+
+            for (var i = 0; i < count; ++i)
+            {
+                ref readonly var transform = ref transforms[i];
+                ref readonly var rect = ref rects[i];
+                totalCount -= (int)transform.Position.X;
+                totalCount += rect.Position.X;
+
+                componentsRead += 2;
+            }
+
+            //Logger.Info<ComponentSystem>($"Transform3D: {transforms.Length}");
+            //Logger.Info<ComponentSystem>($"TransformRect: {rects.Length}");
+        }
+        timer1.Stop();
+        Logger.Info<ComponentSystem>($"Query completed. Number of Entities queried = {numEntities} Components Read = {componentsRead} Elapsed = {timer1.Elapsed.TotalMicroseconds} microseconds ({timer1.Elapsed.TotalMilliseconds} ms) - {totalCount}");
+
+
+        var q = new CachedQuery([Transform3D.Type],0);
+
+        while (reg->EnumerateArchetypes(ref index, signature, &archetype))
         {
             //ref readonly var layout = ref archetype->Layout;
 
@@ -143,36 +172,49 @@ internal unsafe partial struct ComponentSystem
             //}
             //Logger.Error<ComponentSystem>($"Archetype match: ID = {archetype->Id.Signature}");
         }
-        a.Stop();
-        Logger.Error<ComponentSystem>($"Time = {a.Elapsed.TotalMicroseconds}");
-        for (var i = 0; i < entities.Length; ++i)
-        {
-            ref readonly var entity = ref entities[i];
-            ref var transform = ref transforms[i];
-            Logger.Trace<ComponentSystem>($"Entity: {entity.IdNoVersion} Tranform: {transform.Position}");
-            transform.Position += Vector3.One * 0.01f;
-        }
+
+
+        //query.Free(memoryManager);
+        //for (var i = 0; i < entities.Length; ++i)
+        //{
+        //    ref readonly var entity = ref entities[i];
+        //    ref var transform = ref transforms[i];
+        //    Logger.Trace<ComponentSystem>($"Entity: {entity.IdNoVersion} Tranform: {transform.Position}");
+        //    transform.Position += Vector3.One * 0.01f;
+        //}
     }
 
-   
-}
 
+}
 
 public unsafe struct CachedQuery
 {
-    private Archetype** _archetypes;
-    private ushort* _offsets;
+    private readonly Inline8<ComponentType> _components;
+    private readonly ushort _componentCount;
+    public readonly ReadOnlySpan<ComponentType> Components => _components.AsReadOnlySpan();
+    public readonly ulong Signature;
+    public CachedQuery(ReadOnlySpan<ComponentType> components, ulong signature)
+    {
+        components.CopyTo(_components.AsSpan());
+        _componentCount = (ushort)components.Length;
+        Signature = signature;
+    }
 
-    private ushort _count;
-    private ushort _componentCount;
+    internal Archetype** Archetypes;
+    internal ushort* Offsets;
+    internal ushort Count;
 
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public bool EnumerateData(ref QueryState state, void** data)
     {
-        while (state.Index > _count)
+        if (Count == 0)
         {
-            var archetype = _archetypes[state.Index];
+            return false;
+        }
+
+        while (state.Index < Count)
+        {
+            var archetype = Archetypes[state.Index];
 
             if (state.Chunk == null)
             {
@@ -180,16 +222,21 @@ public unsafe struct CachedQuery
             }
 
             var offsetStart = state.Index * _componentCount;
+            //NOTE(Jens): This part could be source generated, but then the entire struct would need to be generated for each system. 
+            //NOTE(Jens): Might create a better implementation if we put this method inside the system. The binary will be bigger, but the execution speed will increase. 
+            //TODO(Jens): Test it out at some point. 
             for (var i = 0; i < _componentCount; ++i)
             {
-                data[i] = state.Chunk->GetDataRow(_offsets[offsetStart + i]);
+                data[i] = state.Chunk->GetDataRow(Offsets[offsetStart + i]);
             }
-
+            state.Count = state.Chunk->Header.NumberOfEntities;
             state.Chunk = state.Chunk->Header.Next;
+
             if (state.Chunk == null)
             {
                 state.Index++;
             }
+
             return true;
         }
 
@@ -199,6 +246,8 @@ public unsafe struct CachedQuery
 
 public unsafe ref struct QueryState
 {
+    public int Count;
     internal uint Index;
     internal Chunk* Chunk;
+
 }
