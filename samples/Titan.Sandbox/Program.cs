@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
@@ -48,11 +47,11 @@ namespace Titan.Sandbox
     }
 
     [UnmanagedResource]
-
     internal partial struct EntityTestSystem
     {
-        private uint Count;
-        
+        private Entity _entity;
+        private bool _done;
+
         [System]
         public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
         {
@@ -61,10 +60,6 @@ namespace Titan.Sandbox
                 transform.Position += Vector3.One * 0.1f;
             }
         }
-
-
-        private Entity _entity;
-        private bool _done;
 
         [System]
         public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);
@@ -77,14 +72,10 @@ namespace Titan.Sandbox
 
             if (_entity.IsValid)
             {
-                //entityManager.DestroyEntity(_entity);
-                //entityManager.RemoveComponent<TransformRect>(_entity);
-                //_entity = default;
+                entityManager.DestroyEntity(_entity);
+                entityManager.RemoveComponent<TransformRect>(_entity);
+                _entity = default;
                 _done = true;
-                //foreach (var entity in _entities)
-                //{
-                //    entityManager.RemoveComponent<Transform3D>(entity);
-                //}
             }
             else
             {
@@ -92,22 +83,20 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<Transform3D>(_entity);
                 entityManager.AddComponent<TransformRect>(_entity);
 
-                for (var i = 0; i < 10; ++i)
+                for (var i = 0; i < 1000; ++i)
                 {
                     var entity = entityManager.CreateEntity();
                     entityManager.AddComponent<Transform3D>(entity);
                     entityManager.AddComponent<TransformRect>(entity);
-                    _entities.Add(entity);
                 }
-
             }
         }
-        private static List<Entity> _entities = new List<Entity>();
-
     }
 
     internal partial struct ATestSystem
     {
+        private static AssetHandle<MeshAsset> _assetHandle;
+
         [System(SystemStage.Update, SystemExecutionType.Inline)]
         public static void Update(in InputState inputState)
         {
@@ -132,21 +121,13 @@ namespace Titan.Sandbox
             }
         }
 
-
-        private static AssetHandle<MeshAsset> _assetHandle;
         [System]
         public static void LoadModelTest(IAssetsManager assetsManager)
         {
             if (_assetHandle.IsInvalid)
             {
-                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed); ;
+                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);
             }
         }
     }
-
-    public partial struct SomeOtherComponent
-    {
-        public int A;
-    }
-
 }
