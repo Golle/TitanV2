@@ -66,7 +66,6 @@ internal unsafe partial struct ArchetypeRegistry
 
     public void AddComponent(in Entity entity, in ComponentType type, void* componentData)
     {
-        return;
         var entityId = entity.IdNoVersion;
         ref var data = ref _data[entityId];
         if (data.IsValid)
@@ -110,7 +109,6 @@ internal unsafe partial struct ArchetypeRegistry
 
     public void RemoveComponent(in Entity entity, in ComponentType type)
     {
-        return;
         var id = entity.IdNoVersion;
         ref var data = ref _data[id];
         ref var source = ref data.Record;
@@ -265,7 +263,7 @@ internal unsafe partial struct ArchetypeRegistry
     }
 
 
-    public void CreateQuery(ref BumpAllocator allocator, CachedQuery* query, Archetype** archetypeBuffer, ushort* offsetBuffer)
+    public void UpdateQuery(ref BumpAllocator allocator, CachedQuery* query, Archetype** archetypeBuffer, ushort* offsetBuffer)
     {
         var signature = query->Signature;
         var components = query->Components;

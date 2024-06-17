@@ -20,7 +20,6 @@ internal unsafe partial struct QueryRegistry
 
     public bool RegisterQueries(IMemoryManager memoryManager, IReadOnlyList<SystemDescriptor> systems)
     {
-
         var queries = stackalloc CachedQuery*[systems.Count];
         var count = 0u;
         foreach (var systemDescriptor in systems)
@@ -60,21 +59,6 @@ internal unsafe partial struct QueryRegistry
         registry->_archetypeRegistry = unmanagedResources.GetResourcePointer<ArchetypeRegistry>();
     }
 
-    public CachedQuery* CreateQuery(ReadOnlySpan<ComponentType> types)
-    {
-        return null;
-        //var query = _queries.GetPointer(_queryCount++);
-        //var archetypeCount = _archetypeRegistry->ArchetypeCount;
-
-        //var archetypeBuffer = stackalloc Archetype*[(int)archetypeCount];
-        //var offsetBuffers = stackalloc ushort[(int)archetypeCount * types.Length];
-
-        //*query = _archetypeRegistry->CreateQuery(ref _allocator, types, archetypeBuffer, offsetBuffers);
-
-        //return query;
-    }
-
-
     [System(SystemStage.PreUpdate)]
     internal static void CheckForDirtyQueries(QueryRegistry* registry)
     {
@@ -91,7 +75,8 @@ internal unsafe partial struct QueryRegistry
     private void UpdateQueries()
     {
         var archetypeCount = _archetypeRegistry->ArchetypeCount;
-
+        
+        //TODO(Jens): Stack overflow could happen, but leave it as is for now and revisit.
         //maybe we should use a titan buffer for this.
         var archetypeBuffer = stackalloc Archetype*[(int)archetypeCount];
         var offsetBuffer = stackalloc ushort[(int)archetypeCount * 10];
@@ -100,7 +85,7 @@ internal unsafe partial struct QueryRegistry
         for (var i = 0; i < _queryCount; ++i)
         {
             var query = _queries[i];
-            _archetypeRegistry->CreateQuery(ref _allocator, query, archetypeBuffer, offsetBuffer);
+            _archetypeRegistry->UpdateQuery(ref _allocator, query, archetypeBuffer, offsetBuffer);
         }
     }
 

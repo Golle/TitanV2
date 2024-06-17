@@ -50,6 +50,7 @@ internal static class TitanTypes
     public const string EntityManager = $"{ECS}.EntityManager";
     public const string Entity = $"{ECS}.Entity";
     public const string CachedQuery = $"{ECS}.Archetypes.CachedQuery";
+    public const string QueryState = $"{ECS}.Archetypes.QueryState";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 
@@ -63,4 +64,5 @@ internal static class TitanTypes
 
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
+
 }

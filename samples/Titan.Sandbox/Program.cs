@@ -1,8 +1,10 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Core.Logging;
+using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Graphics.Rendering;
@@ -46,17 +48,23 @@ namespace Titan.Sandbox
     }
 
     [UnmanagedResource]
+
     internal partial struct EntityTestSystem
     {
+        private uint Count;
+        
+        [System]
+        public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
+        {
+            foreach (ref var transform in transforms)
+            {
+                transform.Position += Vector3.One * 0.1f;
+            }
+        }
+
+
         private Entity _entity;
         private bool _done;
-
-        [System]
-        [EntityConfig(Not = [typeof(SomeOtherComponent)])]
-        public static void EntityFunction(ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects)
-        {
-            // Do the things
-        }
 
         [System]
         public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);
@@ -69,14 +77,14 @@ namespace Titan.Sandbox
 
             if (_entity.IsValid)
             {
-                entityManager.DestroyEntity(_entity);
-                entityManager.RemoveComponent<TransformRect>(_entity);
-                _entity = default;
+                //entityManager.DestroyEntity(_entity);
+                //entityManager.RemoveComponent<TransformRect>(_entity);
+                //_entity = default;
                 _done = true;
-                foreach (var entity in _entities)
-                {
-                    entityManager.RemoveComponent<Transform3D>(entity);
-                }
+                //foreach (var entity in _entities)
+                //{
+                //    entityManager.RemoveComponent<Transform3D>(entity);
+                //}
             }
             else
             {
@@ -84,7 +92,7 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<Transform3D>(_entity);
                 entityManager.AddComponent<TransformRect>(_entity);
 
-                for (var i = 0; i < 10000; ++i)
+                for (var i = 0; i < 10; ++i)
                 {
                     var entity = entityManager.CreateEntity();
                     entityManager.AddComponent<Transform3D>(entity);

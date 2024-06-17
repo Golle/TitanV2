@@ -60,7 +60,7 @@ internal class SystemsGenerator : IIncrementalGenerator
                 }
 
                 builder.Reset();
-                var name = $"{system.Type.Name}_{system.Method.Name}_NEXT";
+                var name = $"{system.Type.Name}_{system.Method.Name}";
                 SystemsBuilder.Build(builder, system, name, ids);
                 productionContext.AddSource($"{name}.g.cs", builder.ToString());
 

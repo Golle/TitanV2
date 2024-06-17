@@ -71,7 +71,7 @@ internal static class SystemsBuilder
             AppendSignature(builder, components);
             AppendStaticConstructor(builder, name, components);
             AppendInitMethod(builder, parameters);
-            AppendEntityExecuteMethod(builder, parameters, components);
+            AppendEntityExecuteMethod(builder, system, parameters, components);
         }
         else
         {
@@ -114,8 +114,10 @@ internal static class SystemsBuilder
             .AppendLine();
     }
 
-    private static void AppendEntityExecuteMethod(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
+    private static void AppendEntityExecuteMethod(FormattedBuilder builder, in SystemType system, ImmutableArray<SystemParameter> parameters, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
     {
+        var count = components.Length;
+
         builder
             .AppendLine("public static void Execute(void * context/* Context is currently not used, placeholder for future dev.*/)")
             .AppendOpenBracer()
@@ -123,11 +125,69 @@ internal static class SystemsBuilder
             .AppendLine("// Complex logic goes here!")
             ;
 
+        // Query
+        // Execute, pass
+
+        builder
+            .AppendLine($"{TitanTypes.QueryState} state = default;")
+            .AppendLine($"{TitanTypes.Entity}* entities;")
+            .AppendLine($"var data = stackalloc void*[{count}];")
+            
+            .AppendLine()
+
+            .AppendLine("while(_query.EnumerateData(ref state, &entities, data));")
+            .AppendOpenBracer();
+
+
+        builder.AppendLine("var count = state.Count;");
+        for (var i = 0; i < count; ++i)
+        {
+            builder.AppendLine($"var p{i} = new {TitanTypes.Span}<{components[i].Parameter.Type}>(data[{i}], count);");
+        }
+
+        var arguments = string.Join(", ", parameters
+            .Select((p, i) =>
+            {
+                if (p.Kind is ArgumentKind.EntityCollection)
+                {
+                    return $"new {TitanTypes.ReadOnlySpan}<{TitanTypes.Entity}>(entities, count)";
+                }
+
+                if (p.Kind is ArgumentKind.ReadOnlyComponent or ArgumentKind.MutableComponent)
+                {
+                    for (var index = 0; index < components.Length; ++index)
+                    {
+                        if (components[index].Parameter.Type == p.Type)
+                        {
+                            return $"p{index}";
+                        }
+                    }
+
+                    throw new InvalidOperationException("Failed to find the component index. Should not happen.");
+                }
+
+                if (p.Kind is ArgumentKind.Managed)
+                {
+                    return $"_{i}.Value";
+                }
+
+                var mod = p.Modifier switch
+                {
+                    ModifierType.Ref => "ref *",
+                    ModifierType.In => "in *",
+                    _ => string.Empty
+                };
+                return $"{mod}_{i}";
+            }));
+
+
+        builder
+            .AppendLine($"{system.Type.ToDisplayString()}.{system.Method.Name}({arguments});")
+            .AppendCloseBracer();
+
         builder
             .AppendCloseBracer()
             .AppendLine();
-
-
     }
 
     private static void AppendResourcesFields(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters)
@@ -211,7 +271,8 @@ internal static class SystemsBuilder
     private static void AppendStaticConstructor(FormattedBuilder builder, string name, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
     {
         var componentString = string.Join(", ", components.Select(static c => $"{c.Parameter.Type}.Type"));
-        builder.AppendLine($"static {name}()")
+        builder
+            .AppendLine($"static {name}()")
             .AppendOpenBracer()
             .AppendLine($"_query = new([{componentString}], Signature);")
             .AppendCloseBracer()

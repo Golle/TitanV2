@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Configurations;
-using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.ECS.Components;
@@ -89,8 +88,8 @@ internal unsafe partial struct ComponentSystem
 
     private static int _counter;
 
-    [System]
-    [EntityConfig(Not = [typeof(TransformRect)])]
+    //[System]
+    //[EntityConfig(Not = [typeof(TransformRect)])]
     public static void EntityTestSystem(ReadOnlySpan<Entity> entities, Span<Transform3D> t1, ComponentSystem* sys, IMemoryManager memoryManager)
     {
         if (_counter++ > 4)
@@ -124,7 +123,8 @@ internal unsafe partial struct ComponentSystem
         var componentsRead = 0;
         Logger.Info<ComponentSystem>("Do the query");
         var timer1 = Stopwatch.StartNew();
-        while (query.EnumerateData(ref state, data))
+        Entity* ent;
+        while (query.EnumerateData(ref state, &ent, data))
         {
             var count = state.Count;
             numEntities += count;
@@ -151,7 +151,7 @@ internal unsafe partial struct ComponentSystem
         Logger.Info<ComponentSystem>($"Query completed. Number of Entities queried = {numEntities} Components Read = {componentsRead} Elapsed = {timer1.Elapsed.TotalMicroseconds} microseconds ({timer1.Elapsed.TotalMilliseconds} ms) - {totalCount}");
 
 
-        var q = new CachedQuery([Transform3D.Type],0);
+        var q = new CachedQuery([Transform3D.Type], 0);
 
         while (reg->EnumerateArchetypes(ref index, signature, &archetype))
         {
@@ -185,63 +185,6 @@ internal unsafe partial struct ComponentSystem
     }
 
 
-}
-
-public unsafe struct CachedQuery
-{
-    private readonly Inline8<ComponentType> _components;
-    private readonly ushort _componentCount;
-    public readonly ReadOnlySpan<ComponentType> Components => _components.AsReadOnlySpan();
-    public readonly ulong Signature;
-    public CachedQuery(ReadOnlySpan<ComponentType> components, ulong signature)
-    {
-        components.CopyTo(_components.AsSpan());
-        _componentCount = (ushort)components.Length;
-        Signature = signature;
-    }
-
-    internal Archetype** Archetypes;
-    internal ushort* Offsets;
-    internal ushort Count;
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public bool EnumerateData(ref QueryState state, void** data)
-    {
-        if (Count == 0)
-        {
-            return false;
-        }
-
-        while (state.Index < Count)
-        {
-            var archetype = Archetypes[state.Index];
-
-            if (state.Chunk == null)
-            {
-                state.Chunk = archetype->ChunkStart;
-            }
-
-            var offsetStart = state.Index * _componentCount;
-            //NOTE(Jens): This part could be source generated, but then the entire struct would need to be generated for each system. 
-            //NOTE(Jens): Might create a better implementation if we put this method inside the system. The binary will be bigger, but the execution speed will increase. 
-            //TODO(Jens): Test it out at some point. 
-            for (var i = 0; i < _componentCount; ++i)
-            {
-                data[i] = state.Chunk->GetDataRow(Offsets[offsetStart + i]);
-            }
-            state.Count = state.Chunk->Header.NumberOfEntities;
-            state.Chunk = state.Chunk->Header.Next;
-
-            if (state.Chunk == null)
-            {
-                state.Index++;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
 }
 
 public unsafe ref struct QueryState

@@ -84,7 +84,7 @@ internal static class Helpers
                 var arg = ((INamedTypeSymbol)type).TypeArguments[0];
                 if (arg.ToDisplayString() == TitanTypes.Entity)
                 {
-                    kind = ArgumentKind.ReadOnlyComponent;
+                    kind = ArgumentKind.EntityCollection;
                 }
                 else
                 {
