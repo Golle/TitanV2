@@ -47,7 +47,7 @@ internal static class Helpers
                 {
                     if (typeSymbol.AllInterfaces.Contains(interfaceType))
                     {
-                        if (typeSymbol.GetMembers("THE_ID").FirstOrDefault() is IFieldSymbol { ConstantValue: ulong value })
+                        if (typeSymbol.GetMembers(ComponentBuilder.IdFieldName).FirstOrDefault() is IFieldSymbol { ConstantValue: uint value })
                         {
                             builder.Add((typeSymbol.ToDisplayString(), value));
                         }

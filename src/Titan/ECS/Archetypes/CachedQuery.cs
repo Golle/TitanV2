@@ -7,7 +7,7 @@ public unsafe struct CachedQuery
 {
     private readonly Inline8<ComponentType> _components;
     private readonly ushort _componentCount;
-    public readonly ReadOnlySpan<ComponentType> Components => _components.AsReadOnlySpan();
+    public readonly ReadOnlySpan<ComponentType> Components => _components.AsReadOnlySpan()[.._componentCount];
     public readonly ulong Signature;
 
     internal Archetype** Archetypes;

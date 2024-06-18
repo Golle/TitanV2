@@ -70,12 +70,12 @@ internal static class SystemsBuilder
             AppendQueryField(builder);
             AppendSignature(builder, components);
             AppendStaticConstructor(builder, name, components);
-            AppendInitMethod(builder, parameters);
+            AppendInitMethod(builder, parameters, components);
             AppendEntityExecuteMethod(builder, system, parameters, components);
         }
         else
         {
-            AppendInitMethod(builder, parameters);
+            AppendInitMethod(builder, parameters, components);
             AppendExecuteMethod(builder, system, parameters);
         }
 
@@ -132,10 +132,10 @@ internal static class SystemsBuilder
             .AppendLine($"{TitanTypes.QueryState} state = default;")
             .AppendLine($"{TitanTypes.Entity}* entities;")
             .AppendLine($"var data = stackalloc void*[{count}];")
-            
+
             .AppendLine()
 
-            .AppendLine("while(_query.EnumerateData(ref state, &entities, data));")
+            .AppendLine("while(_query.EnumerateData(ref state, &entities, data))")
             .AppendOpenBracer();
 
 
@@ -222,7 +222,7 @@ internal static class SystemsBuilder
             .AppendLine();
     }
 
-    private static void AppendInitMethod(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters)
+    private static void AppendInitMethod(FormattedBuilder builder, ImmutableArray<SystemParameter> parameters, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)
     {
         const string ArgumentName = "initializer";
         builder
@@ -262,10 +262,22 @@ internal static class SystemsBuilder
             }
         }
 
+        foreach (var (component, _) in components)
+        {
+            if (component.Kind is ArgumentKind.ReadOnlyComponent)
+            {
+                builder.AppendLine($"{ArgumentName}.AddReadOnlyComponent({component.Type}.Type);");
+            }
+            else if (component.Kind is ArgumentKind.MutableComponent)
+            {
+                builder.AppendLine($"{ArgumentName}.AddMutableComponent({component.Type}.Type);");
+            }
+        }
+
+
         builder
             .AppendCloseBracer()
             .AppendLine();
-
     }
 
     private static void AppendStaticConstructor(FormattedBuilder builder, string name, ImmutableArray<(SystemParameter Parameter, ulong Id)> components)

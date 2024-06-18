@@ -11,6 +11,7 @@ internal sealed unsafe class UnmanagedResourceRegistry : IService
     private TitanArray<uint> _offsets;
 
     private IMemoryManager? _memoryManager;
+    public uint HighestId { get; private set; }
     public bool Init(IMemoryManager memoryManager, IReadOnlyList<UnmanagedResourceDescriptor> descriptors)
     {
         var length = descriptors.Count;
@@ -40,8 +41,11 @@ internal sealed unsafe class UnmanagedResourceRegistry : IService
         uint offset = 0;
         foreach (var descriptor in descriptors)
         {
-            _offsets[descriptor.Id] = offset;
+            var id = descriptor.Id;
+            _offsets[id] = offset;
             offset += descriptor.AlignedSize;
+
+            HighestId = Math.Max(id, HighestId);
         }
 
         _memoryManager = memoryManager;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Titan;
 using Titan.Application;
@@ -72,8 +73,8 @@ namespace Titan.Sandbox
 
             if (_entity.IsValid)
             {
-                entityManager.DestroyEntity(_entity);
-                entityManager.RemoveComponent<TransformRect>(_entity);
+                //entityManager.DestroyEntity(_entity);
+                //entityManager.RemoveComponent<TransformRect>(_entity);
                 _entity = default;
                 _done = true;
             }
@@ -83,12 +84,12 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<Transform3D>(_entity);
                 entityManager.AddComponent<TransformRect>(_entity);
 
-                for (var i = 0; i < 1000; ++i)
-                {
-                    var entity = entityManager.CreateEntity();
-                    entityManager.AddComponent<Transform3D>(entity);
-                    entityManager.AddComponent<TransformRect>(entity);
-                }
+                //for (var i = 0; i < 1000; ++i)
+                //{
+                //    var entity = entityManager.CreateEntity();
+                //    entityManager.AddComponent<Transform3D>(entity);
+                //    entityManager.AddComponent<TransformRect>(entity);
+                //}
             }
         }
     }

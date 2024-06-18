@@ -262,7 +262,7 @@ internal unsafe partial struct ArchetypeRegistry
                 var offsetIndex = 0;
 
                 ref readonly var layout = ref arch->Layout;
-                for (var i = 0; i < layout.NumberOfComponents; ++i)
+                for (var i = 0; offsetIndex < numberOfComponents; ++i) // exit when the amount of components have been reached.
                 {
                     if (layout.Ids[i] == components[offsetIndex].Id)
                     {

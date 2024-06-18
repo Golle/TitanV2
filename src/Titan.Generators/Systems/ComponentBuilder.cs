@@ -12,6 +12,7 @@ internal struct ComponentType(string name, string fullName, string @namespace, s
 
 internal static class ComponentBuilder
 {
+    public const string IdFieldName = "Id";
     public static string Build(in ComponentType component, ulong id)
     {
         var builder = new FormattedBuilder(new StringBuilder());
@@ -22,8 +23,8 @@ internal static class ComponentBuilder
             .AppendLine()
             .AppendLine($"{component.Accessability} unsafe partial struct {component.Name} : {TitanTypes.IComponent}")
             .AppendOpenBracer()
-            .AppendLine($"public static {TitanTypes.ComponentType} Type {{get;}} = {TitanTypes.ComponentType}.GetNext<{component.Name}>();")
-            .AppendLine($"public const ulong THE_ID = {id};")
+            .AppendLine($"public static {TitanTypes.ComponentType} Type {{ get; }} = new ({IdFieldName}, (uint)sizeof({component.Name}));")
+            .AppendLine($"public const uint {IdFieldName} = {id};")
             .AppendCloseBracer();
 
         return builder.ToString();
