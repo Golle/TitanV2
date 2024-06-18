@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Configurations;
@@ -6,7 +5,6 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
-using Titan.ECS.Components;
 using Titan.Resources;
 using Titan.Systems;
 
@@ -237,6 +235,7 @@ internal unsafe partial struct ArchetypeRegistry
         return null;
     }
 
+
     public void PrintArchetypeStats()
     {
         Logger.Info<ArchetypeRegistry>($"Print archetype stats. Count = {_archetypeCount}");
@@ -245,23 +244,6 @@ internal unsafe partial struct ArchetypeRegistry
             Logger.Info<ArchetypeRegistry>($"Id/Signature: {arch.Id.Signature} Component Size: {arch.Id.ComponentsSize} Number of Entities: {arch.EntitiesCount} Number of Chunks : {arch.ChunkCount}");
         }
     }
-
-
-    public bool EnumerateArchetypes(ref uint index, ulong signature, Archetype** archetypeOut)
-    {
-        while (index < _archetypes.Length)
-        {
-            var archetype = _archetypes.GetPointer(index++);
-            if (archetype->Id.Signature % signature == 0)
-            {
-                *archetypeOut = archetype;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     public void UpdateQuery(ref BumpAllocator allocator, CachedQuery* query, Archetype** archetypeBuffer, ushort* offsetBuffer)
     {
@@ -310,59 +292,5 @@ internal unsafe partial struct ArchetypeRegistry
 
         MemoryUtils.Copy(query->Archetypes, archetypeBuffer, archetypeSize);
         MemoryUtils.Copy(query->Offsets, offsetBuffer, offsetSize);
-    }
-
-    public CachedQuery ConstructQuery(IMemoryManager memoryManager, Archetype** archetypeBuffer, ushort* offsetBuffer, uint archetypeCount)
-    {
-        var comp1 = Transform3D.Type.Id;
-        var comp2 = TransformRect.Type.Id;
-        var numberOfComponents = 2;
-
-        Span<uint> compIds = [comp1, comp2]
-            ;
-        compIds.Sort();
-
-        var signature = comp1 * comp2;
-
-        var count = 0;
-        for (var index = 0; index < _archetypeCount; ++index)
-        {
-            var arch = _archetypes.GetPointer(index);
-            if (arch->Id.Signature % signature == 0)
-            {
-                archetypeBuffer[count] = arch;
-                var offsetStart = offsetBuffer + (count * numberOfComponents);
-                var offsetIndex = 0;
-
-                ref readonly var layout = ref arch->Layout;
-                for (var i = 0; i < layout.NumberOfComponents; ++i)
-                {
-                    if (layout.Ids[i] == compIds[offsetIndex])
-                    {
-                        *(offsetStart + offsetIndex) = layout.Offsets[i];
-                        offsetIndex++;
-                    }
-                }
-                count++;
-            }
-        }
-
-        if (count == 0)
-        {
-            //return new CachedQuery(null, null, 0, (ushort)numberOfComponents);
-            return default;
-        }
-
-        var offsetSize = count * (sizeof(ushort) * 4);
-        var archetypeSize = count * sizeof(Archetype*);
-        var archetypeMem = (Archetype**)memoryManager.Alloc((uint)(offsetSize + archetypeSize));
-        var offsetMem = (ushort*)(archetypeMem + count);
-
-        MemoryUtils.Copy(archetypeMem, archetypeBuffer, sizeof(Archetype*) * count);
-        MemoryUtils.Copy(offsetMem, offsetBuffer, sizeof(ushort));
-
-        return default;
-        //return new CachedQuery(archetypeMem, offsetMem, (ushort)count, (ushort)numberOfComponents);
-
     }
 }

@@ -1,5 +1,3 @@
-using Titan.Systems;
-
 namespace Titan.ECS;
 
 [AttributeUsage(AttributeTargets.Struct)]

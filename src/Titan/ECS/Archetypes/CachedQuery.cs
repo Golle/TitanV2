@@ -42,6 +42,7 @@ public unsafe struct CachedQuery
             //NOTE(Jens): This part could be source generated, but then the entire struct would need to be generated for each system. 
             //NOTE(Jens): Might create a better implementation if we put this method inside the system. The binary will be bigger, but the execution speed will increase. 
             //TODO(Jens): Test it out at some point. 
+
             for (var i = 0; i < _componentCount; ++i)
             {
                 data[i] = state.Chunk->GetDataRow(Offsets[offsetStart + i]);

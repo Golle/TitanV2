@@ -19,7 +19,8 @@ public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAlloc
 
     public static void Release(void* allocator, IMemoryManager memoryManager)
     {
-        throw new NotImplementedException();
+        Debug.Assert(allocator != null);
+        memoryManager.Free(allocator);
     }
 
     public void* Alloc(uint size)

@@ -46,6 +46,15 @@ internal unsafe struct ComponentCommands
         return true;
     }
 
+    public void Shutdown(IMemoryManager memoryManager)
+    {
+        if (_commands.IsValid)
+        {
+            memoryManager.FreeAllocator(_allocator);
+            memoryManager.FreeArray(ref _commands);
+        }
+    }
+
     public void AddComponent<T>(in Entity entity, in T data) where T : unmanaged, IComponent
     {
         var ptr = (T*)_allocator.Alloc((uint)sizeof(T));
@@ -82,6 +91,7 @@ internal unsafe struct ComponentCommands
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<EntityCommand> GetCommands() => _commands.AsReadOnlySpan()[.._commandCount];
 
     public void Reset()

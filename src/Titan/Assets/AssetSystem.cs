@@ -5,7 +5,6 @@ using Titan.Core.IO;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
-using Titan.Graphics.Resources;
 using Titan.IO.FileSystem;
 using Titan.Systems;
 
