@@ -43,46 +43,18 @@ namespace Titan.Sandbox
             builder
                 .AddSystems<ATestSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
-                .AddResource<Res1>()
-                .AddResource<Res2>()
-                .AddResource<Res3>()
                 ;
                 
             return true;
         }
     }
-
-    [UnmanagedResource]
-    internal partial struct Res1
-    {
-        public int A;
-    }
-    [UnmanagedResource]
-    internal partial struct Res2
-    {
-        public int A;
-    }
-    [UnmanagedResource]
-    internal partial struct Res3
-    {
-        public int A;
-    }
-
+    
     [UnmanagedResource]
     internal unsafe partial struct EntityTestSystem
     {
         private Entity _entity;
         private bool _done;
-
-
-        [System]
-        public static void CircularA(Res1* res, in Res2 res2) { }
-        [System]
-        public static void CircularB(Res2* res, in Res3 res3) { }
-        [System]
-        public static void CircularC(Res3* res, in Res1 res1) { }
-
-
+        
         [System]
         public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
         {
