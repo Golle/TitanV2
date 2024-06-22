@@ -22,14 +22,11 @@ public sealed class InlineGenerator : IIncrementalGenerator
                 return (Symbol: (INamedTypeSymbol)syntaxContext.TargetSymbol, Length: length);
             });
 
-        var valueProvider = context
-            .CompilationProvider
-            .Combine(structDeclarations.Collect());
 
         context
-            .RegisterSourceOutput(valueProvider, static (productionContext, source) => Execute(source.Left, source.Right!, productionContext));
+            .RegisterSourceOutput(structDeclarations.Collect(), static (productionContext, source) => Execute(source, productionContext));
 
-        static void Execute(Compilation _, ImmutableArray<(INamedTypeSymbol Symbol, int Length)> arrays, SourceProductionContext context)
+        static void Execute(ImmutableArray<(INamedTypeSymbol Symbol, int Length)> arrays, SourceProductionContext context)
         {
             var builder = new StringBuilder();
 
@@ -39,8 +36,7 @@ public sealed class InlineGenerator : IIncrementalGenerator
                 builder.AppendLine();
             }
 
-            context.AddSource($"InlineArrays.g.cs", builder.ToString());
+            context.AddSource("InlineArrays.g.cs", builder.ToString());
         }
-
     }
 }

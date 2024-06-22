@@ -18,14 +18,4 @@ internal class MemoryModule<TPlatformAllocator> : IModule where TPlatformAllocat
         builder.AddService<IMemoryManager, MemoryManager<TPlatformAllocator>>(system);
         return true;
     }
-
-    public static bool Init(IApp app)
-        => true;
-
-    public static bool Shutdown(IApp app)
-    {
-        app.GetService<MemoryManager<TPlatformAllocator>>().Shutdown();
-
-        return true;
-    }
 }

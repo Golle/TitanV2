@@ -3,18 +3,18 @@ using System.Runtime.CompilerServices;
 
 namespace Titan.Core.Memory.Allocators;
 
-public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
+public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 {
-    private uint _offset;
+    private volatile uint _offset;
     public static void* Alloc(void* allocator, uint size)
     {
-        var bump = (BumpAllocator*)allocator;
+        var bump = (AtomicBumpAllocator*)allocator;
         return bump->Alloc(size);
     }
 
-    public static unsafe void Free(void* allocator, void* ptr)
+    public static void Free(void* allocator, void* ptr)
     {
-        // no op for bump allocator
+        throw new NotImplementedException();
     }
 
     public static void Release(void* allocator, IMemoryManager memoryManager)
@@ -25,9 +25,9 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 
     public void* Alloc(uint size)
     {
-        Debug.Assert(_offset + size <= allocatorSize);
-        var ptr = mem + _offset;
-        _offset += size;
+        var end = Interlocked.Add(ref _offset, size);
+        var ptr = mem + end - size;
+        Debug.Assert(end <= allocatorSize);
         return ptr;
     }
 
@@ -58,9 +58,12 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
             return TitanArray<T>.Empty;
         }
         var size = (uint)(sizeof(T) * count);
-        Debug.Assert(_offset + size <= allocatorSize);
-        var array = new TitanArray<T>((T*)(mem + _offset), count);
-        _offset += size;
+        var end = Interlocked.Add(ref _offset, size);
+        Debug.Assert(end <= allocatorSize);
+
+        var ptr = mem + end - size;
+        var array = new TitanArray<T>((T*)ptr, count);
+
         return array;
     }
 
@@ -75,5 +78,5 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 
     public readonly Allocator AsAllocator() => Allocator.Create(ref Unsafe.AsRef(in this));
 
-    public static implicit operator Allocator(in BumpAllocator allocator) => allocator.AsAllocator();
+    public static implicit operator Allocator(in AtomicBumpAllocator allocator) => allocator.AsAllocator();
 }

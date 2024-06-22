@@ -1,87 +1,101 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Immutable;
 using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Titan.Generators.Systems;
+
 [Generator]
-public class SystemsGenerator : IIncrementalGenerator
+internal class SystemsGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var structDeclarations = context.SyntaxProvider.ForAttributeWithMetadataName(
-            TitanTypes.SystemAttribute,
-            static (node, _) => node is MethodDeclarationSyntax syntax && IsJobMethod(syntax),
-            static (syntaxContext, _) =>
-            {
-                var constructorArguments = syntaxContext
-                    .Attributes
-                    .First(static data => TitanTypes.SystemAttribute.EndsWith(data.AttributeClass!.MetadataName))
-                    .ConstructorArguments;
+        var systemsValueProvider = context
+            .SyntaxProvider
+            .ForAttributeWithMetadataName(
+                TitanTypes.SystemAttribute,
+                static (node, _) => node.IsMethod() && node.Parent!.IsPartial(),
+                static (syntaxContext, _) => Helpers.ReadSystemType(syntaxContext));
 
-                var systemStage = (int)constructorArguments[0].Value!;
-                var executionType = (int)constructorArguments[1].Value!;
+        var componentsValueProvider = context
+            .SyntaxProvider
+            .ForAttributeWithMetadataName(
+                TitanTypes.ComponentAttribute,
+                static (node, _) => node.IsStruct() && node.IsPartial(),
+                static (syntaxContext, _) => Helpers.ReadComponentType(syntaxContext));
 
 
-                var method = (IMethodSymbol)syntaxContext.TargetSymbol;
-                var type = method.ContainingType;
-                return new SystemType(type, method, systemStage, executionType, syntaxContext.TargetNode);
-            });
-
-        var valueProvider = context
+        var compiledComponents = context
             .CompilationProvider
-            .Combine(structDeclarations.Collect());
+            .Select(static (compilation, _) => Helpers.ReadCompiledComponentTypes(compilation));
 
-        context
-            .RegisterSourceOutput(valueProvider, static (productionContext, source) => Execute(source.Left, source.Right!, productionContext));
-        return;
+        // Combine the results into a single tuple
+        var result = compiledComponents
+            .Combine(componentsValueProvider.Collect())
+            .Combine(systemsValueProvider.Collect())
+            .Select((tuple, _) => (CompiledComponents: tuple.Left.Left, Components: tuple.Left.Right, Systems: tuple.Right))
+            ;
 
-        static bool IsJobMethod(MethodDeclarationSyntax syntax)
+        context.RegisterSourceOutput(result, static (productionContext, tuple) =>
         {
-            var parent = syntax.Parent;
-            if (parent is StructDeclarationSyntax structDecl)
-            {
-                return structDecl.Modifiers.Any(static m => m.IsKind(SyntaxKind.PartialKeyword));
-            }
+            // Create a dictionary from the components for easy lookup of ID.
+            var ids = tuple
+                .CompiledComponents
+                .ToDictionary(static valueTuple => valueTuple.Name, static valueTuple => valueTuple.Id);
 
-            if (parent is ClassDeclarationSyntax classDecl)
-            {
-                return classDecl.Modifiers.Any(static m => m.IsKind(SyntaxKind.PartialKeyword));
-            }
+            // We use ID 1 for Entities, this will not affect the signature calculation
+            ids.Add(TitanTypes.Entity, 1);
 
-            return false;
-        }
+            // Add the components sources and record their IDs
+            ConstructComponents(ids, tuple.Components, productionContext);
 
-        static void Execute(Compilation _, ImmutableArray<SystemType> systemTypes, SourceProductionContext context)
-        {
-            Dictionary<INamedTypeSymbol, List<(string Name, int Stage, int ExecutionType)>> systems = new(systemTypes.Length, SymbolEqualityComparer.Default);
-            foreach (var system in systemTypes)
+            Dictionary<INamedTypeSymbol, List<(string Name, int Stage, int ExecutionType)>> systems = new(tuple.Systems.Length, SymbolEqualityComparer.Default);
+
+            var builder = new FormattedBuilder(new StringBuilder());
+            foreach (var system in tuple.Systems)
             {
                 if (!system.Method.ReturnsVoid)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("TI0002", "Wrong return type", "The return type must be void for a System.", "Systems", DiagnosticSeverity.Error, true), system.Node.GetLocation(), system.Method.Locations));
+                    productionContext.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor("TI0002", "Wrong return type", "The return type must be void for a System.", "Systems", DiagnosticSeverity.Error, true), system.Node.GetLocation(), system.Method.Locations));
                     continue;
                 }
 
-                var name = SystemsBuilder.Build(system, context);
-                var containingType = system.Type;
-                if (!systems.TryGetValue(containingType, out var list))
+                builder.Reset();
+                var name = $"{system.Type.Name}_{system.Method.Name}";
+                SystemsBuilder.Build(builder, system, name, ids);
+                productionContext.AddSource($"{name}.g.cs", builder.ToString());
+
+                if (!systems.TryGetValue(system.Type, out var list))
                 {
-                    systems[containingType] = list = new();
+                    systems[system.Type] = list = new();
                 }
                 list.Add((name, system.Stage, system.ExecutionType));
             }
 
-
             foreach (var system in systems)
             {
-                CreateSystem(system.Key, system.Value, context);
+                WriteSystemDescriptors(system.Key, system.Value, productionContext);
             }
+        });
+    }
+
+
+
+    private static void ConstructComponents(Dictionary<string, ulong> ids, ImmutableArray<ComponentType> components, SourceProductionContext context)
+    {
+        // Get the higest ID, so we can continue to increase it if we have new components.
+        var id = ids.Count > 0 ? ids.Values.Max() : 0;
+
+        foreach (var component in components)
+        {
+            var nextId = PrimeNumberIncrement.CalculateNext(ref id);
+            // Add the new component the Dictionary
+            ids.Add(component.FullName, nextId);
+            var source = ComponentBuilder.Build(component, nextId);
+            context.AddSource($"{component.Name}.g.cs", source);
         }
     }
 
-    private static void CreateSystem(ITypeSymbol type, IReadOnlyList<(string Name, int Stage, int ExecutionType)> systems, SourceProductionContext context)
+    private static void WriteSystemDescriptors(ITypeSymbol type, IReadOnlyList<(string Name, int Stage, int ExecutionType)> systems, SourceProductionContext context)
     {
         var builder = new FormattedBuilder(new StringBuilder());
         var containingNamespace = type.ContainingNamespace.ToDisplayString();
@@ -90,17 +104,18 @@ public class SystemsGenerator : IIncrementalGenerator
         var classOrStruct = type.IsValueType ? "struct" : "class";
 
         var modifier = type.DeclaredAccessibility.AsString();
-        builder.AppendLine("// Auto-Generated")
+        builder.AppendAutoGenerated()
+            .AppendLine()
             .AppendLine($"namespace {containingNamespace};")
+            .AppendLine()
             .AppendLine($"{modifier} unsafe partial {classOrStruct} {typeName} : {TitanTypes.ISystem}")
-            .AppendLine("{")
-            .BeginIndentation();
+            .AppendOpenBracer();
 
         // Add GetJobs
         {
-            builder.AppendLine($"public static int GetSystems(System.Span<{TitanTypes.SystemDescriptor}> descriptors)")
-                .AppendLine("{")
-                .BeginIndentation()
+            builder
+                .AppendLine($"public static int GetSystems({TitanTypes.Span}<{TitanTypes.SystemDescriptor}> descriptors)")
+                .AppendOpenBracer()
                 .AppendLine($"{TitanTypes.Debug}.Assert(descriptors.Length >= {systems.Count});")
                 ;
 
@@ -112,18 +127,20 @@ public class SystemsGenerator : IIncrementalGenerator
                     .AppendLine($"descriptors[{i}].ExecutionType = ({TitanTypes.SystemExecutionType}){executionType};")
                     .AppendLine($"descriptors[{i}].Name = {TitanTypes.StringRef}.Create(\"{systemName}\");")
                     .AppendLine($"descriptors[{i}].Init = &{systemName}.Init;")
-                    .AppendLine($"descriptors[{i}].Execute = &{systemName}.Execute;");
+                    .AppendLine($"descriptors[{i}].Execute = &{systemName}.Execute;")
+                    .AppendLine($"descriptors[{i}].GetQuery = &{systemName}.GetQuery;")
+                    .AppendLine()
+                    ;
             }
 
             builder
                 .AppendLine($"return {systems.Count};")
-                .EndIndentation()
-                .AppendLine("}");
+                .AppendCloseBracer()
+                ;
         }
 
         builder
-            .EndIndentation()
-            .AppendLine("}");
+            .AppendCloseBracer();
 
         //NOTE(Jens): This will crash if this is a resource without a namespace. Fix if it ever occurs.
         context.AddSource($"{containingNamespace}.{typeName}.g.cs", builder.ToString());

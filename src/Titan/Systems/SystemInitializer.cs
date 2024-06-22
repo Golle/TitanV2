@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
+using Titan.ECS;
+using Titan.ECS.Archetypes;
 using Titan.Events;
 using Titan.Resources;
 using Titan.Services;
@@ -53,4 +55,25 @@ public unsafe ref struct SystemInitializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ManagedResource<T> GetService<T>() where T : class, IService
         => _serviceRegistry.GetHandle<T>();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public EntityManager CreateEntityManager()
+        => new(_unmanagedResources.GetResourcePointer<EntitySystem>(), _unmanagedResources.GetResourcePointer<ComponentSystem>());
+
+    public void AddReadOnlyComponent(in ComponentType type)
+    {
+        Debug.Assert(ReadOnlyCount < _readOnly.Length);
+
+        //NOTE(Jens): We offset the ID with the highest in the UnmanagedResources, so no extra work has to be done to support components.
+        var id = _unmanagedResources.HighestId + type.Id;
+        _readOnly[ReadOnlyCount++] = id;
+    }
+
+    public void AddMutableComponent(in ComponentType type)
+    {
+        //NOTE(Jens): We offset the ID with the highest in the UnmanagedResources, so no extra work has to be done to support components.
+        var id = _unmanagedResources.HighestId + type.Id;
+        Debug.Assert(MutableCount < _mutable.Length);
+        _mutable[MutableCount++] = id;
+    }
 }

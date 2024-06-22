@@ -93,13 +93,11 @@ internal unsafe ref struct ExecutionTreeBuilder
                     var dependencyType = CheckDependency(outerSystem, innerSystem);
                     if (dependencyType is DependencyType.OneWay or DependencyType.TwoWay)
                     {
-                        Logger.Warning("We're not checking for circular dependencies. Implement this asap.", typeof(ExecutionTreeBuilder));
-                        //NOTE(Jens): We need to check for Circular dependencies.
-                        //if (IsCircular(_systems, innerSystem, outerSystem))
-                        //{
-                        //    Logger.Warning<SystemsScheduler>($"System {systems[outer].Id} has a circular dependency to {systems[inner].Id}. The system will not be added to the dependency list and will be executed before the other system");
-                        //}
-                        //else
+                        if (IsCircular(nodes, inner, outer))
+                        {
+                            Logger.Warning<SystemsScheduler>($"System {outer} has a circular dependency to {inner}. The system will not be added to the dependency list and will be executed before the other system");
+                        }
+                        else
                         {
                             tempDependencies[dependencyCount++] = (ushort)inner;
                         }
@@ -130,7 +128,7 @@ internal unsafe ref struct ExecutionTreeBuilder
             var numberOfNodes = (uint)_stageCounter[i];
             Logger.Trace($"Stage {(SystemStage)i}. Systems Count = {numberOfNodes}", typeof(ExecutionTreeBuilder));
 
-            //NOTE(Jens): PreInit and PostShutdown are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
+            //NOTE(Jens): Startup and EndOfLife are excuted in the order they are registered. This is to allow certain things to happen in order without having dependencies.
             delegate*<IJobSystem, TitanArray<SystemNode>, void> executor = (SystemStage)i switch
             {
                 SystemStage.Startup => &SequentialExecutor.Run,
@@ -177,9 +175,22 @@ internal unsafe ref struct ExecutionTreeBuilder
         }
     }
 
-    private bool IsCircular(in TitanArray<SystemInstance> systems, in SystemInstance inner, in SystemInstance outer)
+    private static bool IsCircular(in TitanArray<SystemNode> nodes, int current, int id)
     {
-        throw new NotImplementedException();
+        ref readonly var node = ref nodes[current];
+
+        foreach (var dependency in node.Dependencies.AsReadOnlySpan())
+        {
+            if (dependency == id)
+            {
+                return true;
+            }
+            if (IsCircular(nodes, dependency, id))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 

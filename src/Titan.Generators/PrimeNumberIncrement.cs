@@ -1,6 +1,5 @@
-namespace Titan.Core.Ids;
-
-public readonly struct PrimeNumberIncrement : IIdIncrementer<ulong>
+namespace Titan.Generators;
+public readonly struct PrimeNumberIncrement
 {
     private static readonly object _lock = new();
 
@@ -8,14 +7,14 @@ public readonly struct PrimeNumberIncrement : IIdIncrementer<ulong>
     {
         lock (_lock)
         {
-            var val = value+1;
+            var val = value + 1;
             while (!IsPrime(val))
             {
                 val++;
             }
 
             value = val;
-            
+
             return val;
         }
     }

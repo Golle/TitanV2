@@ -8,6 +8,8 @@ namespace Titan.ECS;
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
 public readonly struct Entity
 {
+    public static readonly unsafe ComponentType Type = new(1, (uint)sizeof(Entity));
+    
     internal Entity(uint id, byte version)
     {
         Id = id;

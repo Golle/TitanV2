@@ -11,6 +11,7 @@ internal static class TitanTypes
     public const string Events = "Titan.Events";
     public const string Configurations = "Titan.Configurations";
     public const string Core = "Titan.Core";
+    public const string ECS = "Titan.ECS";
 
     public const string UnmanagedResourceAttribute = $"{Resources}.UnmanagedResourceAttribute";
     public const string UnmanagedResourceGenerator = $"{Resources}.UnmanagedResourceId";
@@ -43,8 +44,17 @@ internal static class TitanTypes
     public const string AssetDescriptor = $"{Assets}.AssetDescriptor";
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
+    public const string ComponentAttribute = $"{ECS}.ComponentAttribute";
+    public const string IComponent = $"{ECS}.IComponent";
+    public const string ComponentType = $"{ECS}.ComponentType";
+    public const string EntityManager = $"{ECS}.EntityManager";
+    public const string Entity = $"{ECS}.Entity";
+    public const string CachedQuery = $"{ECS}.Archetypes.CachedQuery";
+    public const string QueryState = $"{ECS}.Archetypes.QueryState";
+
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 
+    public const string MemoryUtils = $"{Core}.Memory.MemoryUtils";
 
     public static readonly string MethodImplAttribute = typeof(MethodImplAttribute).FullName!;
     public static readonly string MethodImplOptions = typeof(MethodImplOptions).FullName!;
@@ -54,4 +64,5 @@ internal static class TitanTypes
 
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
+
 }

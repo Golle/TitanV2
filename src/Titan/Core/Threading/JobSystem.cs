@@ -223,6 +223,8 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
                 catch (Exception e)
                 {
                     Logger.Error<JobSystem>($"{e.GetType().Name} was thrown in a Job. This will crash the process in release builds. Exceptions have to be handled by the function that is queued.");
+                    Logger.Error<JobSystem>(e.Message);
+                    Logger.Error<JobSystem>(e.StackTrace!);
                 }
 
 #else

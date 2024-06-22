@@ -14,14 +14,10 @@ public class UnmanagedResourcesGenerator : IIncrementalGenerator
             static (node, _) => node is StructDeclarationSyntax structDecl && structDecl.Modifiers.Any(static m => m.IsKind(SyntaxKind.PartialKeyword)),
             static (syntaxContext, _) => new UnmanagedResourceType((INamedTypeSymbol)syntaxContext.TargetSymbol));
 
-        var valueProvider = context
-            .CompilationProvider
-            .Combine(structDeclarations.Collect());
-        
         context
-            .RegisterSourceOutput(valueProvider, static (productionContext, source) => Execute(source.Left, source.Right!, productionContext));
+            .RegisterSourceOutput(structDeclarations.Collect(), static (productionContext, source) => Execute(source, productionContext));
 
-        static void Execute(Compilation _, ImmutableArray<UnmanagedResourceType> resources, SourceProductionContext context)
+        static void Execute(ImmutableArray<UnmanagedResourceType> resources, SourceProductionContext context)
         {
             foreach (var resource in resources)
             {

@@ -322,8 +322,4 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.Transition(backbuffer, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT);
         commandList.Close();
     }
-
-
-
-    private static float Angle;
 }

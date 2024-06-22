@@ -1,5 +1,4 @@
 using Titan.Assets.Types;
-using Titan.Core.Memory;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
