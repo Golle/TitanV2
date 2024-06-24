@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "8287615a-efcd-4e46-834c-8407fc155662",
+  "name": "DebugTextPixelShader",
+  "fileSize": 123,
+  "dependsOn": [],
+  "skip": false
+}

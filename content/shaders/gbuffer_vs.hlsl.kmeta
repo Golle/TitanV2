@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Vertex",
+  "shaderVersion": "Version_6_5",
+  "id": "ef3ad871-6709-4fac-a835-67a552d3148f",
+  "name": "GBufferVertexShader",
+  "fileSize": 218,
+  "dependsOn": [],
+  "skip": false
+}
