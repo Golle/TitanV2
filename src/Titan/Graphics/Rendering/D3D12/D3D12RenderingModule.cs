@@ -8,6 +8,8 @@ internal class D3D12RenderingModule : IModule
         builder
             .AddSystemsAndResource<D3D12FullScreenRenderer>()
 
+            .AddSystemsAndResource<D3D12TextRenderer>()
+
             ;
 
         return true;

@@ -71,7 +71,7 @@ public unsafe partial struct D3D12ResourceManager
         memoryManager.FreeResourcePool(ref manager->_textures);
     }
 
-    public readonly Handle<Buffer> CreateBuffer(CreateBufferArgs args)
+    public readonly Handle<Buffer> CreateBuffer(in CreateBufferArgs args)
     {
         Debug.Assert(args.Count > 0);
         Debug.Assert(args.Stride > 0);

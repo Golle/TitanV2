@@ -8,6 +8,7 @@ using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Graphics.Rendering;
+using Titan.Graphics.Rendering.D3D12;
 using Titan.Graphics.Resources;
 using Titan.Input;
 using Titan.Resources;
@@ -62,6 +63,11 @@ namespace Titan.Sandbox
             {
                 transform.Position += Vector3.One * 0.1f;
             }
+        }
+
+        public static void DrawText(in D3D12TextRenderer renderer)
+        {
+            renderer.DrawText(Vector2.Zero, "This is my text"u8);
         }
 
         [System]

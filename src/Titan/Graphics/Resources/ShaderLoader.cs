@@ -9,7 +9,7 @@ using Titan.Graphics.D3D12;
 namespace Titan.Graphics.Resources;
 
 [Asset(AssetType.Shader)]
-internal partial struct ShaderAsset
+public partial struct ShaderAsset
 {
     public TitanBuffer ShaderByteCode;
     public ShaderType ShaderType;

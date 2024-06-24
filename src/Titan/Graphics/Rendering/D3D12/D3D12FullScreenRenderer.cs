@@ -126,9 +126,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
             DepthFunc = D3D12_COMPARISON_FUNC.D3D12_COMPARISON_FUNC_LESS,
             StencilEnable = 0
         };
-        D3D12_RT_FORMAT_ARRAY renderTargets;
-        renderTargets.RTFormats[0] = (int)DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
-        renderTargets.NumRenderTargets = 1;
+        D3D12_RT_FORMAT_ARRAY renderTargets = new(DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM);
 
         {
             var stream = new D3D12PipelineSubobjectStream()

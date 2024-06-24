@@ -153,9 +153,9 @@ internal unsafe partial struct AssetSystem
         var loader = asset->GetLoader();
         Debug.Assert(loader != null);
         var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);
-        var resource = loader->Load(*asset->Descriptor, buffer);
+        asset->Resource = loader->Load(*asset->Descriptor, buffer);
 
-        if (resource == null)
+        if (asset->Resource == null)
         {
             asset->State = AssetState.Error;
         }

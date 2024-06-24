@@ -21,7 +21,7 @@ public unsafe ref struct D3D12PipelineSubobjectStream
     public D3D12PipelineSubobjectStream Topology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY, topology);
     public D3D12PipelineSubobjectStream Razterizer(in D3D12_RASTERIZER_DESC desc) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER, desc);
     public D3D12PipelineSubobjectStream Blend(in D3D12_BLEND_DESC blend) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND, blend);
-    public D3D12PipelineSubobjectStream DepthStencil(in D3D12_DEPTH_STENCIL_DESC depth) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL, depth);
+    public D3D12PipelineSubobjectStream DepthStencil(scoped in D3D12_DEPTH_STENCIL_DESC depth) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL, depth);
     public D3D12PipelineSubobjectStream SampleMask(uint sampleMask) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK, sampleMask);
     public D3D12PipelineSubobjectStream RenderTargetFormat(in D3D12_RT_FORMAT_ARRAY format) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS, format);
     public D3D12PipelineSubobjectStream Sample(in DXGI_SAMPLE_DESC sample) => Add(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC, sample);
