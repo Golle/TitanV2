@@ -23,6 +23,8 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
         memoryManager.Free(allocator);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T* Alloc<T>() where T : unmanaged => (T*)Alloc((uint)sizeof(T));
     public void* Alloc(uint size)
     {
         Debug.Assert(_offset + size <= allocatorSize);

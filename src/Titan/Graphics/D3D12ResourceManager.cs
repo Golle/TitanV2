@@ -7,6 +7,7 @@ using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
+using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Resources;
@@ -36,11 +37,26 @@ public record struct CreateDepthBufferArgs
     public float ClearValue { get; init; }
 }
 
+public ref struct CreateRootSignatureArgs
+{
+    public uint NumberOfDescriptors;
+    public required ReadOnlySpan<uint> Parameters;
+    public required ReadOnlySpan<(SamplerState State, ShaderVisibility Visibility)> Samplers;
+}
+
+public enum ShaderVisibility
+{
+    All,
+    Pixel,
+    Vertex
+}
+
 [UnmanagedResource]
 public unsafe partial struct D3D12ResourceManager
 {
     private ResourcePool<D3D12Buffer> _buffers;
     private ResourcePool<D3D12Texture> _textures;
+    private ResourcePool<D3D12RootSignature> _rootSignatures;
     private D3D12Device* _device;
     private D3D12UploadQueue* _uploadQueue;
     private D3D12Allocator* _allocator;
@@ -62,6 +78,11 @@ public unsafe partial struct D3D12ResourceManager
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12Texture)} Count = {count}.");
         }
+
+        if (!memoryManager.TryCreateResourcePool(out manager->_rootSignatures, count))
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12RootSignature)} Count = {count}.");
+        }
     }
 
     [System(SystemStage.PostShutdown)]
@@ -69,6 +90,7 @@ public unsafe partial struct D3D12ResourceManager
     {
         memoryManager.FreeResourcePool(ref manager->_buffers);
         memoryManager.FreeResourcePool(ref manager->_textures);
+        memoryManager.FreeResourcePool(ref manager->_rootSignatures);
     }
 
     public readonly Handle<Buffer> CreateBuffer(in CreateBufferArgs args)
@@ -146,7 +168,6 @@ public unsafe partial struct D3D12ResourceManager
         _buffers.SafeFree(handle.Value);
     }
 
-
     public readonly Handle<Texture> CreateDepthBuffer(in CreateDepthBufferArgs args)
     {
         var handle = _textures.SafeAlloc();
@@ -198,7 +219,8 @@ public unsafe partial struct D3D12ResourceManager
         var texture = _textures.AsPtr(handle);
         if (backbuffer == null)
         {
-            texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format);
+            var flags = args.RenderTargetView ? D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE;
+            texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format, flags);
             if (!texture->Resource.IsValid)
             {
                 Logger.Error<D3D12ResourceManager>("Failed to create the underlying resource for the texture.");
@@ -283,5 +305,71 @@ public unsafe partial struct D3D12ResourceManager
                 allocator->Free(descriptor);
             }
         }
+    }
+
+    public readonly Handle<RootSignature> CreateRootSignature(in CreateRootSignatureArgs args)
+    {
+        var handle = _rootSignatures.SafeAlloc();
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to allocate a slot for the root signature.");
+            return Handle<RootSignature>.Invalid;
+        }
+
+        var rootSignature = _rootSignatures.AsPtr(handle);
+
+
+
+
+        TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[10];
+        TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[args.Samplers.Length];
+
+        if (args.NumberOfDescriptors > 0)
+        {
+            Span<D3D12_DESCRIPTOR_RANGE1> ranges = stackalloc D3D12_DESCRIPTOR_RANGE1[(int)args.NumberOfDescriptors];
+            D3D12Helpers.InitDescriptorRanges(ranges, D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
+        }
+
+        if (args.Samplers.Length > 0)
+        {
+            for (var i = 0; i < args.Samplers.Length; ++i)
+            {
+                //NOTE(Jens): We can improve this by specifying the visibility of the static sampler.
+                var visibility = args.Samplers[i].Visibility switch
+                {
+                    ShaderVisibility.Pixel => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL,
+                    ShaderVisibility.Vertex => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_VERTEX,
+                    _ => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL
+                };
+                samplers.Add(D3D12Helpers.CreateStaticSamplerDesc(args.Samplers[i].State, (uint)i, 0, visibility));
+            }
+        }
+        var flags = D3D12_ROOT_SIGNATURE_FLAGS.D3D12_ROOT_SIGNATURE_FLAG_NONE;
+        rootSignature->Resource = _device->CreateRootSignature(flags, parameters, samplers);
+        if (!rootSignature->Resource.IsValid)
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to create the {nameof(ID3D12RootSignature)}.");
+            _rootSignatures.SafeFree(handle);
+            return Handle<RootSignature>.Invalid;
+        }
+
+        return handle.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public RootSignature* Access(Handle<RootSignature> rootSignature)
+    {
+        Debug.Assert(rootSignature.IsValid, "Trying to access a resource of an invalid handle");
+        return (RootSignature*)_rootSignatures.AsPtr(rootSignature.Value);
+    }
+
+    public void DestroyRootSignature(Handle<RootSignature> handle)
+    {
+        Debug.Assert(handle.IsValid);
+        var rootSignature = _rootSignatures.AsPtr(handle.Value);
+        rootSignature->Resource.Dispose();
+        *rootSignature = default;
+        _rootSignatures.SafeFree(handle.Value);
     }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Titan.Configurations;
@@ -250,7 +251,13 @@ internal unsafe partial struct D3D12Device
         return resource;
     }
 
-    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format)
+    public readonly ID3D12Resource* CreateTexture(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
+    {
+        Debug.Assert(width >= 0 && height >= 0);
+        return CreateTexture((uint)width, (uint)height, format,flags);
+    }
+
+    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
     {
         //NOTE(Jens): Add support for Mip levels etc.
         D3D12_RESOURCE_DESC resourceDesc = new()
@@ -258,7 +265,7 @@ internal unsafe partial struct D3D12Device
             Width = width,
             Height = height,
             Format = format,
-            Flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE,
+            Flags = flags,
             DepthOrArraySize = 1, // change this when we support other types of textures.
             Alignment = 0,
             Layout = D3D12_TEXTURE_LAYOUT.D3D12_TEXTURE_LAYOUT_UNKNOWN,

@@ -3,6 +3,13 @@ using Titan.Platform.Win32.D3D12;
 namespace Titan.Graphics.D3D12.Utils;
 internal static class CD3DX12_ROOT_PARAMETER1
 {
+    public static unsafe D3D12_ROOT_PARAMETER1 AsDescriptorTable(ReadOnlySpan<D3D12_DESCRIPTOR_RANGE1> descriptorRanges, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL)
+    {
+        fixed (D3D12_DESCRIPTOR_RANGE1* ranges = descriptorRanges)
+        {
+            return AsDescriptorTable((uint)descriptorRanges.Length, ranges, visibility);
+        }
+    }
     public static unsafe D3D12_ROOT_PARAMETER1 AsDescriptorTable(uint numberOfDescriptorRanges, D3D12_DESCRIPTOR_RANGE1* descriptorRanges, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL) =>
         new()
         {

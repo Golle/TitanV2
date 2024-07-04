@@ -3,10 +3,12 @@ using System.Numerics;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
+using Titan.Graphics.Pipeline;
 using Titan.Graphics.Rendering;
 using Titan.Graphics.Rendering.D3D12;
 using Titan.Graphics.Resources;
@@ -45,11 +47,11 @@ namespace Titan.Sandbox
                 .AddSystems<ATestSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
                 ;
-                
+
             return true;
         }
     }
-    
+
     [UnmanagedResource]
     internal unsafe partial struct EntityTestSystem
     {
@@ -71,8 +73,8 @@ namespace Titan.Sandbox
         }
 
         [System]
-        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager) => sys.InstanceMethod(entityManager);
-        private void InstanceMethod(in EntityManager entityManager)
+        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, IAssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
+        private void InstanceMethod(in EntityManager entityManager, IAssetsManager assetsManager)
         {
             if (_done)
             {
@@ -91,6 +93,10 @@ namespace Titan.Sandbox
                 _entity = entityManager.CreateEntity();
                 entityManager.AddComponent<Transform3D>(_entity);
                 entityManager.AddComponent<TransformRect>(_entity);
+                entityManager.AddComponent(_entity, new Mesh3D
+                {
+                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book)
+                });
 
                 //for (var i = 0; i < 1000; ++i)
                 //{

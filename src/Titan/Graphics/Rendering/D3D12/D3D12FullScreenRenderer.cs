@@ -223,11 +223,14 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         commandList.SetGraphicsRootSignature(data.RootSignature);
         commandList.SetRenderTarget(backbuffer, depthBuffer);
-        commandList.ClearRenderTargetView(backbuffer, MemoryUtils.AsPointer(data.ClearColor));
-        commandList.ClearDepthStencilView(depthBuffer, D3D12_CLEAR_FLAGS.D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, null);
         commandList.SetDescriptorHeap(allocator.SRV.Heap);
         commandList.SetGraphicsRootDescriptorTable(0, allocator.SRV.GPUStart);
+
         commandList.SetGraphicsRootConstantBufferView(1, data.ConstantBuffer.Get()->GetGPUVirtualAddress());
+
+        commandList.ClearRenderTargetView(backbuffer, MemoryUtils.AsPointer(data.ClearColor));
+        commandList.ClearDepthStencilView(depthBuffer, D3D12_CLEAR_FLAGS.D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, null);
+        
         //commandList.SetGraphicsRootShaderResourceView(2, data.VertexBufferView.BufferLocation);
 
         D3D12_VIEWPORT viewport = new()

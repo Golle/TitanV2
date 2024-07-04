@@ -78,6 +78,14 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
         }
     }
 
+    public bool TryAllocList<T>(out TitanList<T> list, uint count) where T : unmanaged
+    {
+        lock (_syncObject)
+        {
+            return _generalAllocator.TryAllocList(out list, count, true);
+        }
+    }
+
     public T* Alloc<T>() where T : unmanaged
         => (T*)Alloc((uint)sizeof(T));
 

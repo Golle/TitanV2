@@ -22,3 +22,12 @@ struct GBufferPixelOutput
     float4 Normal : SV_Target1;
     float4 Specular : SV_Target2;
 };
+
+
+/* Full screen */
+
+struct FullScreenVertexOutput 
+{
+    float4 Position : SV_POSITION;
+    float2 Texture : TEXCOORD0;
+};

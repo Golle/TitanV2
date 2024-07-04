@@ -77,7 +77,6 @@ internal partial struct MeshAsset
     public uint SubMeshCount;
     public uint IndexCount;
     public Inline16<SubMesh> SubMeshes;
-
 }
 
 internal struct SubMesh

@@ -125,7 +125,6 @@ internal unsafe partial struct DXGISwapchain
                 return false;
             }
 
-
             if (createDescriptor)
             {
                 //TODO(Jens): This needs some work to support resizing.

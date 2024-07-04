@@ -28,6 +28,7 @@ internal static class TitanTypes
 
     public const string Handle = $"{Core}.Handle";
     public const string TitanBuffer = $"{Core}.TitanBuffer";
+    public const string TitanList = $"{Core}.TitanList";
 
     public const string EventAttribute = $"{Events}.EventAttribute";
     public const string EventsGenerator = $"{Events}.EventId";

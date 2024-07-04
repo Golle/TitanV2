@@ -222,6 +222,7 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
 
     public D3D12CachedPipelineState* state;
     public bool done;
+    
     [System]
     public static void T(ref D3D12PipelineStateObjectRegistry reg, in D3D12ResourceManager resourceManager)
     {

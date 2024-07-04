@@ -15,7 +15,7 @@ internal sealed class RenderingModule : IModule
         {
             builder
                 .AddModule<D3D12GraphicsModule>()
-                .AddModule<D3D12PipelineModule>()
+                //.AddModule<D3D12PipelineModule>()
                 .AddModule<D3D12RenderingModule>()
                 .AddAssetLoader<ShaderLoader>()
                 .AddAssetLoader<TextureLoader>()

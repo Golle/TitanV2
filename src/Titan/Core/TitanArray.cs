@@ -28,6 +28,8 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
     /// </summary>
     public bool IsValid => ptr != null;
 
+    public TitanList<T> AsList() => new(ptr, Length);
+
     public Span<T> AsSpan() => new(ptr, (int)Length);
 
     public ReadOnlySpan<T> AsReadOnlySpan() => new(ptr, (int)Length);

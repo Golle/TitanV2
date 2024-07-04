@@ -20,6 +20,33 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetRenderTargets(Texture** textures, uint count)
+    {
+        //TODO(Jens): This might be slow, maybe we can cache this on the caller? Needs to measure the overhead of having a nicer API.
+        var handles = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[(int)count];
+        for (var i = 0; i < count; ++i)
+        {
+            handles[i] = ((D3D12Texture*)textures[i])->RTV.CPU;
+        }
+
+        commandList->OMSetRenderTargets(count, handles, 0, null);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SetRenderTargets(D3D12_CPU_DESCRIPTOR_HANDLE* renderTargetHandles, uint count)
+    {
+        Debug.Assert(renderTargetHandles != null && count > 0);
+        commandList->OMSetRenderTargets(count, renderTargetHandles, 0, null);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SetRenderTargets(D3D12_CPU_DESCRIPTOR_HANDLE* renderTargetHandles, uint count, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
+    {
+        Debug.Assert(renderTargetHandles != null && count > 0);
+        commandList->OMSetRenderTargets(count, renderTargetHandles, 1, depthBuffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void SetRenderTarget(Texture* texture, Texture* depthBuffer)
     {
         Debug.Assert(depthBuffer != null);

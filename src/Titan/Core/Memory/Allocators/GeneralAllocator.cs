@@ -63,6 +63,19 @@ public unsafe struct GeneralAllocator : IAllocator
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryAllocList<T>(out TitanList<T> list, uint count, bool initialize = false) where T : unmanaged
+    {
+        Unsafe.SkipInit(out list);
+        var mem = Alloc<T>(count, initialize);
+        if (mem == null)
+        {
+            return false;
+        }
+        list = new TitanList<T>(mem, count);
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T* Alloc<T>(uint count, bool initialize = true) where T : unmanaged => (T*)Alloc((uint)sizeof(T) * count, initialize);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -22,6 +22,15 @@ public interface IMemoryManager : IService
     /// <returns>True if the allocation was successful</returns>
     bool TryAllocBuffer(out TitanBuffer buffer, uint size);
 
+    /// <summary>
+    /// Alloc an array from the global general purpose memory.
+    /// <remarks>Dedicated allocators are always preferred</remarks>
+    /// </summary>
+    /// <param name="list">The list</param>
+    /// <param name="count">Number of slots in the list</param>
+    /// <returns>True if the allocation was successful</returns>
+    bool TryAllocList<T>(out TitanList<T> list, uint count) where T : unmanaged;
+
     unsafe T* Alloc<T>() where T : unmanaged;
     unsafe void* Alloc(uint size);
     unsafe void Free(void* ptr);
