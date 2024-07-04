@@ -21,6 +21,7 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
     private byte[]? _finalizedData;
 
     public IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics => _diagnostics;
+    public IEnumerable<T> GetMetadataByType<T>() where T : AssetFileMetadata => metadataFiles.OfType<T>();
     public bool HasErrors => _diagnostics.Any(static d => d.Level == DiagnosticsLevel.Error);
     public bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
     {
@@ -40,6 +41,18 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
             Shader = shader,
         };
         return AddAsset(data, metadata, descriptor);
+    }
+
+    public bool TryAddShaderConfig(in ShaderConfigDescriptor configDescriptor, ShaderConfigMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.ShaderConfig,
+            ShaderConfig = configDescriptor
+        };
+
+        return AddAsset(ReadOnlySpan<byte>.Empty, metadata, descriptor);
+
     }
 
     public bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
@@ -82,7 +95,7 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         }
     }
 
-    public IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename) 
+    public IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename)
         => metadataFiles.Where(m => m.ContentFileRelativePath.EndsWith(filename, true, null));
 
     // ReSharper disable InconsistentlySynchronizedField
@@ -95,7 +108,7 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         foreach (var sortedAsset in _assets.OrderBy(static a => a.Metadata.Name))
         {
             var length = (uint)sortedAsset.Data.Length;
-
+            
             var updatedDescriptor = sortedAsset.Descriptor with
             {
                 File = new()

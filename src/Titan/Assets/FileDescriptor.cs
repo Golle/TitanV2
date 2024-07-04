@@ -9,6 +9,8 @@ public struct FileDescriptor
     public uint Offset;
     public uint Length;
 
+    public bool IsEmpty() => Length == 0;
+
     //#if !RELEASE
     public StringRef AssetPath;
     //#endif

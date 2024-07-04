@@ -64,6 +64,20 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
+    private static string CreateShaderConfigDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var shader = ref assetDescriptor.ShaderConfig;
+        var content =
+            $@"{nameof(AssetDescriptor.ShaderConfig)} = new()
+            {{
+                {nameof(ShaderConfigDescriptor.NumberOfDescriptors)} = {shader.NumberOfDescriptors},
+                {nameof(ShaderConfigDescriptor.NumberOfParameters)} = {shader.NumberOfParameters},
+                {nameof(ShaderConfigDescriptor.NumberOfSamplers)} = {shader.NumberOfSamplers}
+            }}";
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
+
+
     private static string CreateBaseDescriptor(in AssetDescriptor baseDescriptor, string content, AssetFileMetadata metadata)
     {
         //NOTE(Jens): Consider removing AssetPath, it can be useful in debug/tracing/logging but it will use some additional memory.
@@ -98,7 +112,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 continue;
             }
             ref var desc = ref CollectionsMarshal.AsSpan(_assets)[i].Descriptor;
-            var dependenciesCount = meta.DependsOn.Length;
+            var dependenciesCount = meta.Dependencies.Count;
             desc.Dependencies = new((uint)depsIndex, (byte)dependenciesCount);
 
             AddDependencies(dependencies.Slice(depsIndex, dependenciesCount), _assets, meta);
@@ -123,7 +137,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
     public string Build()
     {
         var numberOfDependencies = _assets
-            .Sum(a => a.Metadata.DependsOn.Length);
+            .Sum(a => a.Metadata.Dependencies.Count);
         Span<uint> dependencies = stackalloc uint[numberOfDependencies];
 
         PrepareAssetDescriptors(dependencies);
@@ -148,8 +162,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         // The inline struct
         _builder
             .AppendLine($"public static {typeof(RegistryId).FullName} {AssetRegistryIdName} {{ get; }} = {typeof(RegistryId).FullName}.{nameof(RegistryId.GetNext)}();")
-            .AppendLine($"private static {AssetStructName} {AssetMemberName};")
-            .AppendLine($"private static {DependenciesStructName} {DependenciesMemberName};"); ;
+            .AppendLine($"private static readonly {AssetStructName} {AssetMemberName};")
+            .AppendLine($"private static readonly {DependenciesStructName} {DependenciesMemberName};");
 
 
         InsertGetFilePath();
@@ -183,6 +197,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 {
                     AssetType.Texture => CreateTexture2DDescriptor(descriptor, metadata),
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
+                    AssetType.ShaderConfig => CreateShaderConfigDescriptor(descriptor, metadata),
                     AssetType.Mesh => CreateMeshDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };

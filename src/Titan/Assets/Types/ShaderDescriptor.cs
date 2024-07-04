@@ -8,3 +8,11 @@ public struct ShaderDescriptor
 {
     public ShaderType Type;
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ShaderConfigDescriptor
+{
+    public byte NumberOfDescriptors;
+    public byte NumberOfParameters;
+    public byte NumberOfSamplers;
+}

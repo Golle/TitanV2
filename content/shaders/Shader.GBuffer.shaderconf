@@ -1,0 +1,8 @@
+{
+    "VertexShader": {
+        "Name": "ShaderGBufferVertex"
+    },
+    "PixelShader": {
+        "Name": "ShaderGBufferPixel"
+    }
+}

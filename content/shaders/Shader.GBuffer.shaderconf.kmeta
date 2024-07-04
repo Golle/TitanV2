@@ -1,0 +1,8 @@
+{
+  "$type": "ShaderConfigMetadata",
+  "id": "fd4e7946-2273-45f9-b6aa-769d4c4f09c4",
+  "name": "GBufferShader",
+  "fileSize": 0,
+  "dependsOn": [],
+  "skip": false
+}

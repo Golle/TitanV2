@@ -36,8 +36,8 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
             Inputs = [],
             Outputs = [gbufferAlbedo, gbufferNormal, gbufferSpecular],
             DepthBufferOutput = depthBuffer,
-            VertexShader = EngineAssetsRegistry.GBufferVertexShader,
-            PixelShader = EngineAssetsRegistry.GBufferPixelShader
+            VertexShader = EngineAssetsRegistry.ShaderGBufferPixel,
+            PixelShader = EngineAssetsRegistry.ShaderGBufferVertex
         };
 
         RenderPipelineRenderTarget lighting = new("DeferredLighting_RenderTarget", RenderTargetFormat.RGBA8);

@@ -17,6 +17,7 @@ internal class MetadataBuilder
             ".aseprite" => new AsepriteMetadata(),
             ".hlsl" => new ShaderMetadata(),
             ".ttf" => new FontMetadata(),
+            ".shaderconf" => new ShaderConfigMetadata(),
             _ => null
         };
         if (metadata == null)

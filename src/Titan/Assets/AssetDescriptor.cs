@@ -55,6 +55,9 @@ public struct AssetDescriptor
     [UnscopedRef]
     public ref ShaderDescriptor Shader => ref _descriptors.Shader;
 
+    [UnscopedRef]
+    public ref ShaderConfigDescriptor ShaderConfig => ref _descriptors.ShaderConfig;
+
     /// <summary>
     /// All supported built in Asset descriptors
     /// </summary>
@@ -67,5 +70,7 @@ public struct AssetDescriptor
         public MeshDescriptor Mesh;
         [FieldOffset(0)]
         public ShaderDescriptor Shader;
+        [FieldOffset(0)]
+        public ShaderConfigDescriptor ShaderConfig;
     }
 }
