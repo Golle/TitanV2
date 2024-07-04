@@ -19,7 +19,8 @@ internal enum ArgumentKind
     EntityManager,
     ReadOnlyComponent,
     MutableComponent,
-    EntityCollection
+    EntityCollection,
+    AssetsManager
 }
 
 internal static class SystemsBuilder
@@ -204,6 +205,7 @@ internal static class SystemsBuilder
                 ArgumentKind.Managed => $"{TitanTypes.ManagedResource}<{parameter.Type}>",
                 ArgumentKind.Unmanaged => $"{parameter.Type}*",
                 ArgumentKind.EntityManager => TitanTypes.EntityManager,
+                ArgumentKind.AssetsManager => TitanTypes.AssetsManager,
                 ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent
                     => null,
                 _ => throw new NotImplementedException($"The kind {parameter.Kind} has not been implemented.")
@@ -248,6 +250,9 @@ internal static class SystemsBuilder
 
                 ArgumentKind.EntityManager
                     => $"{ArgumentName}.CreateEntityManager()",
+
+                ArgumentKind.AssetsManager
+                    => $"{ArgumentName}.CreateAssetsManager()",
 
                 ArgumentKind.Managed
                     => $"{ArgumentName}.GetService<{parameter.Type}>()",

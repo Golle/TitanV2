@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Configurations;
 using Titan.Core;
@@ -34,7 +35,6 @@ internal sealed class TitanApp : IApp, IRunnable
         var unmanagedResourceRegistry = registry.GetService<UnmanagedResourceRegistry>();
         var configurationManager = registry.GetService<ConfigurationManager>();
         var eventSystem = registry.GetService<EventSystem>();
-        var assetsManager = registry.GetService<AssetsManager>();
 
         // Set up all unmanaged resources that have been registered.
         if (!unmanagedResourceRegistry.Init(memoryManager, resources))
@@ -69,11 +69,12 @@ internal sealed class TitanApp : IApp, IRunnable
             Logger.Error<AppBuilder>($"Failed to register the cached queries in {nameof(QueryRegistry)}.");
             throw new InvalidOperationException($"{nameof(QueryRegistry)} failed.");
         }
-
-        if (!assetsManager.Init(assetRegistries, unmanagedResourceRegistry.GetResourceHandle<AssetsContext>(), assetLoaders, memoryManager))
+        
+        ref var assetSystem = ref unmanagedResourceRegistry.GetResource<AssetSystem>();
+        if (!assetSystem.SetRegisterAndLoaders(assetRegistries, assetLoaders))
         {
-            Logger.Error<AppBuilder>($"Failed to init the {nameof(AssetsManager)}.");
-            throw new InvalidOperationException($"{nameof(AssetsManager)} failed.");
+            Logger.Error<AppBuilder>($"Failed to set the asset registers and loaders in {nameof(AssetSystem)}");
+            throw new InvalidOperationException($"{nameof(AssetSystem)} failed");
         }
     }
 
@@ -189,10 +190,6 @@ internal sealed class TitanApp : IApp, IRunnable
 
     private void Cleanup()
     {
-        _registry
-            .GetService<AssetsManager>()
-            .Shutdown();
-
         var memoryManager = _registry.GetService<IMemoryManager>();
         GetResourceHandle<SystemsScheduler>().AsRef.Shutdown(memoryManager);
         _registry.GetService<EventSystem>().Shutdown();

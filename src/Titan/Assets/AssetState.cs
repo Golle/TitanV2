@@ -7,6 +7,7 @@ internal enum AssetState
     LoadRequested,
     ReadingFile,
     ReadingFileCompleted,
+    ResolvingDependencies,
     CreatingResource,
     ResourceCreated,
     UnloadRequested,

@@ -73,9 +73,11 @@ namespace Titan.Sandbox
         }
 
         [System]
-        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, IAssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
-        private void InstanceMethod(in EntityManager entityManager, IAssetsManager assetsManager)
+        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
+        private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager)
         {
+            assetsManager.Load<ShaderInfo>(EngineAssetsRegistry.GBufferShader);
+
             if (_done)
             {
                 return;
@@ -137,7 +139,7 @@ namespace Titan.Sandbox
         }
 
         [System]
-        public static void LoadModelTest(IAssetsManager assetsManager)
+        public static void LoadModelTest(AssetsManager assetsManager)
         {
             if (_assetHandle.IsInvalid)
             {

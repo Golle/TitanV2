@@ -30,7 +30,7 @@ internal unsafe partial struct D3D12TextRenderer
     private volatile uint _count;
 
     [System(SystemStage.Init)]
-    public static void Init(D3D12TextRenderer* renderer, IAssetsManager assetsManager, IMemoryManager memoryManager)
+    public static void Init(D3D12TextRenderer* renderer, AssetsManager assetsManager, IMemoryManager memoryManager)
     {
         if (!memoryManager.TryCreateAtomicBumpAllocator(out renderer->_allocator, TextMaxSize))
         {

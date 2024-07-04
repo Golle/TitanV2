@@ -4,34 +4,67 @@ using Titan.Core;
 using Titan.Core.IO;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Core.Memory.Allocators;
 using Titan.Core.Threading;
 using Titan.IO.FileSystem;
+using Titan.Resources;
+using Titan.Services;
 using Titan.Systems;
 
 namespace Titan.Assets;
 
+[UnmanagedResource]
 internal unsafe partial struct AssetSystem
 {
-    [System(SystemStage.PreInit)]
-    public static void Init(AssetsContext* context, IFileSystem fileSystem, IMemoryManager memoryManager, IConfigurationManager configurationManager)
+    public Inline8<AssetRegistry> Registers;
+    public Inline16<AssetLoaderDescriptor> Loaders;
+    public uint NumberOfRegisters;
+
+    public TitanArray<Asset> Assets;
+    public ManagedResource<IFileSystem> FileSystem;
+    public GeneralAllocator Allocator;
+
+    public TitanBuffer LoadersData;
+
+    public bool SetRegisterAndLoaders(IReadOnlyList<AssetRegistryDescriptor> assetRegistries, IReadOnlyList<AssetLoaderDescriptor> assetLoaders)
     {
-        var assetCount = GetMaxIndex(context->Registers.AsReadOnlySpan()[..(int)context->NumberOfRegisters]) + 1;
-        if (!memoryManager.TryAllocArray(out context->Assets, assetCount))
+        for (var i = 0; i < assetRegistries.Count; ++i)
+        {
+            Registers[i].Descriptor = assetRegistries[i];
+        }
+
+        foreach (var loader in assetLoaders)
+        {
+            Loaders[loader.AssetId] = loader;
+        }
+
+        NumberOfRegisters = (uint)assetRegistries.Count;
+        return true;
+    }
+
+    [System(SystemStage.Startup)]
+    public static void Startup(AssetSystem* system, IFileSystem fileSystem, IMemoryManager memoryManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services)
+    {
+        var config = configurationManager.GetConfigOrDefault<AssetsConfig>();
+
+        var assetCount = GetMaxIndex(system->Registers.AsReadOnlySpan()[..(int)system->NumberOfRegisters]) + 1;
+        if (!memoryManager.TryAllocArray(out system->Assets, assetCount))
         {
             Logger.Error<AssetSystem>($"Failed to allocate an array for the assets. Size = {sizeof(Asset) * assetCount} bytes");
+            return;
         }
 
-        var config = configurationManager.GetConfigOrDefault<AssetsConfig>();
         Logger.Trace<AssetSystem>($"File buffer size {config.FileBufferMaxSize} bytes");
-        if (!memoryManager.TryCreateGeneralAllocator(out context->Allocator, config.FileBufferMaxSize))
+        if (!memoryManager.TryCreateGeneralAllocator(out system->Allocator, config.FileBufferMaxSize))
         {
             Logger.Error<AssetSystem>($"Failed to create a allocator. Max Size = {config.FileBufferMaxSize} bytes");
+            return;
         }
 
-        Logger.Trace<AssetSystem>($"Init the AssetSystem. Registries = {context->NumberOfRegisters}. Max AssetCount = {assetCount}");
-        for (var i = 0; i < context->NumberOfRegisters; ++i)
+        Logger.Trace<AssetSystem>($"Init the AssetSystem. Registries = {system->NumberOfRegisters}. Max AssetCount = {assetCount}");
+        for (var i = 0; i < system->NumberOfRegisters; ++i)
         {
-            var register = context->Registers.AsPointer() + i;
+            var register = system->Registers.AsPointer() + i;
 
             var filePathType = register->EngineRegistry ? FilePathType.Engine : FilePathType.Content;
             var handle = fileSystem.Open(register->GetFilePath(), filePathType);
@@ -45,11 +78,12 @@ internal unsafe partial struct AssetSystem
 
             foreach (ref readonly var descriptor in register->GetAssetDescriptors())
             {
-                context->Assets[descriptor.Id] = new()
+                system->Assets[descriptor.Id] = new()
                 {
                     Descriptor = MemoryUtils.AsPointer(descriptor), //NOTE: this might crash , unless they are stored as constants.. We'll see :D Worst case is that we can copy them, should not use a massive amount of memory
                     File = &register->File,
-                    Context = context,
+                    System = system,
+                    Registry = register,
                     FileBuffer = null,
                     State = AssetState.Unloaded
                 };
@@ -57,7 +91,50 @@ internal unsafe partial struct AssetSystem
         }
 
         //NOTE(Jens): Not the best way, but we need to use the file system. 
-        context->FileSystem = ManagedResource<IFileSystem>.Alloc(fileSystem);
+        system->FileSystem = ManagedResource<IFileSystem>.Alloc(fileSystem);
+
+        // Init the loaders
+        var (loadersSize, highestAssetId) = CalculateLoaderSizeAndAssetId(system->Loaders);
+        Debug.Assert(highestAssetId < system->Loaders.Size);
+
+        if (!memoryManager.TryAllocBuffer(out system->LoadersData, loadersSize))
+        {
+            Logger.Error<AssetSystem>($"Failed to allocate memory for the AssetLoaders. Size = {loadersSize} bytes");
+            return;
+        }
+
+        var initializer = new AssetLoaderInitializer(unmanagedResources, services);
+        var offset = 0u;
+        foreach (ref var loader in system->Loaders)
+        {
+            if (loader.AssetId == 0) // an empty slot.
+            {
+                continue;
+            }
+            loader.Context = system->LoadersData.AsPointer() + offset;
+            offset += loader.Size;
+
+            if (loader.Init(initializer))
+            {
+                Logger.Trace<AssetSystem>($"Asset Loader {loader.Name.GetString()} initialized.");
+            }
+            else
+            {
+                Logger.Error<AssetSystem>($"Failed to init the {loader.Name.GetString()} asset loader.");
+            }
+        }
+
+        static (uint Size, uint AssetId) CalculateLoaderSizeAndAssetId(ReadOnlySpan<AssetLoaderDescriptor> loaders)
+        {
+            var assetId = 0u;
+            var size = 0u;
+            foreach (ref readonly var loader in loaders)
+            {
+                size += loader.Size;
+                assetId = Math.Max(loader.AssetId, assetId);
+            }
+            return (size, assetId);
+        }
 
         static uint GetMaxIndex(ReadOnlySpan<AssetRegistry> registries)
         {
@@ -76,14 +153,15 @@ internal unsafe partial struct AssetSystem
         }
     }
 
+
     [System(SystemStage.PostUpdate)]
-    public static void Update(AssetsContext* context, IJobSystem jobSystem)
+    public static void Update(AssetSystem* system, IJobSystem jobSystem)
     {
-        var count = context->Assets.Length;
+        var count = system->Assets.Length;
 
         for (var i = 0; i < count; ++i)
         {
-            var state = context->Assets.GetPointer(i);
+            var state = system->Assets.GetPointer(i);
             switch (state->State)
             {
                 // Ignore all these states, they are handled by async tasks
@@ -97,8 +175,15 @@ internal unsafe partial struct AssetSystem
                     state->State = AssetState.Unloading;
                     state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&UnloadResourceAsync, state));
                     break;
+
+                case AssetState.LoadRequested when state->Descriptor->File.IsEmpty(): // Special case when there's no file data.
+                case AssetState.ReadingFileCompleted:
+                    state->State = AssetState.CreatingResource;
+                    state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&CreateResourceAsync, state));
+                    break;
+
                 case AssetState.LoadRequested:
-                    state->FileBuffer = context->Allocator.Alloc(state->Descriptor->File.Length, false);
+                    state->FileBuffer = system->Allocator.Alloc(state->Descriptor->File.Length, false);
                     if (state->FileBuffer == null)
                     {
                         Logger.Warning("Failed to allocate memory for the file buffer.");
@@ -108,15 +193,10 @@ internal unsafe partial struct AssetSystem
                     state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&ReadFileAsync, state));
                     break;
 
-                case AssetState.ReadingFileCompleted:
-                    state->State = AssetState.CreatingResource;
-                    state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&CreateResourceAsync, state));
-                    break;
-
                 case AssetState.ResourceCreated:
                     if (state->FileBuffer != null)
                     {
-                        context->Allocator.Free(state->FileBuffer);
+                        system->Allocator.Free(state->FileBuffer);
                         state->FileBuffer = null;
                     }
                     state->State = AssetState.Loaded;
@@ -136,7 +216,7 @@ internal unsafe partial struct AssetSystem
 #if DEBUG
         Logger.Trace<AssetSystem>($"Reading file {asset->Descriptor->File.AssetPath.GetString()}");
 #endif
-        var fileSystem = asset->Context->FileSystem.Value;
+        var fileSystem = asset->System->FileSystem.Value;
         ref readonly var fileDescriptor = ref asset->Descriptor->File;
 
         var bufferSpan = new Span<byte>(asset->FileBuffer, (int)fileDescriptor.Length);
@@ -152,6 +232,7 @@ internal unsafe partial struct AssetSystem
     {
         var loader = asset->GetLoader();
         Debug.Assert(loader != null);
+
         var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);
         asset->Resource = loader->Load(*asset->Descriptor, buffer);
 
@@ -163,17 +244,29 @@ internal unsafe partial struct AssetSystem
         asset->State = AssetState.ResourceCreated;
     }
 
-    [System(SystemStage.Shutdown)]
-    public static void Shutdown(AssetsContext* context, IFileSystem fileSystem)
+    [System(SystemStage.EndOfLife)]
+    public static void Shutdown(AssetSystem* system, IFileSystem fileSystem, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services, IMemoryManager memoryManager)
     {
-        for (var i = 0; i < context->NumberOfRegisters; ++i)
+        var initializer = new AssetLoaderInitializer(unmanagedResources, services); //TODO(Jens): Rename this struct.
+        foreach (ref var loader in system->Loaders.AsSpan())
         {
-            ref var registry = ref context->Registers[i];
+            if (loader.Context == null)
+            {
+                continue;
+            }
+            loader.Shutdown(initializer);
+        }
+        memoryManager.FreeBuffer(ref system->LoadersData);
+
+        for (var i = 0; i < system->NumberOfRegisters; ++i)
+        {
+            ref var registry = ref system->Registers[i];
             if (registry.File.Handle.IsValid())
             {
                 fileSystem.Close(ref registry.File.Handle);
             }
         }
-        context->FileSystem.Release();
+        system->FileSystem.Release();
+
     }
 }

@@ -61,11 +61,11 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
     private TitanArray<D3D12CachedPipelineState> _pipelineCache;
     private uint _count;
 
-    private ManagedResource<IAssetsManager> _assetsManager;
+    private AssetsManager _assetsManager;
     private UnmanagedResource<D3D12Device> _device;
 
     [System(SystemStage.Init)]
-    public static void Init(ref D3D12PipelineStateObjectRegistry registry, IMemoryManager memoryManager, IConfigurationManager configurationManager, ServiceRegistry services, UnmanagedResourceRegistry resources)
+    public static void Init(ref D3D12PipelineStateObjectRegistry registry, AssetsManager assetsManager, IMemoryManager memoryManager, IConfigurationManager configurationManager, ServiceRegistry services, UnmanagedResourceRegistry resources)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
 
@@ -75,7 +75,8 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
             return;
         }
 
-        registry._assetsManager = services.GetHandle<IAssetsManager>();
+        //NOTE(Jens): Not sure if we should do this.
+        registry._assetsManager = assetsManager;
         registry._device = resources.GetResourceHandle<D3D12Device>();
     }
 
@@ -96,12 +97,13 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
 
             var pso = _pipelineCache.GetPointer(_count++);
 
+            //NOTE(Jens): This will be sorted by the "ShaderConfig/ShaderInfo"
             pso->VertexShader = args.VertexShader.HasValue
-                ? _assetsManager.Get().Load<ShaderAsset>(args.VertexShader.Value)
+                ? _assetsManager.Load<ShaderAsset>(args.VertexShader.Value)
                 : AssetHandle<ShaderAsset>.Invalid;
 
             pso->PixelShader = args.PixelShader.HasValue
-                ? _assetsManager.Get().Load<ShaderAsset>(args.PixelShader.Value)
+                ? _assetsManager.Load<ShaderAsset>(args.PixelShader.Value)
                 : AssetHandle<ShaderAsset>.Invalid;
 
             if (args.DepthStencil.HasValue)
@@ -135,7 +137,7 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
     }
 
     [System]
-    public static void Update(ref D3D12PipelineStateObjectRegistry registry, IAssetsManager assetsManager)
+    public static void Update(ref D3D12PipelineStateObjectRegistry registry, AssetsManager assetsManager)
     {
         for (var i = 0; i < registry._count; ++i)
         {

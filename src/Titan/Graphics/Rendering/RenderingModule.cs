@@ -1,6 +1,5 @@
 using Titan.Application;
 using Titan.Graphics.D3D12;
-using Titan.Graphics.Pipeline;
 using Titan.Graphics.Rendering.D3D12;
 using Titan.Graphics.Resources;
 using Titan.Graphics.Vulkan;
@@ -18,6 +17,7 @@ internal sealed class RenderingModule : IModule
                 //.AddModule<D3D12PipelineModule>()
                 .AddModule<D3D12RenderingModule>()
                 .AddAssetLoader<ShaderLoader>()
+                .AddAssetLoader<ShaderInfoLoader>()
                 .AddAssetLoader<TextureLoader>()
                 .AddAssetLoader<MeshLoader>()
                 ;

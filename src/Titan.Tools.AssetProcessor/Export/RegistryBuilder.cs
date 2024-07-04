@@ -38,7 +38,6 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
-
     private static string CreateMeshDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
     {
         ref readonly var mesh = ref assetDescriptor.Mesh;

@@ -60,7 +60,7 @@ internal unsafe partial struct SceneRenderer
     }
 
     [System]
-    public static void Render(in SceneRenderer renderer, in D3D12RenderGraph graph, in RenderContext context, IAssetsManager assetsManager)
+    public static void Render(in SceneRenderer renderer, in D3D12RenderGraph graph, in RenderContext context, AssetsManager assetsManager)
     {
         var renderPass = renderer.RenderPass;
 

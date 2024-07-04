@@ -6,7 +6,8 @@ internal unsafe struct Asset
 {
     public AssetState State;
     public AssetFile* File;
-    public AssetsContext* Context;
+    public AssetSystem* System;
+    public AssetRegistry* Registry;
 
     public JobHandle AsyncJobHandle;
 
@@ -16,5 +17,5 @@ internal unsafe struct Asset
     public AssetDescriptor* Descriptor;
 
 
-    public AssetLoaderDescriptor* GetLoader() => Context->Loaders.GetPointer((int)Descriptor->Type);
+    public AssetLoaderDescriptor* GetLoader() => System->Loaders.GetPointer((int)Descriptor->Type);
 }

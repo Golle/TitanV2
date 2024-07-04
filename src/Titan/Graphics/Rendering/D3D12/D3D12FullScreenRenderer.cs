@@ -51,7 +51,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
     public Vector3 CameraPosition;
 
     [System(SystemStage.Init)]
-    public static void Init(in D3D12Device device, D3D12FullScreenRenderer* data, IConfigurationManager configurationManager, IAssetsManager assetsManager, in D3D12Allocator allocator, in Window window, in D3D12ResourceManager resourceManager)
+    public static void Init(in D3D12Device device, D3D12FullScreenRenderer* data, IConfigurationManager configurationManager, AssetsManager assetsManager, in D3D12Allocator allocator, in Window window, in D3D12ResourceManager resourceManager)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
 
@@ -210,7 +210,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
     }
 
     [System]
-    public static void Render(in D3D12CommandQueue queue, ref D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, IAssetsManager assetsManager, in InputState inputState)
+    public static void Render(in D3D12CommandQueue queue, ref D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, AssetsManager assetsManager, in InputState inputState)
     {
         var pipelineState = inputState.IsKeyDown(KeyCode.Space) ? data.PipelineStateWireframe : data.PipelineState;
 

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Titan.Assets;
 using Titan.Core;
 using Titan.ECS;
 using Titan.ECS.Archetypes;
@@ -59,6 +60,10 @@ public unsafe ref struct SystemInitializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public EntityManager CreateEntityManager()
         => new(_unmanagedResources.GetResourcePointer<EntitySystem>(), _unmanagedResources.GetResourcePointer<ComponentSystem>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public AssetsManager CreateAssetsManager()
+        => new(_unmanagedResources.GetResourcePointer<AssetSystem>());
 
     public void AddReadOnlyComponent(in ComponentType type)
     {

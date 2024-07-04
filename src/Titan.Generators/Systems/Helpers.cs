@@ -115,6 +115,10 @@ internal static class Helpers
                 {
                     builder.Add(new SystemParameter(TitanTypes.EntityManager, ArgumentKind.EntityManager, ModifierType.Value));
                 }
+                else if (typeName is TitanTypes.AssetsManager)
+                {
+                    builder.Add(new SystemParameter(TitanTypes.AssetsManager, ArgumentKind.AssetsManager, ModifierType.Value));
+                }
                 else if (typeName is TitanTypes.EventWriter)
                 {
                     builder.Add(new SystemParameter(TitanTypes.EventWriter, ArgumentKind.EventWriter, ModifierType.Value));
@@ -124,6 +128,7 @@ internal static class Helpers
                     var eventType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();
                     builder.Add(new SystemParameter(eventType, ArgumentKind.EventReader, ModifierType.Value));
                 }
+
                 else
                 {
                     var kind = type.IsUnmanagedType

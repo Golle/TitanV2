@@ -8,6 +8,35 @@ using Titan.Graphics.D3D12;
 
 namespace Titan.Graphics.Resources;
 
+[Asset(AssetType.ShaderConfig)]
+public partial struct ShaderInfo
+{
+    public Handle<ShaderAsset> VertexShader;
+    public Handle<ShaderAsset> PixelShader;
+}
+
+[AssetLoader<ShaderInfo>]
+public unsafe partial struct ShaderInfoLoader
+{
+    public bool Init(in AssetLoaderInitializer init)
+    {
+        return true;
+    }
+
+    public void Shutdown(in AssetLoaderInitializer init)
+    {
+    }
+
+    public ShaderInfo* Load(in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        return (ShaderInfo*)1;
+    }
+
+    public void Unload(ShaderInfo* asset)
+    {
+    }
+}
+
 [Asset(AssetType.Shader)]
 public partial struct ShaderAsset
 {

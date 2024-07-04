@@ -6,10 +6,7 @@ internal sealed class AssetsModule : IModule
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
         builder
-            .AddResource<AssetsContext>()
-            .AddService<IAssetsManager, AssetsManager>(new AssetsManager())
-            .AddSystems<AssetSystem>()
-            .AddSystems<AssetLoaderSystem>()
+            .AddSystemsAndResource<AssetSystem>()
             .AddRegistry<EngineAssetsRegistry>(true)
             ;
 
