@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
@@ -21,11 +22,12 @@ internal unsafe partial struct AssetSystem
     public uint NumberOfRegisters;
 
     public TitanArray<Asset> Assets;
+    public TitanArray<AssetId> Dependencies;
+
     public ManagedResource<IFileSystem> FileSystem;
     public GeneralAllocator Allocator;
 
     public TitanBuffer LoadersData;
-
     public bool SetRegisterAndLoaders(IReadOnlyList<AssetRegistryDescriptor> assetRegistries, IReadOnlyList<AssetLoaderDescriptor> assetLoaders)
     {
         for (var i = 0; i < assetRegistries.Count; ++i)
@@ -46,22 +48,17 @@ internal unsafe partial struct AssetSystem
     public static void Startup(AssetSystem* system, IFileSystem fileSystem, IMemoryManager memoryManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services)
     {
         var config = configurationManager.GetConfigOrDefault<AssetsConfig>();
+        // Pre-calculate the memory usage for assets, loaders and dependencies so we can have all in the same block.
 
-        var assetCount = GetMaxIndex(system->Registers.AsReadOnlySpan()[..(int)system->NumberOfRegisters]) + 1;
-        if (!memoryManager.TryAllocArray(out system->Assets, assetCount))
+        if (!InitSystem(system, config, memoryManager))
         {
-            Logger.Error<AssetSystem>($"Failed to allocate an array for the assets. Size = {sizeof(Asset) * assetCount} bytes");
+            Logger.Error<AssetSystem>($"Failed to initialize the {nameof(AssetSystem)}.");
             return;
         }
 
-        Logger.Trace<AssetSystem>($"File buffer size {config.FileBufferMaxSize} bytes");
-        if (!memoryManager.TryCreateGeneralAllocator(out system->Allocator, config.FileBufferMaxSize))
-        {
-            Logger.Error<AssetSystem>($"Failed to create a allocator. Max Size = {config.FileBufferMaxSize} bytes");
-            return;
-        }
-
-        Logger.Trace<AssetSystem>($"Init the AssetSystem. Registries = {system->NumberOfRegisters}. Max AssetCount = {assetCount}");
+        // get the start of the dependencies array
+        var dependencies = system->Dependencies.AsPointer();
+        Logger.Trace<AssetSystem>($"Init the AssetSystem. Registries = {system->NumberOfRegisters}. Max AssetCount = {system->Assets.Length}");
         for (var i = 0; i < system->NumberOfRegisters; ++i)
         {
             var register = system->Registers.AsPointer() + i;
@@ -76,52 +73,103 @@ internal unsafe partial struct AssetSystem
             register->File.Handle = handle;
             register->File.Size = fileSystem.GetLength(handle);
 
-            foreach (ref readonly var descriptor in register->GetAssetDescriptors())
+            var assetDescriptors = register->GetAssetDescriptors();
+            foreach (ref readonly var descriptor in assetDescriptors)
             {
+                var assetDependencies = register->GetDependencies(descriptor);
                 system->Assets[descriptor.Id] = new()
                 {
-                    Descriptor = MemoryUtils.AsPointer(descriptor), //NOTE: this might crash , unless they are stored as constants.. We'll see :D Worst case is that we can copy them, should not use a massive amount of memory
+                    Descriptor = MemoryUtils.AsPointer(descriptor),
                     File = &register->File,
                     System = system,
                     Registry = register,
                     FileBuffer = null,
-                    State = AssetState.Unloaded
+                    State = AssetState.Unloaded,
+                    Dependencies = dependencies, // store dependencies pointer on the asset (regardless if it's empty)
+                    NumberOfDependencies = (byte)assetDependencies.Length
                 };
+
+                // For each dependency, write the ID and move the pointer.
+                foreach (var dependency in assetDependencies)
+                {
+                    *dependencies = assetDescriptors[(int)dependency].Id;
+                    dependencies++;
+                }
             }
         }
 
-        //NOTE(Jens): Not the best way, but we need to use the file system. 
+        //NOTE(Jens): Not the best way, but we need to use the file system.  Stretch: Replace IFileSystem with a struct, similar to AssetManager and EntityManager.
         system->FileSystem = ManagedResource<IFileSystem>.Alloc(fileSystem);
 
-        // Init the loaders
-        var (loadersSize, highestAssetId) = CalculateLoaderSizeAndAssetId(system->Loaders);
-        Debug.Assert(highestAssetId < system->Loaders.Size);
-
-        if (!memoryManager.TryAllocBuffer(out system->LoadersData, loadersSize))
-        {
-            Logger.Error<AssetSystem>($"Failed to allocate memory for the AssetLoaders. Size = {loadersSize} bytes");
-            return;
-        }
-
-        var initializer = new AssetLoaderInitializer(unmanagedResources, services);
-        var offset = 0u;
+        // Init the Loaders
+        var context = system->LoadersData.AsPointer();
         foreach (ref var loader in system->Loaders)
         {
             if (loader.AssetId == 0) // an empty slot.
             {
                 continue;
             }
-            loader.Context = system->LoadersData.AsPointer() + offset;
-            offset += loader.Size;
 
-            if (loader.Init(initializer))
-            {
-                Logger.Trace<AssetSystem>($"Asset Loader {loader.Name.GetString()} initialized.");
-            }
-            else
+            loader.Context = context;
+            context += loader.Size;
+            if (!loader.Init(new AssetLoaderInitializer(unmanagedResources, services)))
             {
                 Logger.Error<AssetSystem>($"Failed to init the {loader.Name.GetString()} asset loader.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Allocates all memory needed for the system
+    /// </summary>
+    /// <returns>True on success</returns>
+    private static bool InitSystem(AssetSystem* system, AssetsConfig config, IMemoryManager memoryManager)
+    {
+        var (assetCount, dependencyCount) = GetMaxIndexAndDependencyCount(system->Registers.AsReadOnlySpan()[..(int)system->NumberOfRegisters]);
+
+        if (!memoryManager.TryAllocArray(out system->Assets, assetCount + 1))
+        {
+            Logger.Error<AssetSystem>($"Failed to allocate an array for the assets. Size = {sizeof(Asset) * (assetCount + 1)} bytes");
+            return false;
+        }
+        if (!memoryManager.TryAllocArray(out system->Dependencies, dependencyCount))
+        {
+            Logger.Error<AssetSystem>($"Failed to allocate an array for the asset dependencies. Size = {sizeof(AssetId) * dependencyCount} bytes");
+            return false;
+        }
+
+        Logger.Trace<AssetSystem>($"File buffer size {config.FileBufferMaxSize} bytes");
+        if (!memoryManager.TryCreateGeneralAllocator(out system->Allocator, config.FileBufferMaxSize))
+        {
+            Logger.Error<AssetSystem>($"Failed to create a allocator. Max Size = {config.FileBufferMaxSize} bytes");
+            return false;
+        }
+
+        var (loadersSize, highestAssetId) = CalculateLoaderSizeAndAssetId(system->Loaders);
+        Debug.Assert(highestAssetId < system->Loaders.Size);
+
+        if (!memoryManager.TryAllocBuffer(out system->LoadersData, loadersSize))
+        {
+            Logger.Error<AssetSystem>($"Failed to allocate memory for the AssetLoaders. Size = {loadersSize} bytes");
+            return false;
+        }
+
+        return true;
+
+        static (uint MaxId, uint DependencyCount) GetMaxIndexAndDependencyCount(ReadOnlySpan<AssetRegistry> registries)
+        {
+            var maxId = 0u;
+            var dependencies = 0u;
+            foreach (ref readonly var registry in registries)
+            {
+                var descriptors = registry.GetAssetDescriptors();
+                foreach (ref readonly var descriptor in descriptors)
+                {
+                    maxId = Math.Max(descriptor.Id, maxId);
+                    dependencies += (uint)registry.GetDependencies(descriptor).Length;
+                }
+            }
+            return (maxId, dependencies);
         }
 
         static (uint Size, uint AssetId) CalculateLoaderSizeAndAssetId(ReadOnlySpan<AssetLoaderDescriptor> loaders)
@@ -134,22 +182,6 @@ internal unsafe partial struct AssetSystem
                 assetId = Math.Max(loader.AssetId, assetId);
             }
             return (size, assetId);
-        }
-
-        static uint GetMaxIndex(ReadOnlySpan<AssetRegistry> registries)
-        {
-            var maxId = 0u;
-            foreach (ref readonly var registry in registries)
-            {
-                var descriptors = registry.GetAssetDescriptors();
-                if (descriptors.Length == 0)
-                {
-                    continue;
-                }
-                maxId = Math.Max(descriptors[^1].Id, maxId);
-            }
-
-            return maxId;
         }
     }
 
@@ -256,7 +288,6 @@ internal unsafe partial struct AssetSystem
             }
             loader.Shutdown(initializer);
         }
-        memoryManager.FreeBuffer(ref system->LoadersData);
 
         for (var i = 0; i < system->NumberOfRegisters; ++i)
         {
@@ -268,5 +299,8 @@ internal unsafe partial struct AssetSystem
         }
         system->FileSystem.Release();
 
+        memoryManager.FreeBuffer(ref system->LoadersData);
+        memoryManager.FreeArray(ref system->Dependencies);
+        memoryManager.FreeArray(ref system->Assets);
     }
 }

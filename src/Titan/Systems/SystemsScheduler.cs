@@ -37,7 +37,7 @@ internal unsafe partial struct SystemsScheduler
             descriptor.Init(ref initializer);
 
             builder.AddSystem(descriptor, mutable[..initializer.MutableCount], readOnly[..initializer.ReadOnlyCount]);
-            Logger.Trace<SystemsScheduler>($"Initialized system {descriptor.Name.GetString()}. Mutable = {initializer.MutableCount} ReadOnly = {initializer.ReadOnlyCount}");
+            Logger.Trace<SystemsScheduler>($"Initialized system {descriptor.Name.GetString()}. Stage = {descriptor.Stage} Type = {descriptor.ExecutionType} Mutable = {initializer.MutableCount} ReadOnly = {initializer.ReadOnlyCount}");
         }
 
         if (!builder.TryBuild(ref _stages, ref _nodes, ref _dependencies, memoryManager))
