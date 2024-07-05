@@ -122,7 +122,7 @@ public readonly unsafe struct AssetsManager
                 }
 
                 //NOTE(Jens): We do a Slice here because the buffer returned by the allocator might be bigger.
-                asset->Resource = asset->GetLoader()->Load(descriptor, fileBuffer.Slice(0, descriptor.File.Length));
+                asset->Resource = asset->GetLoader()->Load(descriptor, fileBuffer.Slice(0, descriptor.File.Length), ReadOnlySpan<AssetDependency>.Empty);
                 if (asset->Resource == null)
                 {
                     Logger.Error<AssetsManager>("Failed to load resource");

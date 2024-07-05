@@ -44,6 +44,7 @@ internal static class TitanTypes
     public const string AssetType = $"{Assets}.AssetType";
     public const string AssetLoaderInitializer = $"{Assets}.AssetLoaderInitializer";
     public const string AssetDescriptor = $"{Assets}.AssetDescriptor";
+    public const string AssetDependency = $"{Assets}.AssetDependency";
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";

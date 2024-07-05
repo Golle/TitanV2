@@ -11,6 +11,6 @@ public unsafe interface IAssetLoader<T> : IAssetLoader where T : unmanaged, IAss
 {
     bool Init(in AssetLoaderInitializer init);
     void Shutdown(in AssetLoaderInitializer init);
-    T* Load(in AssetDescriptor descriptor, TitanBuffer buffer);
+    T* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies);
     void Unload(T* asset);
 }

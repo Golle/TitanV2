@@ -3,9 +3,9 @@
   "entryPoint": "main",
   "shaderType": "Vertex",
   "shaderVersion": "Version_6_5",
-  "id": "255be936-3bfc-4c8a-a03f-97f02a69140e",
-  "name": "LightingPassVertexShader",
-  "fileSize": 182,
+  "id": "125abbdb-65f4-4f72-bbcb-18eb91f312e6",
+  "name": "ShaderFullscreenVertex",
+  "fileSize": 0,
   "dependsOn": [],
   "skip": false
 }

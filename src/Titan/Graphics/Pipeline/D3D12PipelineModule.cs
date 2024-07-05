@@ -36,8 +36,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
             Inputs = [],
             Outputs = [gbufferAlbedo, gbufferNormal, gbufferSpecular],
             DepthBufferOutput = depthBuffer,
-            VertexShader = EngineAssetsRegistry.ShaderGBufferPixel,
-            PixelShader = EngineAssetsRegistry.ShaderGBufferVertex
+            Shader = EngineAssetsRegistry.ShaderGBuffer,
         };
 
         RenderPipelineRenderTarget lighting = new("DeferredLighting_RenderTarget", RenderTargetFormat.RGBA8);
@@ -46,8 +45,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
         RenderPipelinePass lightingPass = new("DeferredLighting")
         {
             Type = RenderPassType.DeferredLighting,
-            VertexShader = EngineAssetsRegistry.LightingPassVertexShader,
-            PixelShader = EngineAssetsRegistry.LightingPassPixelShader,
+            Shader = EngineAssetsRegistry.ShaderDeferredLighting,
             Inputs = [gbufferAlbedo, gbufferNormal, gbufferSpecular],
             Outputs = [lighting],
             DepthBufferOutput = null,
@@ -69,8 +67,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
         {
             Inputs = [],
             Outputs = [debugTarget],
-            PixelShader = default,
-            VertexShader = default,
+            Shader = default,
             Type = RenderPassType.Custom
         };
 
@@ -80,10 +77,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
             Type = RenderPassType.Backbuffer,
             Inputs = [lighting, debugTarget],
             Outputs = [RenderPipelineRenderTarget.Backbuffer],
-
-            // TODO: replace these shaders with proper full screen shaders.
-            PixelShader = EngineAssetsRegistry.FullScreenPixelShader,
-            VertexShader = EngineAssetsRegistry.FullScreenVertexShader
+            Shader = EngineAssetsRegistry.ShaderFullscreen
         };
 
         return new RenderPipeline
@@ -143,8 +137,7 @@ public record RenderPipelinePass(string Identifier)
     public required RenderPipelineRenderTarget[] Outputs { get; init; }
     public RenderPipelineDepthBuffer? DepthBufferOutput { get; init; }
     public RenderPipelineDepthBuffer? DepthBufferInput { get; init; }
-    public required AssetDescriptor VertexShader { get; init; }
-    public required AssetDescriptor PixelShader { get; init; }
+    public required AssetDescriptor Shader { get; init; }
 
     //TODO(Jens): Add support for SubPasses, this could be useful for DepthOfField or MotionBlur (yuk) and maybe other post-processing effects
     //public RenderPipelinePass[] SubPasses { get; init; } = [];

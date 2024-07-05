@@ -3,9 +3,9 @@
   "entryPoint": "main",
   "shaderType": "Pixel",
   "shaderVersion": "Version_6_5",
-  "id": "89746169-03b7-486d-920d-6621b814064d",
-  "name": "LightingPassPixelShader",
-  "fileSize": 177,
+  "id": "59786e04-96a1-434d-b33c-a565edd3ce85",
+  "name": "ShaderFullscreenPixel",
+  "fileSize": 295,
   "dependsOn": [],
   "skip": false
 }

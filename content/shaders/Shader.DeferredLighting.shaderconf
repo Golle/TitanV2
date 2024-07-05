@@ -1,0 +1,8 @@
+{
+    "VertexShader": {
+        "Name": "ShaderDeferredLightingVertex"
+    },
+    "PixelShader": {
+        "Name": "ShaderDeferredLightingPixel"
+    }
+}

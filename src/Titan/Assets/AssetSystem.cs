@@ -22,7 +22,7 @@ internal unsafe partial struct AssetSystem
     public uint NumberOfRegisters;
 
     public TitanArray<Asset> Assets;
-    public TitanArray<AssetId> Dependencies;
+    public TitanArray<AssetDependency> Dependencies;
 
     public ManagedResource<IFileSystem> FileSystem;
     public GeneralAllocator Allocator;
@@ -92,7 +92,8 @@ internal unsafe partial struct AssetSystem
                 // For each dependency, write the ID and move the pointer.
                 foreach (var dependency in assetDependencies)
                 {
-                    *dependencies = assetDescriptors[(int)dependency].Id;
+                    var assetId = assetDescriptors[(int)dependency].Id;
+                    *dependencies = new(system->Assets.GetPointer(assetId));
                     dependencies++;
                 }
             }
@@ -210,8 +211,16 @@ internal unsafe partial struct AssetSystem
 
                 case AssetState.LoadRequested when state->Descriptor->File.IsEmpty(): // Special case when there's no file data.
                 case AssetState.ReadingFileCompleted:
-                    state->State = AssetState.CreatingResource;
-                    state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&CreateResourceAsync, state));
+                    if (HasPendingDependencies(state))
+                    {
+                        state->State = AssetState.ResolvingDependencies;
+                    }
+                    else
+                    {
+                        state->State = AssetState.CreatingResource;
+                        state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&CreateResourceAsync, state));
+                    }
+
                     break;
 
                 case AssetState.LoadRequested:
@@ -225,6 +234,14 @@ internal unsafe partial struct AssetSystem
                     state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&ReadFileAsync, state));
                     break;
 
+                case AssetState.ResolvingDependencies:
+                    if (!HasPendingDependencies(state))
+                    {
+                        state->State = AssetState.CreatingResource;
+                        state->AsyncJobHandle = jobSystem.Enqueue(JobDescriptor.CreateTyped(&CreateResourceAsync, state));
+                    }
+                    break;
+
                 case AssetState.ResourceCreated:
                     if (state->FileBuffer != null)
                     {
@@ -236,11 +253,24 @@ internal unsafe partial struct AssetSystem
                     break;
             }
         }
+
+        static bool HasPendingDependencies(Asset* asset)
+        {
+            foreach (ref readonly var dependency in asset->GetDependencies())
+            {
+                if (!dependency.IsLoaded())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     public static void UnloadResourceAsync(Asset* asset)
     {
-
+        Logger.Warning<AssetSystem>("Unload has not been implemented yet. We need reference counting for this to work properly.");
     }
 
     private static void ReadFileAsync(Asset* asset)
@@ -266,7 +296,7 @@ internal unsafe partial struct AssetSystem
         Debug.Assert(loader != null);
 
         var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);
-        asset->Resource = loader->Load(*asset->Descriptor, buffer);
+        asset->Resource = loader->Load(*asset->Descriptor, buffer, asset->GetDependencies());
 
         if (asset->Resource == null)
         {

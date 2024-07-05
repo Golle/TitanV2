@@ -3,9 +3,9 @@
   "entryPoint": "main",
   "shaderType": "Vertex",
   "shaderVersion": "Version_6_5",
-  "id": "7261d13b-2363-4b57-91a7-b590708d9dd7",
-  "name": "FullScreenVertexShader",
-  "fileSize": 164,
+  "id": "255be936-3bfc-4c8a-a03f-97f02a69140e",
+  "name": "ShaderDeferredLightingVertex",
+  "fileSize": 182,
   "dependsOn": [],
   "skip": false
 }

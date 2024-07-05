@@ -40,7 +40,7 @@ internal unsafe partial struct TextureLoader
         init.MemoryManager.FreeAllocator(_pool);
     }
 
-    public TextureAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer)
+    public TextureAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies)
     {
         using var _ = new MeasureTime<TextureLoader>("Loaded texture in {0} ms");
         Debug.Assert(descriptor.Type == AssetType.Texture);

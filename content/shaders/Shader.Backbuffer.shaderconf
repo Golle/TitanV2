@@ -1,0 +1,8 @@
+{
+    "VertexShader": {
+        "Name": "ShaderFullscreenVertex"
+    },
+    "PixelShader": {
+        "Name" : "ShaderFullscreenPixel"
+    }
+}

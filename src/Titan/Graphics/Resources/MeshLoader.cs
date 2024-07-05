@@ -29,7 +29,7 @@ internal unsafe partial struct MeshLoader
         init.MemoryManager.FreeAllocator(_meshes);
     }
 
-    public MeshAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer)
+    public MeshAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies)
     {
         Debug.Assert(descriptor.Type == AssetType.Mesh);
         ref readonly var meshDescriptor = ref descriptor.Mesh;

@@ -1,7 +1,7 @@
 {
   "$type": "ShaderConfigMetadata",
-  "id": "fd4e7946-2273-45f9-b6aa-769d4c4f09c4",
-  "name": "ShaderGBuffer",
+  "id": "ec20e040-a662-46f1-90e6-598b1ec695d3",
+  "name": "ShaderFullscreen",
   "fileSize": 0,
   "dependsOn": [],
   "skip": false
