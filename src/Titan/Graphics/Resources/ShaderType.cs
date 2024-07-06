@@ -1,6 +1,6 @@
 namespace Titan.Graphics.Resources;
 
-public enum ShaderType
+public enum ShaderType : byte
 {
     Compute,
     Vertex,

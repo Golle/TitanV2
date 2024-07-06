@@ -1,5 +1,5 @@
 {
-  "$type": "ShaderConfigMetadata",
+  "$type": "ShaderInfoMetadata",
   "id": "fd4e7946-2273-45f9-b6aa-769d4c4f09c4",
   "name": "ShaderGBuffer",
   "fileSize": 0,

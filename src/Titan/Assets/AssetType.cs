@@ -8,7 +8,7 @@ public enum AssetType
     Texture = 1,
     Mesh = 2,
     Shader = 3,
-    ShaderConfig = 4,
+    ShaderInfo = 4,
     Font = 6,
     Material = 8,
 

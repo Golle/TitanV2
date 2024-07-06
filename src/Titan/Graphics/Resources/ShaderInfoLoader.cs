@@ -3,21 +3,24 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
+using Titan.Graphics.D3D12;
 
 namespace Titan.Graphics.Resources;
 
 
-[Asset(AssetType.ShaderConfig)]
+[Asset(AssetType.ShaderInfo)]
 public unsafe partial struct ShaderInfo
 {
     public ShaderAsset* VertexShader;
     public ShaderAsset* PixelShader;
+    public Handle<RootSignature> RootSignature;
 }
 
 [AssetLoader<ShaderInfo>]
 public unsafe partial struct ShaderInfoLoader
 {
     private PoolAllocator<ShaderInfo> _pool;
+    private D3D12ResourceManager* _resourceManager;
 
     public bool Init(in AssetLoaderInitializer init)
     {
@@ -26,6 +29,9 @@ public unsafe partial struct ShaderInfoLoader
             Logger.Error<ShaderInfoLoader>("Failed to create the resource pool for shaders");
             return false;
         }
+
+        _resourceManager = init.GetResourcePointer<D3D12ResourceManager>();
+
         return true;
     }
 
@@ -43,6 +49,8 @@ public unsafe partial struct ShaderInfoLoader
             return null;
         }
         *resource = default;
+
+        ref readonly var shaderInfo = ref descriptor.ShaderInfo;
 
         foreach (var dependency in dependencies)
         {
@@ -63,15 +71,33 @@ public unsafe partial struct ShaderInfoLoader
             }
         }
 
-        //NOTE(Jens): sanity check for now.
+        // Not the nicest piece of code, but it works :D
+        var start = buffer.AsPointer();
+        var samplersStart = ((SamplerState AssetState, ShaderVisibility Visility)*)start;
+        var samplers = new ReadOnlySpan<(SamplerState AssetState, ShaderVisibility Visility)>(samplersStart, shaderInfo.NumberOfSamplers);
+        var rangesStart = ((byte Count, ShaderDescriptorRangeType Type)*)(samplersStart + shaderInfo.NumberOfSamplers);
+        var ranges = new ReadOnlySpan<(byte Count, ShaderDescriptorRangeType Type)>(rangesStart, shaderInfo.NumberOfDescriptorRanges);
+
+
+        //TODO(Jens): See if we want to use some cache for these at some point.
+        resource->RootSignature = _resourceManager->CreateRootSignature(new CreateRootSignatureArgs
+        {
+            NumberOfConstantBuffers = shaderInfo.NumberOfConstantBuffers,
+            Samplers = samplers,
+            Ranges = ranges
+        });
+
+        //NOTE(Jens): sanity check for now. Remove when everything is working! :)
         Debug.Assert(resource->PixelShader != null);
         Debug.Assert(resource->VertexShader != null);
+        Debug.Assert(resource->RootSignature.IsValid);
 
         return resource;
     }
 
     public void Unload(ShaderInfo* asset)
     {
+        _resourceManager->DestroyRootSignature(asset->RootSignature);
         _pool.SafeFree(asset);
     }
 }

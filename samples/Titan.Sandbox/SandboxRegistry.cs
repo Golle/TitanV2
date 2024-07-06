@@ -5,8 +5,8 @@ namespace Titan.Sandbox;
 public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
 {
     public static Titan.Assets.RegistryId Id { get; } = Titan.Assets.RegistryId.GetNext();
-    private static __ASSETS__ _assets;
-    private static __ASSETS_DEPS__ _dependencies;
+    private static readonly __ASSETS__ _assets;
+    private static readonly __ASSETS_DEPS__ _dependencies;
     public static ReadOnlySpan<char> GetFilePath()
     {
         ReadOnlySpan<char> path = "sandbox.tbin";

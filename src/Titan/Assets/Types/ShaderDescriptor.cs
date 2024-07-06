@@ -12,7 +12,8 @@ public struct ShaderDescriptor
 [StructLayout(LayoutKind.Sequential)]
 public struct ShaderConfigDescriptor
 {
-    public byte NumberOfDescriptors;
-    public byte NumberOfParameters;
+    public byte NumberOfDescriptorRanges;
+    public byte NumberOfConstantBuffers;
     public byte NumberOfSamplers;
+    
 }

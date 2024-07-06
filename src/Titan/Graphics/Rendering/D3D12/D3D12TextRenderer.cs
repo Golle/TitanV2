@@ -4,8 +4,6 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
-using Titan.ECS.Archetypes;
-using Titan.Graphics.Resources;
 using Titan.Resources;
 using Titan.Systems;
 

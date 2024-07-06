@@ -43,16 +43,15 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         return AddAsset(data, metadata, descriptor);
     }
 
-    public bool TryAddShaderConfig(in ShaderConfigDescriptor configDescriptor, ShaderConfigMetadata metadata)
+    public bool TryAddShaderConfig(in ShaderConfigDescriptor configDescriptor, ReadOnlySpan<byte> data, ShaderInfoMetadata metadata)
     {
         var descriptor = new AssetDescriptor
         {
-            Type = AssetType.ShaderConfig,
-            ShaderConfig = configDescriptor
+            Type = AssetType.ShaderInfo,
+            ShaderInfo = configDescriptor
         };
 
-        return AddAsset(ReadOnlySpan<byte>.Empty, metadata, descriptor);
-
+        return AddAsset(data, metadata, descriptor);
     }
 
     public bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
@@ -108,7 +107,7 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         foreach (var sortedAsset in _assets.OrderBy(static a => a.Metadata.Name))
         {
             var length = (uint)sortedAsset.Data.Length;
-            
+
             var updatedDescriptor = sortedAsset.Descriptor with
             {
                 File = new()

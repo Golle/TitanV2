@@ -8,6 +8,7 @@ using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
 using Titan.Graphics.D3D12.Utils;
+using Titan.Graphics.Resources;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Resources;
@@ -39,12 +40,12 @@ public record struct CreateDepthBufferArgs
 
 public ref struct CreateRootSignatureArgs
 {
-    public uint NumberOfDescriptors;
-    public required ReadOnlySpan<uint> Parameters;
+    public required int NumberOfConstantBuffers;
+    public required ReadOnlySpan<(byte Count, ShaderDescriptorRangeType Type)> Ranges;
     public required ReadOnlySpan<(SamplerState State, ShaderVisibility Visibility)> Samplers;
 }
 
-public enum ShaderVisibility
+public enum ShaderVisibility : byte
 {
     All,
     Pixel,
@@ -318,19 +319,24 @@ public unsafe partial struct D3D12ResourceManager
 
         var rootSignature = _rootSignatures.AsPtr(handle);
 
-
-
-
         TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[10];
         TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[args.Samplers.Length];
+        Span<D3D12_DESCRIPTOR_RANGE1> rangeDescriptor = stackalloc D3D12_DESCRIPTOR_RANGE1[10];
 
-        if (args.NumberOfDescriptors > 0)
+        // Set up the descriptor ranges
+        foreach (var range in args.Ranges)
         {
-            Span<D3D12_DESCRIPTOR_RANGE1> ranges = stackalloc D3D12_DESCRIPTOR_RANGE1[(int)args.NumberOfDescriptors];
-            D3D12Helpers.InitDescriptorRanges(ranges, D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+            var type = range.Type switch
+            {
+                ShaderDescriptorRangeType.ShaderResourceView => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                _ => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV
+            };
+            var ranges = rangeDescriptor[..range.Count];
+            D3D12Helpers.InitDescriptorRanges(ranges, type);
             parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
         }
-
+        
+        // Set up the samplers
         if (args.Samplers.Length > 0)
         {
             for (var i = 0; i < args.Samplers.Length; ++i)
@@ -345,6 +351,8 @@ public unsafe partial struct D3D12ResourceManager
                 samplers.Add(D3D12Helpers.CreateStaticSamplerDesc(args.Samplers[i].State, (uint)i, 0, visibility));
             }
         }
+
+        // not sure what to use the flags for yet.
         var flags = D3D12_ROOT_SIGNATURE_FLAGS.D3D12_ROOT_SIGNATURE_FLAG_NONE;
         rootSignature->Resource = _device->CreateRootSignature(flags, parameters, samplers);
         if (!rootSignature->Resource.IsValid)

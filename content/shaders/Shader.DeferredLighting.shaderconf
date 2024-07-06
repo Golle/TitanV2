@@ -4,5 +4,15 @@
     },
     "PixelShader": {
         "Name": "ShaderDeferredLightingPixel"
+    },
+    "Samplers": [
+        {
+            "State": "Point",
+            "Visibility": "All"
+        }
+    ],
+    "Parameters": {
+        "DescriptorRanges": [],
+        "ConstantBuffers": 1
     }
 }

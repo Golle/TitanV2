@@ -4,5 +4,15 @@
     },
     "PixelShader": {
         "Name" : "ShaderFullscreenPixel"
+    },
+    "Samplers": [
+        {
+            "State": "Point",
+            "Visibility": "All"
+        }
+    ],
+    "Parameters": {
+        "DescriptorRanges": [],
+        "ConstantBuffers": 0
     }
 }

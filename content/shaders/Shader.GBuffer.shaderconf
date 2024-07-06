@@ -4,5 +4,24 @@
     },
     "PixelShader": {
         "Name": "ShaderGBufferPixel"
+    },
+    "Samplers": [
+        {
+            "State": "Linear",
+            "Visibility": "All"
+        },
+        {
+            "State": "Point",
+            "Visibility": "All"
+        }
+    ],
+    "Parameters": {
+        "DescriptorRanges": [
+            {
+                "Type": "ShaderResourceView",
+                "Count": 6
+            }
+        ],
+        "ConstantBuffers" : 1
     }
 }

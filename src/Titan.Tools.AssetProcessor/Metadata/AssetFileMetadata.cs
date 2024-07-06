@@ -8,7 +8,7 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 [JsonPolymorphic]
 [JsonDerivedType(typeof(ImageMetadata), nameof(ImageMetadata))]
 [JsonDerivedType(typeof(ShaderMetadata), nameof(ShaderMetadata))]
-[JsonDerivedType(typeof(ShaderConfigMetadata), nameof(ShaderConfigMetadata))]
+[JsonDerivedType(typeof(ShaderInfoMetadata), nameof(ShaderInfoMetadata))]
 [JsonDerivedType(typeof(ObjModelMetadata), nameof(ObjModelMetadata))]
 [JsonDerivedType(typeof(MtlMetadata), nameof(MtlMetadata))]
 [JsonDerivedType(typeof(AsepriteMetadata), nameof(AsepriteMetadata))]

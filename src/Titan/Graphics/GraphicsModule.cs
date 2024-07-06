@@ -1,6 +1,5 @@
 using Titan.Application;
 using Titan.Graphics.Rendering;
-using Titan.Graphics.Rendering.D3D12;
 
 namespace Titan.Graphics;
 internal class GraphicsModule : IModule
