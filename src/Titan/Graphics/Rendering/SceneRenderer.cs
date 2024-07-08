@@ -7,11 +7,11 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.ECS.Components;
-using Titan.Graphics.D3D12;
-using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.Pipeline;
+using Titan.Graphics.Pipeline.Graph;
 using Titan.Resources;
 using Titan.Systems;
+using D3D12RenderGraph = Titan.Graphics.Pipeline.Graph.D3D12RenderGraph;
 
 namespace Titan.Graphics.Rendering;
 
@@ -60,17 +60,16 @@ internal unsafe partial struct SceneRenderer
     }
 
     [System]
-    public static void Render(in SceneRenderer renderer, in D3D12RenderGraph graph, in RenderContext context, AssetsManager assetsManager)
+    public static void Render(in SceneRenderer renderer, in D3D12RenderGraph graph, AssetsManager assetsManager)
     {
         var renderPass = renderer.RenderPass;
 
-        var commandList = graph.BeginPass(context, renderPass);
+        var commandList = graph.BeginPass(renderPass);
         var renderables = renderer.Renderables.AsReadOnlySpan();
         // copy mesh indices
 
         graph.EndPass(renderPass, commandList);
     }
-
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -83,28 +82,27 @@ internal struct Renderable
     public int AssetId;
 }
 
-[UnmanagedResource]
-public unsafe partial struct RenderContext
-{
-    internal Camera MainCamera;
+//[UnmanagedResource]
+//public unsafe partial struct RenderContext
+//{
+//    internal Camera MainCamera;
 
-    internal readonly D3D12CommandQueue* CommandQueue;
-    internal readonly D3D12Allocator* Allocator;
-    internal RenderContext(D3D12CommandQueue* queue, D3D12Allocator* allocator)
-    {
-        CommandQueue = queue;
-        Allocator = allocator;
-    }
+//    internal readonly D3D12CommandQueue* CommandQueue;
+//    internal readonly D3D12Allocator* Allocator;
+//    internal RenderContext(D3D12CommandQueue* queue, D3D12Allocator* allocator)
+//    {
+//        CommandQueue = queue;
+//        Allocator = allocator;
+//    }
 
-    [System(SystemStage.Init, SystemExecutionType.Inline)]
-    internal static void Init(RenderContext* context, UnmanagedResourceRegistry registry)
-    {
-        var allocator = registry.GetResourcePointer<D3D12Allocator>();
-        var commandQueue = registry.GetResourcePointer<D3D12CommandQueue>();
-        *context = new(commandQueue, allocator);
-    }
-
-}
+//    [System(SystemStage.Init, SystemExecutionType.Inline)]
+//    internal static void Init(RenderContext* context, UnmanagedResourceRegistry registry)
+//    {
+//        var allocator = registry.GetResourcePointer<D3D12Allocator>();
+//        var commandQueue = registry.GetResourcePointer<D3D12CommandQueue>();
+//        *context = new(commandQueue, allocator);
+//    }
+//}
 
 internal struct Camera
 {

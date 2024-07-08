@@ -222,53 +222,6 @@ internal unsafe partial struct D3D12PipelineStateObjectRegistry
         }
     }
 
-    public D3D12CachedPipelineState* state;
-    public bool done;
-    
-    [System]
-    public static void T(ref D3D12PipelineStateObjectRegistry reg, in D3D12ResourceManager resourceManager)
-    {
-
-        if (reg.state == null)
-        {
-            var ranges = stackalloc D3D12_DESCRIPTOR_RANGE1[6];
-            D3D12Helpers.InitDescriptorRanges(new Span<D3D12_DESCRIPTOR_RANGE1>(ranges, 6), D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
-
-            ReadOnlySpan<D3D12_ROOT_PARAMETER1> rootParameters = [
-                CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(6, ranges),
-                CD3DX12_ROOT_PARAMETER1.AsConstantBufferView(0 , 0,D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC)
-            ];
-            ReadOnlySpan<D3D12_STATIC_SAMPLER_DESC> samplers = [
-                D3D12Helpers.CreateStaticSamplerDesc(SamplerState.Linear, 0, 0, D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL),
-                D3D12Helpers.CreateStaticSamplerDesc(SamplerState.Linear, 1, 0, D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL)
-            ];
-            var root = reg._device.AsPointer->CreateRootSignature(D3D12_ROOT_SIGNATURE_FLAGS.D3D12_ROOT_SIGNATURE_FLAG_NONE, rootParameters, samplers);
-
-            var pso = reg.CreatePipelineState(new PipelineStateArgs
-            {
-                DepthStencil = new DepthStencilDesc
-                {
-                    DepthEnabled = true,
-                    StencilEnabled = false
-                },
-                PixelShader = EngineAssetsRegistry.DebugTextPixelShader,
-                VertexShader = EngineAssetsRegistry.DebugTextVertexShader,
-                RenderTargets = new(DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM),
-                RootSignature = root
-            });
-            reg.state = pso;
-        }
-        else if (!reg.done && reg.state->Loaded)
-        {
-            reg.done = true;
-            Logger.Error<D3D12PipelineStateObjectRegistry>("All done!");
-        }
-        else if (!reg.done)
-        {
-            Logger.Error<D3D12PipelineStateObjectRegistry>("still loading...");
-        }
-    }
-
     [System(SystemStage.Shutdown)]
     public static void Shutdown(ref D3D12PipelineStateObjectRegistry registry, IMemoryManager memoryManager)
     {

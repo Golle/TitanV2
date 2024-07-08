@@ -1,5 +1,6 @@
 using Titan.Application;
 using Titan.Assets;
+using Titan.Core.Ids;
 
 namespace Titan.Graphics.Pipeline;
 
@@ -9,7 +10,8 @@ internal sealed class D3D12PipelineModule : IModule
     {
         builder
             .AddSystemsAndResource<D3D12PipelineStateObjectRegistry>()
-            .AddSystemsAndResource<D3D12RenderGraph>()
+            .AddSystemsAndResource<Graph.D3D12RenderGraph>()
+            //.AddSystemsAndResource<D3D12RenderGraph1>()
             ;
 
         return true;
@@ -62,20 +64,20 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
         //    Outputs = [forward],
         //    DepthBuffer = forwardDepthBuffer,
         //};
-        RenderPipelineRenderTarget debugTarget = new("Debug_RT", RenderTargetFormat.RGBA8);
-        RenderPipelinePass debugPass = new("Debug")
-        {
-            Inputs = [],
-            Outputs = [debugTarget],
-            Shader = default,
-            Type = RenderPassType.Custom
-        };
+        //RenderPipelineRenderTarget debugTarget = new("Debug_RT", RenderTargetFormat.RGBA8);
+        //RenderPipelinePass debugPass = new("Debug")
+        //{
+        //    Inputs = [],
+        //    Outputs = [debugTarget],
+        //    Shader = default,
+        //    Type = RenderPassType.Custom
+        //};
 
 
         RenderPipelinePass finalPass = new("Final")
         {
             Type = RenderPassType.Backbuffer,
-            Inputs = [lighting, debugTarget],
+            Inputs = [lighting/*, debugTarget*/],
             Outputs = [RenderPipelineRenderTarget.Backbuffer],
             Shader = EngineAssetsRegistry.ShaderFullscreen
         };
@@ -87,7 +89,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
                 gBufferRenderPass,
                 lightingPass,
                 //forwardRenderPass,
-                debugPass,
+                //debugPass,
                 finalPass
             ]
         };
@@ -144,6 +146,7 @@ public record RenderPipelinePass(string Identifier)
 }
 public record RenderPipelineRenderTarget(string Identifier, RenderTargetFormat Format)
 {
+    public int Id { get; } = IdGenerator<RenderPipelineRenderTarget, int, SimpleValueIncrement<int>>.GetNext();
     public static readonly RenderPipelineRenderTarget Backbuffer = new("Backbuffer", RenderTargetFormat.BackBuffer);
 }
 public record RenderPipelineDepthBuffer(string Identifier, DepthBufferFormat Format, float ClearValue = 1.0f);

@@ -1,6 +1,7 @@
 using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
+using Titan.Platform.Win32.DXGI;
 
 namespace Titan.Graphics.D3D12;
 
@@ -11,4 +12,5 @@ internal struct D3D12Texture
     public DescriptorHandle SRV;
     public DescriptorHandle RTV;
     public DescriptorHandle DSV;
+    public DXGI_FORMAT Format;
 }

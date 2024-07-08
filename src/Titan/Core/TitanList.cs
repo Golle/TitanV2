@@ -17,15 +17,22 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
         get => _next;
     }
 
-    public void Add(in T value)
+    /// <summary>
+    /// Adds an item to the list and increases the counter
+    /// </summary>
+    /// <param name="value">The value</param>
+    /// <returns>The index of the added element</returns>
+    public uint Add(in T value)
     {
         var index = _next++;
         Debug.Assert(index < _elements.Length);
         _elements[index] = value;
+        return index;
     }
 
     public readonly ReadOnlySpan<T> AsReadOnlySpan() => new(_elements.AsPointer(), (int)_next);
     public readonly Span<T> AsSpan() => new(_elements.AsPointer(), (int)_next);
+    public readonly T* AsPointer(uint index = 0) => _elements.AsPointer() + index;
 
     public static implicit operator TitanList<T>(Span<T> data) => new(MemoryUtils.AsPointer(data.GetPinnableReference()), (uint)data.Length);
 

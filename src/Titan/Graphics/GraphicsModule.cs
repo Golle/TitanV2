@@ -8,7 +8,6 @@ internal class GraphicsModule : IModule
     {
         builder
             .AddModule<RenderingModule>()
-            .AddSystemsAndResource<RenderContext>()
             ;
 
         return true;

@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
@@ -9,6 +10,7 @@ using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Graphics.Resources;
+using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Resources;
@@ -38,6 +40,23 @@ public record struct CreateDepthBufferArgs
     public float ClearValue { get; init; }
 }
 
+
+public ref struct DepthStencilArgs
+{
+    public bool DepthEnabled { get; init; }
+    public bool StencilEnabled { get; init; }
+    public DXGI_FORMAT Format { get; init; }
+}
+public ref struct CreatePipelineStateArgs
+{
+    public required Handle<RootSignature> RootSignature { get; init; }
+    public TitanBuffer PixelShader { get; init; }
+    public TitanBuffer VertexShader { get; init; }
+    public D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology { get; init; }
+    public required ReadOnlySpan<Handle<Texture>> RenderTargets { get; init; }
+    public DepthStencilArgs Depth { get; init; }
+}
+
 public ref struct CreateRootSignatureArgs
 {
     public required int NumberOfConstantBuffers;
@@ -58,40 +77,52 @@ public unsafe partial struct D3D12ResourceManager
     private ResourcePool<D3D12Buffer> _buffers;
     private ResourcePool<D3D12Texture> _textures;
     private ResourcePool<D3D12RootSignature> _rootSignatures;
+    private ResourcePool<D3D12PipelineState> _pipelineStates;
     private D3D12Device* _device;
     private D3D12UploadQueue* _uploadQueue;
     private D3D12Allocator* _allocator;
 
-    [System(SystemStage.Init)]
-    internal static void Init(D3D12ResourceManager* manager, IMemoryManager memoryManager, in D3D12Device device, in D3D12UploadQueue uploadQueue, in D3D12Allocator allocator)
+    [System(SystemStage.Startup)]
+    internal static void Startup(D3D12ResourceManager* manager, IMemoryManager memoryManager, UnmanagedResourceRegistry registry)
     {
         var count = 1024u;
-        manager->_device = MemoryUtils.AsPointer(device);
-        manager->_uploadQueue = MemoryUtils.AsPointer(uploadQueue);
-        manager->_allocator = MemoryUtils.AsPointer(allocator);
-
         if (!memoryManager.TryCreateResourcePool(out manager->_buffers, count))
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12Buffer)} Count = {count}.");
+            return;
         }
 
         if (!memoryManager.TryCreateResourcePool(out manager->_textures, count))
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12Texture)} Count = {count}.");
+            return;
         }
 
         if (!memoryManager.TryCreateResourcePool(out manager->_rootSignatures, count))
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12RootSignature)} Count = {count}.");
+            return;
         }
+
+        if (!memoryManager.TryCreateResourcePool(out manager->_pipelineStates, count))
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12PipelineState)} Count = {count}.");
+            return;
+        }
+
+
+        manager->_device = registry.GetResourcePointer<D3D12Device>();
+        manager->_uploadQueue = registry.GetResourcePointer<D3D12UploadQueue>();
+        manager->_allocator = registry.GetResourcePointer<D3D12Allocator>();
     }
 
-    [System(SystemStage.PostShutdown)]
+    [System(SystemStage.EndOfLife)]
     internal static void Shutdown(D3D12ResourceManager* manager, IMemoryManager memoryManager)
     {
         memoryManager.FreeResourcePool(ref manager->_buffers);
         memoryManager.FreeResourcePool(ref manager->_textures);
         memoryManager.FreeResourcePool(ref manager->_rootSignatures);
+        memoryManager.FreeResourcePool(ref manager->_pipelineStates);
     }
 
     public readonly Handle<Buffer> CreateBuffer(in CreateBufferArgs args)
@@ -275,6 +306,7 @@ public unsafe partial struct D3D12ResourceManager
 
         texture->Texture.Width = args.Width;
         texture->Texture.Height = args.Height;
+        texture->Format = args.Format;
 
         return handle.Value;
     }
@@ -335,7 +367,7 @@ public unsafe partial struct D3D12ResourceManager
             D3D12Helpers.InitDescriptorRanges(ranges, type);
             parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
         }
-        
+
         // Set up the samplers
         if (args.Samplers.Length > 0)
         {
@@ -366,7 +398,7 @@ public unsafe partial struct D3D12ResourceManager
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public RootSignature* Access(Handle<RootSignature> rootSignature)
+    public readonly RootSignature* Access(Handle<RootSignature> rootSignature)
     {
         Debug.Assert(rootSignature.IsValid, "Trying to access a resource of an invalid handle");
         return (RootSignature*)_rootSignatures.AsPtr(rootSignature.Value);
@@ -380,4 +412,106 @@ public unsafe partial struct D3D12ResourceManager
         *rootSignature = default;
         _rootSignatures.SafeFree(handle.Value);
     }
+
+    public readonly Handle<PipelineState> CreatePipelineState(in CreatePipelineStateArgs args)
+    {
+        var handle = _pipelineStates.SafeAlloc();
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to allocate a slot for the {nameof(PipelineState)}");
+            return Handle<PipelineState>.Invalid;
+        }
+
+        Debug.Assert(args.RootSignature.IsValid);
+        var rootSignature = _rootSignatures.AsPtr(args.RootSignature.Value);
+        Debug.Assert(rootSignature->Resource.IsValid);
+
+        TitanList<DXGI_FORMAT> formats = stackalloc DXGI_FORMAT[10];
+        foreach (var textureHandle in args.RenderTargets)
+        {
+            Debug.Assert(textureHandle.IsValid);
+            var texture = _textures.AsPtr(textureHandle.Value);
+            Debug.Assert(texture != null);
+            formats.Add(texture->Format);
+        }
+
+        var pipelineState = _pipelineStates.AsPtr(handle);
+
+        var psoStream = new D3D12PipelineSubobjectStream()
+                .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend)) //TODO(Jens): Should be configurable, but keep it simple for now.
+                .Topology(args.Topology)
+                .Razterizer(D3D12_RASTERIZER_DESC.Default() with
+                {
+                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK // TODO(Jens): Should be configurable
+                })
+                .RenderTargetFormat(new (formats.AsReadOnlySpan()))
+                .RootSignature(rootSignature->Resource)
+                .Sample(new DXGI_SAMPLE_DESC
+                {
+                    Count = 1,
+                    Quality = 0
+                })
+                .SampleMask(uint.MaxValue)
+            ;
+
+        if (args.VertexShader.IsValid)
+        {
+            psoStream = psoStream.VS(new()
+            {
+                BytecodeLength = args.VertexShader.Size,
+                pShaderBytecode = args.VertexShader.AsPointer()
+            });
+        }
+
+        if (args.PixelShader.IsValid)
+        {
+            psoStream = psoStream.PS(new()
+            {
+                BytecodeLength = args.PixelShader.Size,
+                pShaderBytecode = args.PixelShader.AsPointer()
+            });
+        }
+        if (args.Depth.DepthEnabled)
+        {
+            D3D12_DEPTH_STENCIL_DESC depthStencilDesc = new()
+            {
+                DepthEnable = 1,
+                DepthWriteMask = D3D12_DEPTH_WRITE_MASK.D3D12_DEPTH_WRITE_MASK_ALL,
+                DepthFunc = D3D12_COMPARISON_FUNC.D3D12_COMPARISON_FUNC_LESS,
+                StencilEnable = args.Depth.StencilEnabled ? 1 : 0
+            };
+            psoStream = psoStream
+                .DepthStencil(depthStencilDesc)
+                .DepthStencilfFormat(args.Depth.Format);
+        }
+
+        pipelineState->Resource = _device->CreatePipelineStateObject(psoStream.AsStreamDesc());
+
+        if (pipelineState == null)
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to create the {nameof(ID3D12PipelineState)}.");
+            _pipelineStates.SafeFree(handle);
+            return default;
+        }
+
+        return handle.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly PipelineState* Access(in Handle<PipelineState> handle)
+    {
+
+        return null;
+    }
+
+    public void DestroyPipelineState(Handle<PipelineState> handle)
+    {
+        Debug.Assert(handle.IsValid);
+        var pipeline = _pipelineStates.AsPtr(handle.Value);
+        pipeline->Resource.Dispose();
+        *pipeline = default;
+        _pipelineStates.SafeFree(handle.Value);
+    }
 }
+
+
