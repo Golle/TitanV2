@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Maths;
-using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
@@ -16,8 +15,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     internal void SetRenderTarget(Texture* texture)
     {
         Debug.Assert(texture != null);
-        var d3d12Texture = (D3D12Texture*)texture;
-        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, null);
+        commandList->OMSetRenderTargets(1, &texture->RTV.CPU, 1, null);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,7 +26,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         var handles = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[(int)count];
         for (var i = 0; i < count; ++i)
         {
-            handles[i] = ((D3D12Texture*)textures[i])->RTV.CPU;
+            handles[i] = textures[i]->RTV.CPU;
         }
 
         commandList->OMSetRenderTargets(count, handles, 0, null);
@@ -53,24 +51,19 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     {
         Debug.Assert(depthBuffer != null);
         Debug.Assert(texture != null);
-        var d3d12Texture = (D3D12Texture*)texture;
-        var d3d12DepthBuffer = (D3D12Texture*)depthBuffer;
 
-        commandList->OMSetRenderTargets(1, &d3d12Texture->RTV.CPU, 1, &d3d12DepthBuffer->DSV.CPU);
+        commandList->OMSetRenderTargets(1, &texture->RTV.CPU, 1, &depthBuffer->DSV.CPU);
     }
 
     public void ClearRenderTargetView(Texture* texture, Color* color)
     {
         Debug.Assert(commandList != null);
-        var d3d12Texture = (D3D12Texture*)texture;
-        commandList->ClearRenderTargetView(d3d12Texture->RTV.CPU, (float*)color, 0, null);
+        commandList->ClearRenderTargetView(texture->RTV.CPU, (float*)color, 0, null);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void Transition(Texture* texture, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
     {
-        var d3d12Texture = (D3D12Texture*)texture;
-        //NOTE(Jens): remove this method and use the one with Handle<Texture> when we have proper render target implementation
         Unsafe.SkipInit(out D3D12_RESOURCE_BARRIER barrier);
 
         barrier.Flags = D3D12_RESOURCE_BARRIER_FLAGS.D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -78,7 +71,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         barrier.Transition.StateAfter = after;
         barrier.Transition.StateBefore = before;
         barrier.Transition.Subresource = 0;
-        barrier.Transition.pResource = d3d12Texture->Resource;
+        barrier.Transition.pResource = texture->Resource;
         ResourceBarriers(&barrier, 1);
     }
 
@@ -161,8 +154,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     public void ClearDepthStencilView(Texture* depthBuffer, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
     {
         Debug.Assert(depthBuffer != null);
-        var d3d12DepthBuffer = (D3D12Texture*)depthBuffer;
 
-        commandList->ClearDepthStencilView(d3d12DepthBuffer->DSV.CPU, flags, depth, stencil, numberOfRects, rects);
+        commandList->ClearDepthStencilView(depthBuffer->DSV.CPU, flags, depth, stencil, numberOfRects, rects);
     }
 }

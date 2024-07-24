@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Titan.Tools.Interactive;
 
 if (args.Length == 0)
 {
@@ -227,19 +228,22 @@ static TitanConfig? LoadConfig()
 }
 
 
-
-internal record TitanConfig
+namespace Titan.Tools.Interactive
 {
-    public string Project { get; init; } = string.Empty;
-    public string Content { get; init; } = string.Empty;
-    public string Assets { get; init; } = string.Empty;
-    public string Output { get; init; } = string.Empty;
-    public string? Name { get; init; } = null;
-    public string Binary { get; init; } = string.Empty;
-    public string CodePath { get; init; } = string.Empty;
-    public string AssetRegistryName { get; init; } = string.Empty;
+    internal record TitanConfig
+    {
+        public string Project { get; init; } = string.Empty;
+        public string Content { get; init; } = string.Empty;
+        public string Assets { get; init; } = string.Empty;
+        public string Output { get; init; } = string.Empty;
+        public string? Name { get; init; } = null;
+        public string Binary { get; init; } = string.Empty;
+        public string CodePath { get; init; } = string.Empty;
+        public string AssetRegistryName { get; init; } = string.Empty;
+
+    }
+    [JsonSourceGenerationOptions(JsonSerializerDefaults.General)]
+    [JsonSerializable(typeof(TitanConfig))]
+    internal partial class TitanConfigJsonContext : JsonSerializerContext;
 
 }
-[JsonSourceGenerationOptions(JsonSerializerDefaults.General)]
-[JsonSerializable(typeof(TitanConfig))]
-internal partial class TitanConfigJsonContext : JsonSerializerContext;

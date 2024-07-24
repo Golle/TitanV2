@@ -66,8 +66,8 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         data->Mesh = meshHandle;
         ref readonly var mesh = ref assetsManager.Get(meshHandle);
-        data->VertexBuffer = ((D3D12Buffer*)resourceManager.Access(mesh.VertexBuffer))->Resource;
-        data->IndexBuffer = ((D3D12Buffer*)resourceManager.Access(mesh.IndexBuffer))->Resource;
+        data->VertexBuffer = resourceManager.Access(mesh.VertexBuffer)->Resource;
+        data->IndexBuffer = resourceManager.Access(mesh.IndexBuffer)->Resource;
         data->Count = mesh.IndexCount;
 
         var cbSize = (uint)sizeof(TestData);
@@ -232,7 +232,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         commandList.ClearRenderTargetView(backbuffer, MemoryUtils.AsPointer(data.ClearColor));
         commandList.ClearDepthStencilView(depthBuffer, D3D12_CLEAR_FLAGS.D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, null);
-        
+
         //commandList.SetGraphicsRootShaderResourceView(2, data.VertexBufferView.BufferLocation);
 
         D3D12_VIEWPORT viewport = new()
@@ -303,7 +303,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
             data.CameraPosition -= up * 0.1f;
         }
 
-        var tex = (D3D12Texture*)resourceManager.Access(data.Texture);
+        var tex = resourceManager.Access(data.Texture);
         var d = (TestData*)data.ConstantBufferMap;
         d->Color = Color.White;
         d->TextureIndex = tex->SRV.Index;

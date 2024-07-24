@@ -98,7 +98,7 @@ internal unsafe partial struct D3D12CommandQueue
     public CommandList GetCommandList(Handle<PipelineState> handle)
     {
         ID3D12PipelineState* pipelineState = handle.IsValid
-            ? ((D3D12PipelineState*)ResourceManager->Access(handle))->Resource
+            ? ResourceManager->Access(handle)->Resource
             : null;
 
         return default;

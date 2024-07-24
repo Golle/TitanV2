@@ -158,16 +158,16 @@ internal unsafe partial struct DXGISwapchain
     [System(SystemStage.First, SystemExecutionType.Inline)]
     public static void First(ref DXGISwapchain swapchain, in D3D12ResourceManager resourceManager, in Window window)
     {
-        var texture = (D3D12Texture*)resourceManager.Access(swapchain.CurrentBackbuffer);
+        var texture = resourceManager.Access(swapchain.CurrentBackbuffer);
         texture->Format = DefaultFormat;
         texture->RTV = swapchain.RenderTargetViews[swapchain.FrameIndex];
         texture->Resource = swapchain.Resources[swapchain.FrameIndex];
-        texture->Texture.Height = (uint)window.Height;
-        texture->Texture.Width = (uint)window.Width;
+        texture->Height = (uint)window.Height;
+        texture->Width = (uint)window.Width;
     }
 
     [System(SystemStage.Last)]
-    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue) 
+    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue)
         => swapchain->Present(queue);
     private void Present(in D3D12CommandQueue queue)
     {
@@ -223,7 +223,7 @@ internal unsafe partial struct DXGISwapchain
         //NOTE(Jens): This explodes.
         //*resourceManager.Access(swapchain->CurrentBackbuffer) = default;
         //resourceManager.DestroyTexture(swapchain->CurrentBackbuffer);
-        
+
         swapchain->Fence.Dispose();
         swapchain->Swapchain.Dispose();
         *swapchain = default;

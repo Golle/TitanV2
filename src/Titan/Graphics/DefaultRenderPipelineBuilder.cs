@@ -1,4 +1,6 @@
-namespace Titan.Graphics.Pipeline;
+using Titan.Graphics.Pipeline;
+
+namespace Titan.Graphics;
 
 public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
 {

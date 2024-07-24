@@ -112,10 +112,10 @@ public enum ConstantBufferFlags : byte
 [UnmanagedResource]
 public unsafe partial struct D3D12ResourceManager
 {
-    private ResourcePool<D3D12Buffer> _buffers;
-    private ResourcePool<D3D12Texture> _textures;
-    private ResourcePool<D3D12RootSignature> _rootSignatures;
-    private ResourcePool<D3D12PipelineState> _pipelineStates;
+    private ResourcePool<Buffer> _buffers;
+    private ResourcePool<Texture> _textures;
+    private ResourcePool<RootSignature> _rootSignatures;
+    private ResourcePool<PipelineState> _pipelineStates;
     private D3D12Device* _device;
     private D3D12UploadQueue* _uploadQueue;
     private D3D12Allocator* _allocator;
@@ -126,25 +126,25 @@ public unsafe partial struct D3D12ResourceManager
         var count = 1024u;
         if (!memoryManager.TryCreateResourcePool(out manager->_buffers, count))
         {
-            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12Buffer)} Count = {count}.");
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(Buffer)} Count = {count}.");
             return;
         }
 
         if (!memoryManager.TryCreateResourcePool(out manager->_textures, count))
         {
-            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12Texture)} Count = {count}.");
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(Texture)} Count = {count}.");
             return;
         }
 
         if (!memoryManager.TryCreateResourcePool(out manager->_rootSignatures, count))
         {
-            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12RootSignature)} Count = {count}.");
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(RootSignature)} Count = {count}.");
             return;
         }
 
         if (!memoryManager.TryCreateResourcePool(out manager->_pipelineStates, count))
         {
-            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(D3D12PipelineState)} Count = {count}.");
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(PipelineState)} Count = {count}.");
             return;
         }
 
@@ -196,13 +196,13 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         buffer->StartOffset = 0;
-        buffer->Buffer.Stride = (uint)args.Stride;
-        buffer->Buffer.Count = args.Count;
-        buffer->Buffer.Type = args.Type;
+        buffer->Stride = (uint)args.Stride;
+        buffer->Count = args.Count;
+        buffer->Type = args.Type;
 
         if (!args.InitialData.IsValid)
         {
-            return handle.Value;
+            return handle;
         }
 
         Debug.Assert(args.InitialData.Size <= size, "The data size is greater than the buffer size.");
@@ -217,25 +217,25 @@ public unsafe partial struct D3D12ResourceManager
             return Handle<Buffer>.Invalid;
         }
 
-        return handle.Value;
+        return handle;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Buffer* Access(Handle<Buffer> handle)
     {
         Debug.Assert(handle.IsValid, "Trying to access a resource of an invalid handle");
-        return (Buffer*)_buffers.AsPtr(handle.Value);
+        return _buffers.AsPtr(handle);
     }
 
     public readonly void DestroyBuffer(Handle<Buffer> handle)
     {
         Debug.Assert(handle.IsValid, "Trying to destroy a handle that is invalid.");
 
-        var buffer = _buffers.AsPtr(handle.Value);
+        var buffer = _buffers.AsPtr(handle);
         buffer->Resource.Dispose();
         *buffer = default;
 
-        _buffers.SafeFree(handle.Value);
+        _buffers.SafeFree(handle);
     }
 
     public readonly Handle<Texture> CreateDepthBuffer(in CreateDepthBufferArgs args)
@@ -267,8 +267,7 @@ public unsafe partial struct D3D12ResourceManager
 
         _device->CreateDepthStencilView(texture->Resource, texture->DSV.CPU);
 
-
-        return handle.Value;
+        return handle;
     }
 
     public readonly Handle<Texture> CreateTextureHandle()
@@ -280,7 +279,7 @@ public unsafe partial struct D3D12ResourceManager
             return Handle<Texture>.Invalid;
         }
 
-        return handle.Value;
+        return handle;
     }
 
     public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
@@ -354,24 +353,24 @@ public unsafe partial struct D3D12ResourceManager
             _device->CreateRenderTargetView(texture->Resource, null, texture->RTV.CPU);
         }
 
-        texture->Texture.Width = args.Width;
-        texture->Texture.Height = args.Height;
+        texture->Width = args.Width;
+        texture->Height = args.Height;
         texture->Format = args.Format;
 
-        return handle.Value;
+        return handle;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Texture* Access(Handle<Texture> texture)
+    public readonly Texture* Access(in Handle<Texture> texture)
     {
         Debug.Assert(texture.IsValid, "Trying to access a resource of an invalid handle");
-        return (Texture*)_textures.AsPtr(texture.Value);
+        return _textures.AsPtr(texture);
     }
 
     public readonly void DestroyTexture(Handle<Texture> handle)
     {
         Debug.Assert(handle.IsValid);
-        var texture = _textures.AsPtr(handle.Value);
+        var texture = _textures.AsPtr(handle);
         texture->Resource.Dispose();
 
         FreeDescriptor(texture->RTV, _allocator);
@@ -379,7 +378,7 @@ public unsafe partial struct D3D12ResourceManager
         FreeDescriptor(texture->DSV, _allocator);
 
         *texture = default;
-        _textures.SafeFree(handle.Value);
+        _textures.SafeFree(handle);
 
         static void FreeDescriptor(in DescriptorHandle descriptor, D3D12Allocator* allocator)
         {
@@ -466,7 +465,7 @@ public unsafe partial struct D3D12ResourceManager
             return Handle<RootSignature>.Invalid;
         }
 
-        return handle.Value;
+        return handle;
 
 
         D3D12_SHADER_VISIBILITY ToD3D12ShaderVisibility(ShaderVisibility visibility)
@@ -482,16 +481,16 @@ public unsafe partial struct D3D12ResourceManager
     public readonly RootSignature* Access(Handle<RootSignature> rootSignature)
     {
         Debug.Assert(rootSignature.IsValid, "Trying to access a resource of an invalid handle");
-        return (RootSignature*)_rootSignatures.AsPtr(rootSignature.Value);
+        return _rootSignatures.AsPtr(rootSignature);
     }
 
     public void DestroyRootSignature(Handle<RootSignature> handle)
     {
         Debug.Assert(handle.IsValid);
-        var rootSignature = _rootSignatures.AsPtr(handle.Value);
+        var rootSignature = _rootSignatures.AsPtr(handle);
         rootSignature->Resource.Dispose();
         *rootSignature = default;
-        _rootSignatures.SafeFree(handle.Value);
+        _rootSignatures.SafeFree(handle);
     }
 
     public readonly Handle<PipelineState> CreatePipelineState(in CreatePipelineStateArgs args)
@@ -504,14 +503,14 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         Debug.Assert(args.RootSignature.IsValid);
-        var rootSignature = _rootSignatures.AsPtr(args.RootSignature.Value);
+        var rootSignature = _rootSignatures.AsPtr(args.RootSignature);
         Debug.Assert(rootSignature->Resource.IsValid);
 
         TitanList<DXGI_FORMAT> formats = stackalloc DXGI_FORMAT[10];
         foreach (var textureHandle in args.RenderTargets)
         {
             Debug.Assert(textureHandle.IsValid);
-            var texture = _textures.AsPtr(textureHandle.Value);
+            var texture = _textures.AsPtr(textureHandle);
             Debug.Assert(texture != null);
             formats.Add(texture->Format);
         }
@@ -575,20 +574,20 @@ public unsafe partial struct D3D12ResourceManager
             return default;
         }
 
-        return handle.Value;
+        return handle;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly PipelineState* Access(in Handle<PipelineState> handle)
-        => (PipelineState*)_pipelineStates.AsPtr(handle.Value);
+        => _pipelineStates.AsPtr(handle);
 
     public void DestroyPipelineState(Handle<PipelineState> handle)
     {
         Debug.Assert(handle.IsValid);
-        var pipeline = _pipelineStates.AsPtr(handle.Value);
+        var pipeline = _pipelineStates.AsPtr(handle);
         pipeline->Resource.Dispose();
         *pipeline = default;
-        _pipelineStates.SafeFree(handle.Value);
+        _pipelineStates.SafeFree(handle);
     }
 }
 

@@ -164,8 +164,7 @@ internal unsafe partial struct D3D12RenderGraph
 
         var pass = (D3D12RenderPass*)renderPass;
         ref var cachedState = ref pass->CachedResources;
-        var pipelineState = (D3D12PipelineState*)ResourceManager->Access(pass->PipelineState);
-        var commandList = CommandQueue->GetCommandList(pipelineState->Resource);
+        var commandList = CommandQueue->GetCommandList(ResourceManager->Access(pass->PipelineState)->Resource);
 
         //var handles = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[pass->OutputCount];
         //for (var i = 0; i < pass->OutputCount; ++i)
@@ -234,8 +233,8 @@ internal unsafe partial struct D3D12RenderGraph
         {
             var pass = Passes.GetPointer(passIndex);
 
-            pass->CachedResources.PipelineState = ((D3D12PipelineState*)ResourceManager->Access(pass->PipelineState))->Resource;
-            pass->CachedResources.RootSignature = ((D3D12RootSignature*)ResourceManager->Access(pass->RootSignature))->Resource;
+            pass->CachedResources.PipelineState = ResourceManager->Access(pass->PipelineState)->Resource;
+            pass->CachedResources.RootSignature = ResourceManager->Access(pass->RootSignature)->Resource;
 
             TitanList<D3D12_RESOURCE_BARRIER> barriersBegin = pass->CachedResources.BarriersBegin;
             TitanList<D3D12_RESOURCE_BARRIER> barriersEnd = pass->CachedResources.BarriersEnd;
@@ -244,7 +243,7 @@ internal unsafe partial struct D3D12RenderGraph
             for (var i = 0; i < pass->OutputCount; ++i)
             {
                 var handle = pass->Outputs[i];
-                var texture = (D3D12Texture*)ResourceManager->Access(handle);
+                var texture = ResourceManager->Access(handle);
                 pass->CachedResources.Outputs[i] = texture->RTV.CPU;
 
                 var transitionState = Swapchain->CurrentBackbuffer == handle
@@ -260,7 +259,7 @@ internal unsafe partial struct D3D12RenderGraph
             for (var i = 0; i < pass->InputCount; ++i)
             {
                 var handle = pass->Inputs[i];
-                var texture = (D3D12Texture*)ResourceManager->Access(handle);
+                var texture = ResourceManager->Access(handle);
                 pass->CachedResources.Inputs[i] = texture->RTV.CPU;
 
                 barriersBegin.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
