@@ -7,10 +7,12 @@
     },
     "Samplers": [
         {
+            "Register": 0,
             "State": "Linear",
             "Visibility": "All"
         },
         {
+            "Register": 1,
             "State": "Point",
             "Visibility": "All"
         }
@@ -18,10 +20,27 @@
     "Parameters": {
         "DescriptorRanges": [
             {
+                "Register": 0,
                 "Type": "ShaderResourceView",
                 "Count": 6
             }
         ],
-        "ConstantBuffers" : 1
+        "ConstantBuffers": [
+            {
+                "Register": 0,
+                "Visibility": "All"
+            },
+            {
+                "Register": 1,
+                "Visibility": "Pixel",
+                "Flags": "Static"
+            }
+        ],
+        "Constants": [
+            {
+                "Count" : 1,
+                "Register": 2
+            }
+        ]
     }
 }

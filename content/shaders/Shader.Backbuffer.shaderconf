@@ -3,7 +3,7 @@
         "Name": "ShaderFullscreenVertex"
     },
     "PixelShader": {
-        "Name" : "ShaderFullscreenPixel"
+        "Name": "ShaderFullscreenPixel"
     },
     "Samplers": [
         {
@@ -13,6 +13,6 @@
     ],
     "Parameters": {
         "DescriptorRanges": [],
-        "ConstantBuffers": 0
+        "ConstantBuffers": []
     }
 }

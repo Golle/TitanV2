@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Titan.Core.Maths;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
@@ -8,9 +9,9 @@ using Titan.Platform.Win32.D3D12;
 
 namespace Titan.Graphics.Rendering;
 
-internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* commandList)
+[StructLayout(LayoutKind.Sequential)]
+public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandList)
 {
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void SetRenderTarget(Texture* texture)
     {
@@ -20,6 +21,7 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
     public void SetRenderTargets(Texture** textures, uint count)
     {
         //TODO(Jens): This might be slow, maybe we can cache this on the caller? Needs to measure the overhead of having a nicer API.
@@ -77,8 +79,21 @@ internal readonly unsafe ref struct CommandList(ID3D12GraphicsCommandList4* comm
         barrier.Transition.StateBefore = before;
         barrier.Transition.Subresource = 0;
         barrier.Transition.pResource = d3d12Texture->Resource;
-        commandList->ResourceBarrier(1, &barrier);
+        ResourceBarriers(&barrier, 1);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void ResourceBarriers(ReadOnlySpan<D3D12_RESOURCE_BARRIER> barriers)
+    {
+        fixed (D3D12_RESOURCE_BARRIER* ptr = barriers)
+        {
+            ResourceBarriers(ptr, (uint)barriers.Length);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void ResourceBarriers(D3D12_RESOURCE_BARRIER* barriers, uint count)
+        => commandList->ResourceBarrier(count, barriers);
 
     public void Close()
     {

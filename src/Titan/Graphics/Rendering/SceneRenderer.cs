@@ -11,7 +11,6 @@ using Titan.Graphics.Pipeline;
 using Titan.Graphics.Pipeline.Graph;
 using Titan.Resources;
 using Titan.Systems;
-using D3D12RenderGraph = Titan.Graphics.Pipeline.Graph.D3D12RenderGraph;
 
 namespace Titan.Graphics.Rendering;
 
@@ -62,8 +61,14 @@ internal unsafe partial struct SceneRenderer
     [System]
     public static void Render(in SceneRenderer renderer, in D3D12RenderGraph graph, AssetsManager assetsManager)
     {
-        var renderPass = renderer.RenderPass;
+        //TODO(Jens): We need to figure out a better way to do this. Maybe have a null command list that will just discard any calls?
+        if (!graph.IsReady)
+        {
+            return;
+        }
 
+        var renderPass = renderer.RenderPass;
+        
         var commandList = graph.BeginPass(renderPass);
         var renderables = renderer.Renderables.AsReadOnlySpan();
         // copy mesh indices

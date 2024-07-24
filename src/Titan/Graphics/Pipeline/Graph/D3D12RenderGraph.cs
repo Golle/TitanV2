@@ -7,6 +7,7 @@ using Titan.Core.Logging;
 using Titan.Core.Strings;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
+using Titan.Graphics.D3D12.Utils;
 using Titan.Graphics.Rendering;
 using Titan.Graphics.Resources;
 using Titan.Platform.Win32.D3D;
@@ -21,6 +22,7 @@ namespace Titan.Graphics.Pipeline.Graph;
 [UnmanagedResource]
 internal unsafe partial struct D3D12RenderGraph
 {
+    public bool IsReady => RenderPipelineReady;
     private Inline16<RenderPassGroup> Groups;
     private Inline10<D3D12RenderPass> Passes;
     private Inline16<D3D12RenderTarget> RenderTargets;
@@ -30,9 +32,11 @@ internal unsafe partial struct D3D12RenderGraph
     private bool RenderPipelineReady;
     private D3D12CommandQueue* CommandQueue;
     private D3D12Allocator* CommandAllocator;
+    private D3D12ResourceManager* ResourceManager;
+    private DXGISwapchain* Swapchain;
 
     [System(SystemStage.Init)]
-    public static void Init(ref D3D12RenderGraph graph, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry registry, in Window window, in AssetsManager assetsManager)
+    public static void Init(ref D3D12RenderGraph graph, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry registry, in Window window, in DXGISwapchain swapchain, in AssetsManager assetsManager)
     {
         using var _ = new MeasureTime<D3D12RenderGraph>("Constructed pipeline in {0} ms");
         var config = configurationManager.GetConfigOrDefault<RenderPipelineConfiguration>();
@@ -40,11 +44,13 @@ internal unsafe partial struct D3D12RenderGraph
         var pipelineConfig = config.PipelineConfigurationBuilder();
         ValidatePipeline(pipelineConfig);
 
-        (graph.NumberOfGroups, graph.NumberOfPasses, graph.NumberOfRenderTargets) = ConstructPipeline(graph.Groups, graph.Passes, graph.RenderTargets, pipelineConfig, resourceManager, window, assetsManager);
+        (graph.NumberOfGroups, graph.NumberOfPasses, graph.NumberOfRenderTargets) = ConstructPipeline(graph.Groups, graph.Passes, graph.RenderTargets, pipelineConfig, resourceManager, window, swapchain, assetsManager);
 
         Logger.Info<D3D12RenderGraph>($"Pipeline constructed. Render Grouos = {graph.NumberOfGroups} Render Passes = {graph.NumberOfPasses} Render Targets = {graph.NumberOfRenderTargets}");
         graph.CommandQueue = registry.GetResourcePointer<D3D12CommandQueue>();
         graph.CommandAllocator = registry.GetResourcePointer<D3D12Allocator>();
+        graph.ResourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
+        graph.Swapchain = registry.GetResourcePointer<DXGISwapchain>();
     }
 
 
@@ -67,8 +73,6 @@ internal unsafe partial struct D3D12RenderGraph
             }
         }
 
-        using var _ = new MeasureTime<D3D12RenderGraph>("Created pipeline in {0} ms");
-        Logger.Info<D3D12RenderGraph>("Shaders loaded, creating the pipeline");
         // if all shaders have been loaded, read the shader data and get the PSOs.
         for (var i = 0; i < graph.NumberOfPasses; ++i)
         {
@@ -88,29 +92,33 @@ internal unsafe partial struct D3D12RenderGraph
                 Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
             });
         }
-        Logger.Info<D3D12RenderGraph>("Pipeline created! Rendering ready.");
+        // we call update cached passes when everything has been created
+        graph.UpdateCachedPasses();
         graph.RenderPipelineReady = true;
     }
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void PostUpdate(in D3D12RenderGraph graph)
+    public static void PostUpdate(in D3D12RenderGraph graph, in D3D12CommandQueue commandQueue)
     {
         if (!graph.RenderPipelineReady)
         {
             return;
         }
 
-
-        // no idea
+        Span<CommandList> commandListBuffer = stackalloc CommandList[10];
 
         for (var i = 0; i < graph.NumberOfGroups; ++i)
         {
-            //ref readonly var group = ref graph.Groups[i];
-            //var passes = graph.Passes[group.Offset..group.Count];
+            ref readonly var group = ref graph.Groups[i];
 
+            for (var j = 0; j < group.Count; ++j)
+            {
+                commandListBuffer[j] = graph.Passes[group.Offset + j].CommandList;
+            }
+
+            commandQueue.ExecuteCommandLists(commandListBuffer[..group.Count]);
         }
     }
-
 
     /// <summary>
     /// Request a render pass based on the identifier. This pass must have been marked as Custom.
@@ -155,29 +163,124 @@ internal unsafe partial struct D3D12RenderGraph
         Debug.Assert(renderPass != null);
 
         var pass = (D3D12RenderPass*)renderPass;
-        //var commandList = CommandQueue->GetCommandList(pass->DefaultPipelineState);
-        //commandList.SetRenderTargets(pass->OutputHandles.GetPointer(0), pass->OutputCount, &pass->DepthBufferHandle);
-        //commandList.SetDescriptorHeap(CommandAllocator->SRV.Heap);
+        ref var cachedState = ref pass->CachedResources;
+        var pipelineState = (D3D12PipelineState*)ResourceManager->Access(pass->PipelineState);
+        var commandList = CommandQueue->GetCommandList(pipelineState->Resource);
 
-        //// transition resources ?
-        return default;
-        //return commandList;
+        //var handles = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[pass->OutputCount];
+        //for (var i = 0; i < pass->OutputCount; ++i)
+        //{
+        //    handles[i] = ((D3D12Texture*)ResourceManager->Access(pass->Outputs[i]))->RTV.CPU;
+        //    var texture = ResourceManager->Access(pass->Outputs[i]);
+
+        //    if (Swapchain->CurrentBackbuffer == pass->Outputs[i])
+        //    {
+        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
+        //    }
+        //    else
+        //    {
+        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
+        //    }
+        //}
+        commandList.ResourceBarriers(cachedState.BarriersBegin.AsPointer(), cachedState.BarriersBeginCount);
+
+        //for (var i = 0; i < pass->InputCount; ++i)
+        //{
+        //    var texture = ResourceManager->Access(pass->Inputs[i]);
+        //    commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        //}
+
+        commandList.SetRenderTargets(cachedState.Outputs.AsPointer(), pass->OutputCount);
+        commandList.SetDescriptorHeap(CommandAllocator->SRV.Heap);
+
+        //TODO(Jens): Transition resources
+
+        return commandList;
     }
 
-    public readonly void EndPass(RenderPass* pass, CommandList commandList)
+    public readonly void EndPass(RenderPass* renderPass, in CommandList commandList)
     {
-        var renderPass = (D3D12RenderPass*)pass;
-        var group = Groups.GetPointer(renderPass->Group);
+        var pass = (D3D12RenderPass*)renderPass;
+        ref var cachedState = ref pass->CachedResources;
+        //for (var i = 0; i < pass->OutputCount; ++i)
+        //{
+        //    var texture = ResourceManager->Access(pass->Outputs[i]);
+        //    if (Swapchain->CurrentBackbuffer == pass->Outputs[i])
+        //    {
+        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT);
+        //    }
+        //    else
+        //    {
+        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON);
+        //    }
+        //}
 
-        // do something
+        //for (var i = 0; i < pass->InputCount; ++i)
+        //{
+        //    var texture = ResourceManager->Access(pass->Inputs[i]);
+        //    commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON);
+        //}
+
+        commandList.ResourceBarriers(cachedState.BarriersEnd.AsPointer(), cachedState.BarriersEndCount);
+        //var group = Groups.GetPointer(renderPass->Group);
+        commandList.Close();
+        pass->CommandList = commandList;
     }
 
-    private static (uint groups, uint passes, uint renderTargets) ConstructPipeline(Span<RenderPassGroup> groupsOut,
+
+    private void UpdateCachedPasses()
+    {
+        for (var passIndex = 0; passIndex < NumberOfPasses; ++passIndex)
+        {
+            var pass = Passes.GetPointer(passIndex);
+
+            pass->CachedResources.PipelineState = ((D3D12PipelineState*)ResourceManager->Access(pass->PipelineState))->Resource;
+            pass->CachedResources.RootSignature = ((D3D12RootSignature*)ResourceManager->Access(pass->RootSignature))->Resource;
+
+            TitanList<D3D12_RESOURCE_BARRIER> barriersBegin = pass->CachedResources.BarriersBegin;
+            TitanList<D3D12_RESOURCE_BARRIER> barriersEnd = pass->CachedResources.BarriersEnd;
+
+            // Go through all outputs
+            for (var i = 0; i < pass->OutputCount; ++i)
+            {
+                var handle = pass->Outputs[i];
+                var texture = (D3D12Texture*)ResourceManager->Access(handle);
+                pass->CachedResources.Outputs[i] = texture->RTV.CPU;
+
+                var transitionState = Swapchain->CurrentBackbuffer == handle
+                    ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT
+                    : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
+
+                barriersBegin.Add(D3D12Helpers.Transition(texture->Resource, transitionState, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET));
+                barriersEnd.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, transitionState));
+            }
+
+            //NOTE(Jens): This does not work since the resource for Backbuffer have to be replaced each frame.. yikes.
+            // Go through all outputs
+            for (var i = 0; i < pass->InputCount; ++i)
+            {
+                var handle = pass->Inputs[i];
+                var texture = (D3D12Texture*)ResourceManager->Access(handle);
+                pass->CachedResources.Inputs[i] = texture->RTV.CPU;
+
+                barriersBegin.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+                barriersEnd.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON));
+            }
+
+            pass->CachedResources.BarriersBeginCount = (byte)barriersBegin.Count;
+            pass->CachedResources.BarriersEndCount = (byte)barriersEnd.Count;
+        }
+    }
+
+    //TODO(Jens): move this to another file
+    private static (uint groups, uint passes, uint renderTargets) ConstructPipeline(
+        Span<RenderPassGroup> groupsOut,
         Span<D3D12RenderPass> passesOut,
         Span<D3D12RenderTarget> renderTargetsOut,
         RenderPipeline config,
         in D3D12ResourceManager resourceManager,
         in Window window,
+        in DXGISwapchain swapchain,
         AssetsManager assetsManager)
     {
         // The graph that will have the dependencies
@@ -224,6 +327,10 @@ internal unsafe partial struct D3D12RenderGraph
 
                 var renderPass = new D3D12RenderPass
                 {
+                    RenderPass =
+                    {
+                        Type = pass.Type
+                    },
                     Identifier = StringRef.Create(pass.Identifier),
                     InputCount = (byte)pass.Inputs.Length,
                     OutputCount = (byte)pass.Outputs.Length,
@@ -232,14 +339,14 @@ internal unsafe partial struct D3D12RenderGraph
                     Shader = assetsManager.Load<ShaderInfo>(pass.Shader),
                 };
 
-                if (!ResolveTextures(renderPass.Inputs, pass.Inputs, ref renderTargets, resourceManager, window))
+                if (!TryResolveTextures(renderPass.Outputs, pass.Outputs, ref renderTargets, resourceManager, window, swapchain))
                 {
-                    Logger.Error<D3D12RenderGraph>("Failed to resolve the Input render targets. TODO: implement crash.");
+                    Logger.Error<D3D12RenderGraph>($"Failed to resolve the Output render targets.");
                 }
 
-                if (!ResolveTextures(renderPass.Outputs, pass.Outputs, ref renderTargets, resourceManager, window))
+                if (!TryResolveTextures(renderPass.Inputs, pass.Inputs, ref renderTargets, resourceManager, window, swapchain))
                 {
-                    Logger.Error<D3D12RenderGraph>("Failed to resolve the Output render targets. TODO: implement crash.");
+                    Logger.Error<D3D12RenderGraph>($"Failed to resolve the Input render targets.");
                 }
 
                 foreach (var neighbor in graph[identifier])
@@ -259,12 +366,18 @@ internal unsafe partial struct D3D12RenderGraph
 
         return (groups.Count, passes.Count, renderTargets.Count);
 
-        static bool ResolveTextures(Span<Handle<Texture>> targetsOut, RenderPipelineRenderTarget[] targets, ref TitanList<D3D12RenderTarget> cache, D3D12ResourceManager resourceManager, in Window window)
+
+        static bool TryResolveTextures(Span<Handle<Texture>> handles, RenderPipelineRenderTarget[] targets, ref TitanList<D3D12RenderTarget> cache, D3D12ResourceManager resourceManager, in Window window, in DXGISwapchain swapchain)
         {
             for (var i = 0; i < targets.Length; ++i)
             {
                 var target = targets[i];
-                ref var handle = ref targetsOut[i];
+                ref var handle = ref handles[i];
+                if (target.Format is RenderTargetFormat.BackBuffer)
+                {
+                    handle = swapchain.CurrentBackbuffer;
+                    continue;
+                }
 
                 // Try to get an already created texture.
                 if (TryGetTexture(target.Identifier, out handle, cache.AsReadOnlySpan()))
@@ -272,7 +385,6 @@ internal unsafe partial struct D3D12RenderGraph
                     continue;
                 }
                 // no texture found with the identifier. Create a new one.
-
                 var format = ToDXGIFormat(target.Format);
                 handle = resourceManager.CreateTexture(new CreateTextureArgs
                 {
@@ -297,8 +409,8 @@ internal unsafe partial struct D3D12RenderGraph
                     Y = 1.0f
                 });
             }
-
             return true;
+
             static bool TryGetTexture(string identifier, out Handle<Texture> textureOut, ReadOnlySpan<D3D12RenderTarget> renderTargets)
             {
                 Unsafe.SkipInit(out textureOut);
@@ -319,7 +431,7 @@ internal unsafe partial struct D3D12RenderGraph
     private static DXGI_FORMAT ToDXGIFormat(RenderTargetFormat format) => format switch
     {
         RenderTargetFormat.RGBA8 => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
-        RenderTargetFormat.BackBuffer => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM, // not sure how to handle this. 
+        RenderTargetFormat.BackBuffer => DXGI_FORMAT.DXGI_FORMAT_UNKNOWN, // not sure how to handle this. 
         _ => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
     };
 

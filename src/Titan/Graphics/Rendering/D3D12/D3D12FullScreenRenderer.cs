@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
@@ -209,11 +210,12 @@ internal unsafe partial struct D3D12FullScreenRenderer
         data->CameraPosition = Vector3.UnitZ * -10;
     }
 
-    [System]
+    //[System]
     public static void Render(in D3D12CommandQueue queue, ref D3D12FullScreenRenderer data, in DXGISwapchain swapchain, in Window window, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, AssetsManager assetsManager, in InputState inputState)
     {
         var pipelineState = inputState.IsKeyDown(KeyCode.Space) ? data.PipelineStateWireframe : data.PipelineState;
 
+        Debug.Fail("Not working anymore.");
         var commandList = queue.GetCommandList(pipelineState);
         var backbuffer = resourceManager.Access(swapchain.CurrentBackbuffer);
         var depthBuffer = resourceManager.Access(data.DepthBuffer);

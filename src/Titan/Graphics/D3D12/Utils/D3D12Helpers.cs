@@ -50,7 +50,7 @@ internal static class D3D12Helpers
         Debug.Assert((int)type <= BlendStateDescs.Length && (int)type >= 0);
         return BlendStateDescs[(int)type];
     }
-    public static void InitDescriptorRanges(Span<D3D12_DESCRIPTOR_RANGE1> ranges, D3D12_DESCRIPTOR_RANGE_TYPE type)
+    public static void InitDescriptorRanges(Span<D3D12_DESCRIPTOR_RANGE1> ranges, D3D12_DESCRIPTOR_RANGE_TYPE type, uint register = 0, uint space = 0)
     {
         for (var i = 0; i < ranges.Length; ++i)
         {
@@ -61,7 +61,7 @@ internal static class D3D12Helpers
                 NumDescriptors = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
                 OffsetInDescriptorsFromTableStart = 0,
                 RangeType = type,
-                RegisterSpace = (uint)i
+                RegisterSpace = (uint)i + space
             };
         }
     }
@@ -130,4 +130,17 @@ internal static class D3D12Helpers
     public static ReadOnlySpan<ushort> IndexBufferSquare6 => new ushort[] { 0, 1, 2, 3, 0, 2 };
 
 
+    public static unsafe D3D12_RESOURCE_BARRIER Transition(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) =>
+        new()
+        {
+            Flags = D3D12_RESOURCE_BARRIER_FLAGS.D3D12_RESOURCE_BARRIER_FLAG_NONE,
+            Type = D3D12_RESOURCE_BARRIER_TYPE.D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+            Transition = new()
+            {
+                StateAfter = after,
+                StateBefore = before,
+                Subresource = 0,
+                pResource = resource
+            }
+        };
 }

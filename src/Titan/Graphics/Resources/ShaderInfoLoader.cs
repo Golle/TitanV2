@@ -3,10 +3,8 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
-using Titan.Graphics.D3D12;
 
 namespace Titan.Graphics.Resources;
-
 
 [Asset(AssetType.ShaderInfo)]
 public unsafe partial struct ShaderInfo
@@ -71,20 +69,18 @@ public unsafe partial struct ShaderInfoLoader
             }
         }
 
-        // Not the nicest piece of code, but it works :D
-        var start = buffer.AsPointer();
-        var samplersStart = ((SamplerState AssetState, ShaderVisibility Visility)*)start;
-        var samplers = new ReadOnlySpan<(SamplerState AssetState, ShaderVisibility Visility)>(samplersStart, shaderInfo.NumberOfSamplers);
-        var rangesStart = ((byte Count, ShaderDescriptorRangeType Type)*)(samplersStart + shaderInfo.NumberOfSamplers);
-        var ranges = new ReadOnlySpan<(byte Count, ShaderDescriptorRangeType Type)>(rangesStart, shaderInfo.NumberOfDescriptorRanges);
-
+        var samplers = (SamplerInfo*)buffer.AsPointer();
+        var ranges = (DescriptorRangesInfo*)(samplers + shaderInfo.NumberOfSamplers);
+        var constantBuffers = (ConstantBufferInfo*)(ranges + shaderInfo.NumberOfConstantBuffers);
+        var constants = (ConstantsInfo*)(constantBuffers + shaderInfo.NumberOfConstants);
 
         //TODO(Jens): See if we want to use some cache for these at some point.
         resource->RootSignature = _resourceManager->CreateRootSignature(new CreateRootSignatureArgs
         {
-            NumberOfConstantBuffers = shaderInfo.NumberOfConstantBuffers,
-            Samplers = samplers,
-            Ranges = ranges
+            ConstantBuffers = new(constantBuffers, shaderInfo.NumberOfConstantBuffers),
+            Constants = new(constants, shaderInfo.NumberOfConstants),
+            Samplers = new(samplers, shaderInfo.NumberOfSamplers),
+            Ranges = new(samplers, shaderInfo.NumberOfSamplers)
         });
 
         //NOTE(Jens): sanity check for now. Remove when everything is working! :)

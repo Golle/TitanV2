@@ -2,6 +2,9 @@ Texture2D Textures[] : register(t0, space0);
 ByteAddressBuffer BufferTable[] : register(t0, space1);
 ByteAddressBuffer VertexTable[] : register(t0, space2);
 
+
+
+
 struct Vertex
 {
     float3 Position;
@@ -17,3 +20,5 @@ cbuffer TestData : register(b0, space0)
     int TextureIndex;
     float time;
 };
+
+

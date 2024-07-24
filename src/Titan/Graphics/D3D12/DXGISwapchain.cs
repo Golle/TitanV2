@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
@@ -22,7 +23,6 @@ internal unsafe partial struct DXGISwapchain
 
     public ComPtr<IDXGISwapChain3> Swapchain;
     public ComPtr<ID3D12Fence> Fence;
-    public Inline3<Handle<Texture>> BackBuffers;
 
     public HANDLE FenceEvent;
     public uint FrameIndex;
@@ -33,10 +33,15 @@ internal unsafe partial struct DXGISwapchain
     public uint SyncInterval;
     public uint PresentFlags;
 
-    public Handle<Texture> CurrentBackbuffer => BackBuffers[FrameIndex];
+
+    private Inline3<DescriptorHandle> RenderTargetViews;
+    private Inline3<ComPtr<ID3D12Resource>> Resources;
+
+    public DXGI_FORMAT Format => DefaultFormat;
+    public Handle<Texture> CurrentBackbuffer;
 
     [System(SystemStage.Init)]
-    public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Device device, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager)
+    public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Device device, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager)
     {
         Debug.Assert(BufferCount <= 3, "The Backbuffers are stored in Inline3 struct, change this if we want to run more than 3 backbuffers.");
         var config = configurationManager.GetConfigOrDefault<RenderingConfig>();
@@ -72,7 +77,7 @@ internal unsafe partial struct DXGISwapchain
             Stereo = false,
             SwapEffect = DXGI_SWAP_EFFECT.DXGI_SWAP_EFFECT_FLIP_DISCARD
         };
-        hr = factory.Get()->CreateSwapChainForHwnd((IUnknown*)commandQueue.Queue.Get(), window.Handle, &desc, null, null, (IDXGISwapChain1**)swapchain->Swapchain.GetAddressOf());
+        hr = factory.Get()->CreateSwapChainForHwnd((IUnknown*)commandQueue.GetQueue(), window.Handle, &desc, null, null, (IDXGISwapChain1**)swapchain->Swapchain.GetAddressOf());
         if (FAILED(hr))
         {
             Logger.Error<DXGISwapchain>($"Falied to create the {nameof(IDXGISwapChain3)}. HRESULT = {hr}");
@@ -100,7 +105,10 @@ internal unsafe partial struct DXGISwapchain
             }
         }
 
-        if (!swapchain->InitBackbuffers(resourceManager, device, width, height, true))
+        // add a slot for the backbuffer texture handle
+        swapchain->CurrentBackbuffer = resourceManager.CreateTextureHandle();
+
+        if (!swapchain->InitBackbuffers(device, allocator, true))
         {
             Logger.Error<DXGISwapchain>("Failed to init backbuffers. FATAL");
         }
@@ -111,36 +119,28 @@ internal unsafe partial struct DXGISwapchain
         swapchain->FrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
-    private bool InitBackbuffers(in D3D12ResourceManager resourceManager, in D3D12Device device, uint width, uint height, bool createDescriptor)
+    private bool InitBackbuffers(in D3D12Device device, in D3D12Allocator allocator, bool createDescriptor)
     {
         for (var i = 0; i < BufferCount; ++i)
         {
-            //ref var backbuffer = ref BackBuffers[i];
-
-            ID3D12Resource* resource;
-            var hr = Swapchain.Get()->GetBuffer((uint)i, ID3D12Resource.Guid, (void**)&resource);
+            var hr = Swapchain.Get()->GetBuffer((uint)i, ID3D12Resource.Guid, (void**)Resources[i].GetAddressOf());
             if (FAILED(hr))
             {
                 Logger.Error<DXGISwapchain>($"Failed to get backbuffer at index {i}. HRESULT = {hr}");
                 return false;
             }
+            D3D12Helpers.SetName(Resources[i], $"Backbuffer_{i}");
 
             if (createDescriptor)
             {
-                //TODO(Jens): This needs some work to support resizing.
-                BackBuffers[i] = resourceManager.CreateTexture(new CreateTextureArgs
-                {
-                    Format = DefaultFormat,
-                    Height = height,
-                    Width = width,
-                    RenderTargetView = true
-                }, resource);
-                D3D12Helpers.SetName(resource, $"Backbuffer_{i}");
+                var rtvDescriptor = RenderTargetViews[i] = allocator.Allocate(DescriptorHeapType.RenderTargetView);
+                device.CreateRenderTargetView(Resources[i], null, rtvDescriptor.CPU);
             }
         }
 
         return true;
     }
+
     private static bool HasTearingSupport(IDXGIFactory7* factory)
     {
         Debug.Assert(factory != null);
@@ -154,10 +154,21 @@ internal unsafe partial struct DXGISwapchain
 
         return tearing != 0;
     }
-    [System(SystemStage.PostUpdate)]
-    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue)
-        => swapchain->Present(queue);
 
+    [System(SystemStage.First, SystemExecutionType.Inline)]
+    public static void First(ref DXGISwapchain swapchain, in D3D12ResourceManager resourceManager, in Window window)
+    {
+        var texture = (D3D12Texture*)resourceManager.Access(swapchain.CurrentBackbuffer);
+        texture->Format = DefaultFormat;
+        texture->RTV = swapchain.RenderTargetViews[swapchain.FrameIndex];
+        texture->Resource = swapchain.Resources[swapchain.FrameIndex];
+        texture->Texture.Height = (uint)window.Height;
+        texture->Texture.Width = (uint)window.Width;
+    }
+
+    [System(SystemStage.Last)]
+    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue) 
+        => swapchain->Present(queue);
     private void Present(in D3D12CommandQueue queue)
     {
         CPUFrame++;
@@ -187,7 +198,7 @@ internal unsafe partial struct DXGISwapchain
         for (var i = 0u; i < BufferCount; ++i)
         {
             CPUFrame++;
-            queue.Queue.Get()->Signal(Fence, CPUFrame);
+            queue.Signal(Fence, CPUFrame);
             if (Fence.Get()->GetCompletedValue() < CPUFrame)
             {
                 Fence.Get()->SetEventOnCompletion(CPUFrame, FenceEvent);
@@ -198,16 +209,21 @@ internal unsafe partial struct DXGISwapchain
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(DXGISwapchain* swapchain, in D3D12CommandQueue commandQueue, in D3D12ResourceManager resourceManager)
+    public static void Shutdown(DXGISwapchain* swapchain, in D3D12CommandQueue commandQueue, in D3D12ResourceManager resourceManager, in D3D12Allocator allocator)
     {
         swapchain->FlushGPU(commandQueue);
 
         Kernel32.CloseHandle(swapchain->FenceEvent);
         for (var i = 0; i < BufferCount; ++i)
         {
-            resourceManager.DestroyTexture(swapchain->BackBuffers[i]);
+            swapchain->Resources[i].Dispose();
+            allocator.Free(swapchain->RenderTargetViews[i]);
         }
 
+        //NOTE(Jens): This explodes.
+        //*resourceManager.Access(swapchain->CurrentBackbuffer) = default;
+        //resourceManager.DestroyTexture(swapchain->CurrentBackbuffer);
+        
         swapchain->Fence.Dispose();
         swapchain->Swapchain.Dispose();
         *swapchain = default;

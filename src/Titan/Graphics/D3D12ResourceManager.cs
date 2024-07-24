@@ -59,9 +59,40 @@ public ref struct CreatePipelineStateArgs
 
 public ref struct CreateRootSignatureArgs
 {
-    public required int NumberOfConstantBuffers;
-    public required ReadOnlySpan<(byte Count, ShaderDescriptorRangeType Type)> Ranges;
-    public required ReadOnlySpan<(SamplerState State, ShaderVisibility Visibility)> Samplers;
+    public required ReadOnlySpan<ConstantsInfo> Constants;
+    public required ReadOnlySpan<ConstantBufferInfo> ConstantBuffers;
+    public required ReadOnlySpan<DescriptorRangesInfo> Ranges;
+    public required ReadOnlySpan<SamplerInfo> Samplers;
+}
+
+public struct ConstantsInfo
+{
+    public byte Count;
+    public ShaderVisibility Visibility;
+    public byte Register;
+    public byte Space;
+}
+public struct ConstantBufferInfo
+{
+    public ConstantBufferFlags Flags;
+    public ShaderVisibility Visibility;
+    public byte Register;
+    public byte Space;
+}
+public struct DescriptorRangesInfo
+{
+    public byte Count;
+    public ShaderDescriptorRangeType Type;
+    public byte Register;
+    public byte Space;
+}
+
+public struct SamplerInfo
+{
+    public SamplerState State;
+    public ShaderVisibility Visibility;
+    public byte Register;
+    public byte Space;
 }
 
 public enum ShaderVisibility : byte
@@ -69,6 +100,13 @@ public enum ShaderVisibility : byte
     All,
     Pixel,
     Vertex
+}
+
+public enum ConstantBufferFlags : byte
+{
+    None,
+    Static,
+    Volatile
 }
 
 [UnmanagedResource]
@@ -233,6 +271,18 @@ public unsafe partial struct D3D12ResourceManager
         return handle.Value;
     }
 
+    public readonly Handle<Texture> CreateTextureHandle()
+    {
+        var handle = _textures.SafeAlloc();
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to allocate a slot for the texture.");
+            return Handle<Texture>.Invalid;
+        }
+
+        return handle.Value;
+    }
+
     public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
         => CreateTexture(args, null);
 
@@ -340,6 +390,16 @@ public unsafe partial struct D3D12ResourceManager
         }
     }
 
+    /// <summary>
+    /// Creates a new root signature with ranges, constants, constant buffers and static samplers.
+    /// <remarks>
+    /// <para>The order of the root parameters are:</para>
+    /// 1. Descriptor Ranges<br/>
+    /// 2. ConstantBufferViews<br/>
+    /// 3. Constants<br/>
+    /// </remarks>
+    /// </summary>
+    /// <returns>The handle to the root signature, or Invalid on failure</returns>
     public readonly Handle<RootSignature> CreateRootSignature(in CreateRootSignatureArgs args)
     {
         var handle = _rootSignatures.SafeAlloc();
@@ -350,7 +410,6 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var rootSignature = _rootSignatures.AsPtr(handle);
-
         TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[10];
         TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[args.Samplers.Length];
         Span<D3D12_DESCRIPTOR_RANGE1> rangeDescriptor = stackalloc D3D12_DESCRIPTOR_RANGE1[10];
@@ -364,8 +423,26 @@ public unsafe partial struct D3D12ResourceManager
                 _ => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV
             };
             var ranges = rangeDescriptor[..range.Count];
-            D3D12Helpers.InitDescriptorRanges(ranges, type);
+            D3D12Helpers.InitDescriptorRanges(ranges, type, range.Register, range.Space);
+            
+            //TODO(Jens): Add visibility if we need to.
             parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
+        }
+
+        foreach (var constantBuffer in args.ConstantBuffers)
+        {
+            var constantBufferFlags = constantBuffer.Flags switch
+            {
+                ConstantBufferFlags.Volatile => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE,
+                ConstantBufferFlags.Static => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC,
+                _ => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_NONE
+            };
+            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstantBufferView(constantBuffer.Register, constantBuffer.Space, constantBufferFlags, ToD3D12ShaderVisibility(constantBuffer.Visibility)));
+        }
+
+        foreach (var constant in args.Constants)
+        {
+            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstants(constant.Count, constant.Register, constant.Space, ToD3D12ShaderVisibility(constant.Visibility)));
         }
 
         // Set up the samplers
@@ -374,12 +451,7 @@ public unsafe partial struct D3D12ResourceManager
             for (var i = 0; i < args.Samplers.Length; ++i)
             {
                 //NOTE(Jens): We can improve this by specifying the visibility of the static sampler.
-                var visibility = args.Samplers[i].Visibility switch
-                {
-                    ShaderVisibility.Pixel => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL,
-                    ShaderVisibility.Vertex => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_VERTEX,
-                    _ => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL
-                };
+                var visibility = ToD3D12ShaderVisibility(args.Samplers[i].Visibility);
                 samplers.Add(D3D12Helpers.CreateStaticSamplerDesc(args.Samplers[i].State, (uint)i, 0, visibility));
             }
         }
@@ -395,6 +467,15 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         return handle.Value;
+
+
+        D3D12_SHADER_VISIBILITY ToD3D12ShaderVisibility(ShaderVisibility visibility)
+            => visibility switch
+            {
+                ShaderVisibility.Pixel => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL,
+                ShaderVisibility.Vertex => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_VERTEX,
+                _ => D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL
+            };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -444,7 +525,7 @@ public unsafe partial struct D3D12ResourceManager
                 {
                     CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK // TODO(Jens): Should be configurable
                 })
-                .RenderTargetFormat(new (formats.AsReadOnlySpan()))
+                .RenderTargetFormat(new(formats.AsReadOnlySpan()))
                 .RootSignature(rootSignature->Resource)
                 .Sample(new DXGI_SAMPLE_DESC
                 {
@@ -499,10 +580,7 @@ public unsafe partial struct D3D12ResourceManager
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly PipelineState* Access(in Handle<PipelineState> handle)
-    {
-
-        return null;
-    }
+        => (PipelineState*)_pipelineStates.AsPtr(handle.Value);
 
     public void DestroyPipelineState(Handle<PipelineState> handle)
     {

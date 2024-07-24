@@ -13,6 +13,10 @@
     ],
     "Parameters": {
         "DescriptorRanges": [],
-        "ConstantBuffers": 1
+        "ConstantBuffers": [
+            {
+                "Visibility": "Pixel"
+            }
+        ]
     }
 }
