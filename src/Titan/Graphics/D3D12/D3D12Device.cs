@@ -5,7 +5,6 @@ using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics.D3D12.Adapters;
-using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;

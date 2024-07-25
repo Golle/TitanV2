@@ -16,12 +16,12 @@ internal unsafe partial struct D3D12Allocator
     public const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
 
     private TitanArray<int> _sharedFreeList;
-    private Inline4<DescriptorHeap> _heaps;
+    private Inline4<D3D12DescriptorHeap> _heaps;
 
     private int _frameIndex;
 
     [UnscopedRef]
-    public ref readonly DescriptorHeap SRV => ref _heaps[(int)DescriptorHeapType.ShaderResourceView];
+    public ref readonly D3D12DescriptorHeap SRV => ref _heaps[(int)DescriptorHeapType.ShaderResourceView];
     [System(SystemStage.PreInit)]
     public static void Init(D3D12Allocator* allocator, in D3D12Device device, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
@@ -81,7 +81,7 @@ internal unsafe partial struct D3D12Allocator
     }
 
 
-    public readonly DescriptorHandle Allocate(DescriptorHeapType type)
+    public readonly D3D12DescriptorHandle Allocate(DescriptorHeapType type)
     {
         ref var heap = ref *(_heaps.AsPointer() + (int)type);
         var index = heap.Count++;
@@ -95,7 +95,7 @@ internal unsafe partial struct D3D12Allocator
     }
 
 
-    public readonly void Free(in DescriptorHandle handle)
+    public readonly void Free(in D3D12DescriptorHandle handle)
     {
         ref var heap = ref *(_heaps.AsPointer() + (int)handle.Type);
         var index = --heap.Count;

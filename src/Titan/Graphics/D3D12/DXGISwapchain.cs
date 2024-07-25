@@ -4,10 +4,10 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
-using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
@@ -34,7 +34,7 @@ internal unsafe partial struct DXGISwapchain
     public uint PresentFlags;
 
 
-    private Inline3<DescriptorHandle> RenderTargetViews;
+    private Inline3<D3D12DescriptorHandle> RenderTargetViews;
     private Inline3<ComPtr<ID3D12Resource>> Resources;
 
     public DXGI_FORMAT Format => DefaultFormat;

@@ -1,6 +1,6 @@
 using System.Numerics;
 using Titan.Assets;
-using Titan.Graphics.Resources;
+using Titan.Rendering.Resources;
 
 namespace Titan.ECS.Components;
 

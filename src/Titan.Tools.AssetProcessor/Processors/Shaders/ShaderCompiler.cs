@@ -1,4 +1,4 @@
-using Titan.Graphics.Resources;
+using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Processors.Shaders.DXC;
 
 namespace Titan.Tools.AssetProcessor.Processors.Shaders;

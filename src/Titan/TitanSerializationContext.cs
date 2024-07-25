@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Titan.Graphics.Rendering;
+using Titan.Rendering;
 using Titan.Windows;
 
 namespace Titan;

@@ -1,4 +1,4 @@
-using Titan.Graphics.Resources;
+using Titan.Rendering.Resources;
 
 namespace Titan.Tools.AssetProcessor.Processors.Shaders;
 

@@ -112,7 +112,7 @@ internal sealed class AppBuilder(AppConfig appConfig) : IAppBuilder
         var descriptor = T.CreateDescriptor();
         if (_assetLoaders.Any(a => a.AssetId == descriptor.AssetId))
         {
-            throw new InvalidOperationException($"An asset loader for asset type {(AssetType)descriptor.AssetId} (AssetId = {descriptor.AssetId}) type has already been registed. ");
+            throw new InvalidOperationException($"An asset loader for asset type {(AssetType)descriptor.AssetId} (AssetId = {descriptor.AssetId}) type has already been added. ");
         }
 
         _assetLoaders.Add(descriptor);

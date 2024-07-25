@@ -1,10 +1,10 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
+using Titan.Rendering;
+using Titan.Rendering.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value

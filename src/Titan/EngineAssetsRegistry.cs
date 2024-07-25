@@ -155,7 +155,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Pixel
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
             }
         };
         _assets[5] = new Titan.Assets.AssetDescriptor
@@ -176,7 +176,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Vertex
+                Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
         _assets[6] = new Titan.Assets.AssetDescriptor
@@ -245,7 +245,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Pixel
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
             }
         };
         _assets[9] = new Titan.Assets.AssetDescriptor
@@ -266,7 +266,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Vertex
+                Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
         _assets[10] = new Titan.Assets.AssetDescriptor
@@ -310,7 +310,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Pixel
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
             }
         };
         _assets[12] = new Titan.Assets.AssetDescriptor
@@ -331,7 +331,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Vertex
+                Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
         _assets[13] = new Titan.Assets.AssetDescriptor
@@ -375,7 +375,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Pixel
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
             }
         };
         _assets[15] = new Titan.Assets.AssetDescriptor
@@ -396,7 +396,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Vertex
+                Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
         _assets[16] = new Titan.Assets.AssetDescriptor
@@ -417,7 +417,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Pixel
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
             }
         };
         _assets[17] = new Titan.Assets.AssetDescriptor
@@ -438,7 +438,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Shader = new()
             {
-                Type = Titan.Graphics.Resources.ShaderType.Vertex
+                Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
         _assets[18] = new Titan.Assets.AssetDescriptor

@@ -1,6 +1,5 @@
 using Titan.Core.Maths;
 using Titan.Core.Memory;
-using Titan.Graphics.Rendering;
 using Titan.Platform.Win32.D3D;
 
 namespace Titan.Graphics.D3D12;

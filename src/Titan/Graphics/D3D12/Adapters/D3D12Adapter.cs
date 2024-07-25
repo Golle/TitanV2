@@ -1,9 +1,9 @@
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Graphics.Rendering;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 using static Titan.Platform.Win32.Win32Common;

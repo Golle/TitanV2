@@ -1,7 +1,7 @@
 using Titan.Application;
 using Titan.Core.Logging;
-using Titan.Graphics;
 using Titan.Input;
+using Titan.Rendering;
 using Titan.Windows;
 
 namespace Titan.Modules;
@@ -15,7 +15,7 @@ public class ApplicationModule : IModule
         {
             builder
                 .AddModule<WindowModule>()
-                .AddModule<GraphicsModule>()
+                .AddModule<RenderingModule>()
                 .AddModule<InputModule>()
                 ;
         }

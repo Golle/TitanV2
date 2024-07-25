@@ -4,8 +4,8 @@ using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Core.Strings;
-using Titan.Graphics.Resources;
 using Titan.Platform.Win32.DXGI;
+using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Metadata;
 
 namespace Titan.Tools.AssetProcessor.Export;

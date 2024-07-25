@@ -4,7 +4,7 @@ using Titan.Assets.Types;
 using Titan.Core;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
-using Titan.Graphics.Resources;
+using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
