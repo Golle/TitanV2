@@ -10,8 +10,8 @@ internal class D3D12RenderingModule : IModule
             //.AddSystemsAndResource<D3D12TextRenderer>()
 
             .AddSystemsAndResource<SceneRenderer>()
-            .AddSystemsAndResource<Rendering.DeferredLightingRenderer>()
-            .AddSystemsAndResource<Rendering.FinalRenderer>()
+            .AddSystemsAndResource<DeferredLightingRenderer>()
+            .AddSystemsAndResource<FinalRenderer>()
             
             ;
 

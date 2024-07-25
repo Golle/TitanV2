@@ -24,8 +24,8 @@ internal unsafe partial struct D3D12RenderGraph
 {
     public bool IsReady => RenderPipelineReady;
     private Inline16<RenderPassGroup> Groups;
-    private Inline10<D3D12RenderPass> Passes;
-    private Inline16<D3D12RenderTarget> RenderTargets;
+    private Inline8<D3D12RenderPass> Passes;
+    private Inline8<D3D12RenderTarget> RenderTargets;
     private uint NumberOfGroups;
     private uint NumberOfPasses;
     private uint NumberOfRenderTargets;
@@ -59,6 +59,18 @@ internal unsafe partial struct D3D12RenderGraph
     {
         if (graph.RenderPipelineReady)
         {
+            foreach (ref var pass in graph.Passes)
+            {
+                if (pass.CachedResources.RendersToBackbuffer)
+                {
+                    //NOTE(Jens): The backbuffer resources have to be updated every frame. 
+                    var texture = resourceManager.Access(pass.CachedResources.Backbuffer);
+                    pass.CachedResources.BackbufferBarrierBegin->Transition.pResource = texture->Resource;
+                    pass.CachedResources.BackbufferBarrierEnd->Transition.pResource = texture->Resource;
+                    *pass.CachedResources.BackbufferOutput = texture->RTV.CPU;
+                }
+            }
+
             return;
         }
 
@@ -165,67 +177,22 @@ internal unsafe partial struct D3D12RenderGraph
         var pass = (D3D12RenderPass*)renderPass;
         ref var cachedState = ref pass->CachedResources;
         var commandList = CommandQueue->GetCommandList(ResourceManager->Access(pass->PipelineState)->Resource);
-
-        //var handles = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[pass->OutputCount];
-        //for (var i = 0; i < pass->OutputCount; ++i)
-        //{
-        //    handles[i] = ((D3D12Texture*)ResourceManager->Access(pass->Outputs[i]))->RTV.CPU;
-        //    var texture = ResourceManager->Access(pass->Outputs[i]);
-
-        //    if (Swapchain->CurrentBackbuffer == pass->Outputs[i])
-        //    {
-        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
-        //    }
-        //    else
-        //    {
-        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET);
-        //    }
-        //}
         commandList.ResourceBarriers(cachedState.BarriersBegin.AsPointer(), cachedState.BarriersBeginCount);
-
-        //for (var i = 0; i < pass->InputCount; ++i)
-        //{
-        //    var texture = ResourceManager->Access(pass->Inputs[i]);
-        //    commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        //}
-
         commandList.SetRenderTargets(cachedState.Outputs.AsPointer(), pass->OutputCount);
         commandList.SetDescriptorHeap(CommandAllocator->SRV.Heap);
-
-        //TODO(Jens): Transition resources
-
+        
         return commandList;
     }
 
+    [SkipLocalsInit]
     public readonly void EndPass(RenderPass* renderPass, in CommandList commandList)
     {
         var pass = (D3D12RenderPass*)renderPass;
         ref var cachedState = ref pass->CachedResources;
-        //for (var i = 0; i < pass->OutputCount; ++i)
-        //{
-        //    var texture = ResourceManager->Access(pass->Outputs[i]);
-        //    if (Swapchain->CurrentBackbuffer == pass->Outputs[i])
-        //    {
-        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT);
-        //    }
-        //    else
-        //    {
-        //        commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON);
-        //    }
-        //}
-
-        //for (var i = 0; i < pass->InputCount; ++i)
-        //{
-        //    var texture = ResourceManager->Access(pass->Inputs[i]);
-        //    commandList.Transition(texture, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON);
-        //}
-
         commandList.ResourceBarriers(cachedState.BarriersEnd.AsPointer(), cachedState.BarriersEndCount);
-        //var group = Groups.GetPointer(renderPass->Group);
         commandList.Close();
         pass->CommandList = commandList;
     }
-
 
     private void UpdateCachedPasses()
     {
@@ -246,15 +213,24 @@ internal unsafe partial struct D3D12RenderGraph
                 var texture = ResourceManager->Access(handle);
                 pass->CachedResources.Outputs[i] = texture->RTV.CPU;
 
-                var transitionState = Swapchain->CurrentBackbuffer == handle
+                var isBackbuffer = Swapchain->CurrentBackbuffer == handle;
+                var transitionState = isBackbuffer
                     ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT
                     : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
 
                 barriersBegin.Add(D3D12Helpers.Transition(texture->Resource, transitionState, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET));
                 barriersEnd.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, transitionState));
+
+                //NOTE(Jens): Special treatment for backbuffers since we need to replace the barriers and outputs every frame.
+                if (isBackbuffer)
+                {
+                    pass->CachedResources.BackbufferBarrierBegin = pass->CachedResources.BarriersBegin.AsPointer() + barriersBegin.Count - 1;
+                    pass->CachedResources.BackbufferBarrierEnd = pass->CachedResources.BarriersEnd.AsPointer() + barriersBegin.Count - 1;
+                    pass->CachedResources.BackbufferOutput = pass->CachedResources.Outputs.GetPointer(i);
+                    pass->CachedResources.Backbuffer = handle;
+                }
             }
 
-            //NOTE(Jens): This does not work since the resource for Backbuffer have to be replaced each frame.. yikes.
             // Go through all outputs
             for (var i = 0; i < pass->InputCount; ++i)
             {

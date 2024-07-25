@@ -11,6 +11,7 @@ namespace Titan.Graphics.Pipeline.Graph;
 
 internal struct D3D12RenderPass
 {
+    //NOTE(Jens): This struct is unfortunately massive
     public RenderPass RenderPass;
     public StringRef Identifier;
 
@@ -51,11 +52,18 @@ internal unsafe struct D3D12CachedResources
 
     //NOTE(Jens): Doing it this way can create states where we set  barriers between passes like: Common -> Writable -> Common ->Writeable
     //NOTE(Jens): Instead of just a single transition. This is a naive approach and have to be reworked.
-    
+
+    //NOTE(Jens): These are 32 bytes each, total of 32*8*2 = 512 bytes. This is not a good approach since it makes the render pass massive.
+    //TODO(Jens): Rework the entire cache, we can make this more efficent in memory so that the render passes can be in a single cache line.
     public Inline8<D3D12_RESOURCE_BARRIER> BarriersBegin;
     public Inline8<D3D12_RESOURCE_BARRIER> BarriersEnd;
 
     public byte BarriersBeginCount;
     public byte BarriersEndCount;
 
+    public D3D12_RESOURCE_BARRIER* BackbufferBarrierBegin;
+    public D3D12_RESOURCE_BARRIER* BackbufferBarrierEnd;
+    public D3D12_CPU_DESCRIPTOR_HANDLE* BackbufferOutput;
+    public Handle<Texture> Backbuffer;
+    public bool RendersToBackbuffer => BackbufferOutput != null;
 }

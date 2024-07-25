@@ -87,28 +87,6 @@ internal struct Renderable
     public int AssetId;
 }
 
-//[UnmanagedResource]
-//public unsafe partial struct RenderContext
-//{
-//    internal Camera MainCamera;
-
-//    internal readonly D3D12CommandQueue* CommandQueue;
-//    internal readonly D3D12Allocator* Allocator;
-//    internal RenderContext(D3D12CommandQueue* queue, D3D12Allocator* allocator)
-//    {
-//        CommandQueue = queue;
-//        Allocator = allocator;
-//    }
-
-//    [System(SystemStage.Init, SystemExecutionType.Inline)]
-//    internal static void Init(RenderContext* context, UnmanagedResourceRegistry registry)
-//    {
-//        var allocator = registry.GetResourcePointer<D3D12Allocator>();
-//        var commandQueue = registry.GetResourcePointer<D3D12CommandQueue>();
-//        *context = new(commandQueue, allocator);
-//    }
-//}
-
 internal struct Camera
 {
     public Matrix4x4 Projection;
