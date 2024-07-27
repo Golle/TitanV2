@@ -1,14 +1,13 @@
 #include "bindless.hlsli"
 #include "common.hlsli"
 
-struct OutTemp
+FullScreenVertexOutput main( uint id : SV_VertexID )
 {
-    float4 Position : SV_Position;
-};
+	float2 uv = float2((id << 1) & 2, id & 2);
+	float4 pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
 
-OutTemp main()
-{
-    OutTemp output;
-    output.Position = float4(0.0,0.0,0.0,0.0);
-    return output;
+	FullScreenVertexOutput output;
+	output.Position = pos;
+	output.Texture = uv;
+	return output;
 }

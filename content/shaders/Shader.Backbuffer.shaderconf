@@ -13,6 +13,14 @@
     ],
     "Parameters": {
         "DescriptorRanges": [],
-        "ConstantBuffers": []
+        "ConstantBuffers": [],
+        "Constants": [
+            {
+                "Count" : 2,
+                "Visibility" : "Pixel",
+                "Register" : 0,
+                "Space" : 0
+            }
+        ]
     }
 }

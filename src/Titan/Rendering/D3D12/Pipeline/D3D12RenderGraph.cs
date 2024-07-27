@@ -176,6 +176,8 @@ internal unsafe partial struct D3D12RenderGraph
         var pass = (D3D12RenderPass*)renderPass;
         ref var cachedState = ref pass->CachedResources;
         var commandList = CommandQueue->GetCommandList(ResourceManager->Access(pass->PipelineState)->Resource);
+        commandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        commandList.SetGraphicsRootSignature(cachedState.RootSignature);
         commandList.ResourceBarriers(cachedState.BarriersBegin.AsPointer(), cachedState.BarriersBeginCount);
         commandList.SetRenderTargets(cachedState.Outputs.AsPointer(), pass->OutputCount);
         commandList.SetDescriptorHeap(CommandAllocator->SRV.Heap);
