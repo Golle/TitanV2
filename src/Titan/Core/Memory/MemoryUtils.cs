@@ -52,6 +52,16 @@ public static unsafe class MemoryUtils
         }
     }
 
+    public static void Copy<T>(Span<T> dst, in ReadOnlySpan<T> src) where T : unmanaged
+    {
+        Debug.Assert(dst.Length >= src.Length);
+        fixed (T* pDst = dst)
+        fixed (T* pSrc = src)
+        {
+            Copy(pDst, pSrc, src.Length * sizeof(T));
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Copy<T>(void* dst, in ReadOnlySpan<T> src) where T : unmanaged
     {
@@ -124,7 +134,7 @@ public static unsafe class MemoryUtils
     public static uint MegaBytes(uint size) => KiloBytes(size) * OneKiloByte;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint KiloBytes(uint size) => size * OneKiloByte;
-    
+
     /// <summary>
     /// Aligns to 8 bytes.
     /// </summary>
@@ -187,9 +197,9 @@ public static unsafe class MemoryUtils
     /// <remarks>Uses <see cref="NativeMemory"/> to allocate memory.</remarks>
     /// <param name="size">The bytes</param>
     /// <returns>Pointer to memory allocated</returns>
-    internal static void* GlobalAlloc(nuint size) 
+    internal static void* GlobalAlloc(nuint size)
         => NativeMemory.Alloc(size);
 
-    internal static void GlobalFree(void* ptr) 
+    internal static void GlobalFree(void* ptr)
         => NativeMemory.Free(ptr);
 }

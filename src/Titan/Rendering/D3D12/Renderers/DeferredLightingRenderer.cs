@@ -1,10 +1,10 @@
 using System.Diagnostics;
+using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.D3D12;
 using Titan.Rendering.D3D12.Pipeline;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
-using D3D12ResourceManager = Titan.Graphics.D3D12.D3D12ResourceManager;
 
 namespace Titan.Rendering.D3D12.Renderers;
 

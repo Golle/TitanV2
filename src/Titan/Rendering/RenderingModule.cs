@@ -3,6 +3,7 @@ using Titan.Graphics.D3D12;
 using Titan.Graphics.Vulkan;
 using Titan.Rendering.D3D12;
 using Titan.Rendering.D3D12.Pipeline;
+using Titan.Rendering.Experimental;
 using Titan.Rendering.Resources;
 
 namespace Titan.Rendering;
@@ -12,7 +13,8 @@ internal sealed class RenderingModule : IModule
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
         builder
-            .AddModule<ResourcesModule>();
+            .AddModule<ResourcesModule>()
+            .AddModule<DeferredRenderingModule>();
 
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {

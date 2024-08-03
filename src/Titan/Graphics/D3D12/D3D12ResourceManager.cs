@@ -58,41 +58,16 @@ public ref struct CreatePipelineStateArgs
 
 public ref struct CreateRootSignatureArgs
 {
-    public required ReadOnlySpan<ConstantsInfo> Constants;
-    public required ReadOnlySpan<ConstantBufferInfo> ConstantBuffers;
-    public required ReadOnlySpan<DescriptorRangesInfo> Ranges;
-    public required ReadOnlySpan<SamplerInfo> Samplers;
+    public ReadOnlySpan<ConstantsInfo> Constants;
+    public ReadOnlySpan<ConstantBufferInfo> ConstantBuffers;
+    public ReadOnlySpan<DescriptorRangesInfo> Ranges;
+    public ReadOnlySpan<SamplerInfo> Samplers;
 }
 
-public struct ConstantsInfo
-{
-    public byte Count;
-    public ShaderVisibility Visibility;
-    public byte Register;
-    public byte Space;
-}
-public struct ConstantBufferInfo
-{
-    public ConstantBufferFlags Flags;
-    public ShaderVisibility Visibility;
-    public byte Register;
-    public byte Space;
-}
-public struct DescriptorRangesInfo
-{
-    public byte Count;
-    public ShaderDescriptorRangeType Type;
-    public byte Register;
-    public byte Space;
-}
-
-public struct SamplerInfo
-{
-    public SamplerState State;
-    public ShaderVisibility Visibility;
-    public byte Register;
-    public byte Space;
-}
+public record struct ConstantsInfo(byte Count, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
+public record struct ConstantBufferInfo(ConstantBufferFlags Flags, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
+public record struct DescriptorRangesInfo(byte Count, ShaderDescriptorRangeType Type = ShaderDescriptorRangeType.ShaderResourceView, byte Register = 0, byte Space = 0);
+public record struct SamplerInfo(SamplerState State, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
 
 public enum ShaderVisibility : byte
 {
@@ -422,7 +397,7 @@ public unsafe partial struct D3D12ResourceManager
             };
             var ranges = rangeDescriptor[..range.Count];
             D3D12Helpers.InitDescriptorRanges(ranges, type, range.Register, range.Space);
-            
+
             //TODO(Jens): Add visibility if we need to.
             parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
         }

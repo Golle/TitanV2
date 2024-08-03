@@ -35,6 +35,7 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
     public ReadOnlySpan<T> AsReadOnlySpan() => new(ptr, (int)Length);
 
     public static implicit operator ReadOnlySpan<T>(in TitanArray<T> arr) => arr.AsSpan();
+    public static implicit operator Span<T>(in TitanArray<T> arr) => arr.AsSpan();
     /// <summary>
     /// Returns true for unitialized arrays and also empty arrays.
     /// <remarks>Length == 0 is Empty, no matter if the pointer is valid or not.</remarks>

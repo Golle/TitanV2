@@ -6,13 +6,13 @@ internal class D3D12RenderingModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        builder
-            .AddSystemsAndResource<D3D12FullScreenRenderer>()
-            //.AddSystemsAndResource<D3D12TextRenderer>()
+        //builder
+            //.AddSystemsAndResource<D3D12FullScreenRenderer>()
+            ////.AddSystemsAndResource<D3D12TextRenderer>()
 
-            .AddSystemsAndResource<SceneRenderer>()
-            .AddSystemsAndResource<DeferredLightingRenderer>()
-            .AddSystemsAndResource<FinalRenderer>()
+            //.AddSystemsAndResource<SceneRenderer>()
+            //.AddSystemsAndResource<DeferredLightingRenderer>()
+            //.AddSystemsAndResource<FinalRenderer>()
             
             ;
 

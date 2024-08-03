@@ -1,3 +1,5 @@
+using Titan.Systems;
+
 namespace Titan.Rendering;
 
 public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
@@ -16,6 +18,7 @@ public sealed class DefaultRenderPipelineBuilder : IRenderingPipelineBuilder
             Outputs = [gbufferAlbedo, gbufferNormal, gbufferSpecular],
             DepthBufferOutput = depthBuffer,
             Shader = EngineAssetsRegistry.ShaderGBuffer,
+            
         };
 
         RenderPipelineRenderTarget lighting = new("DeferredLighting_RenderTarget", RenderTargetFormat.RGBA8);

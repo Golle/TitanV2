@@ -101,12 +101,11 @@ internal unsafe partial struct D3D12CommandQueue
             ? ResourceManager->Access(handle)->Resource
             : null;
 
-        return default;
+        return GetCommandList(pipelineState);
 
     }
     public CommandList GetCommandList(ID3D12PipelineState* pipelineState = null)
     {
-        //NOTE(Jens): We use interlocked here to increase the Next variable, and we do a "hack" to avoid requesting this resource as a mutable resource.
         var index = Interlocked.Increment(ref Next) - 1;
         var commandList = CommandLists[BufferIndex][index].Get();
         var allocator = Allocators[BufferIndex][index].Get();

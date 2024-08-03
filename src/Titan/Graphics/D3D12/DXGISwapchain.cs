@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Resources;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -39,6 +40,14 @@ internal unsafe partial struct DXGISwapchain
 
     public DXGI_FORMAT Format => DefaultFormat;
     public Handle<Texture> CurrentBackbuffer;
+
+
+    [System(SystemStage.PreInit)]
+    public static void PreInit(DXGISwapchain* swapchain, in D3D12ResourceManager resourceManager)
+    {
+        // add a slot for the backbuffer texture handle, this is used by other systems so we should set it up early.
+        swapchain->CurrentBackbuffer = resourceManager.CreateTextureHandle();
+    }
 
     [System(SystemStage.Init)]
     public static void Init(DXGISwapchain* swapchain, in Window window, in D3D12CommandQueue commandQueue, in D3D12Device device, in D3D12Allocator allocator, in D3D12ResourceManager resourceManager, IConfigurationManager configurationManager)
@@ -104,9 +113,6 @@ internal unsafe partial struct DXGISwapchain
                 Logger.Error<DXGISwapchain>($"Failed to disable Alt+Enter. HRESULT = {hr}");
             }
         }
-
-        // add a slot for the backbuffer texture handle
-        swapchain->CurrentBackbuffer = resourceManager.CreateTextureHandle();
 
         if (!swapchain->InitBackbuffers(device, allocator, true))
         {
