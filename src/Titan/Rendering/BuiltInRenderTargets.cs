@@ -1,6 +1,6 @@
 using Titan.Core.Strings;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
 public static class BuiltInRenderTargets
 {

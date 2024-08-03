@@ -7,4 +7,3 @@ public struct PipelineState
 {
     internal ComPtr<ID3D12PipelineState> Resource;
 }
-

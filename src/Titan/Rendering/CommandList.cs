@@ -6,7 +6,7 @@ using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
 
-namespace Titan.Rendering.D3D12;
+namespace Titan.Rendering;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandList)

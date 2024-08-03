@@ -2,8 +2,6 @@ using Titan.Application;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.Vulkan;
 using Titan.Rendering.D3D12;
-using Titan.Rendering.D3D12.Pipeline;
-using Titan.Rendering.Experimental;
 using Titan.Rendering.Resources;
 
 namespace Titan.Rendering;
@@ -20,8 +18,6 @@ internal sealed class RenderingModule : IModule
         {
             builder
                 .AddModule<D3D12GraphicsModule>()
-                .AddModule<D3D12PipelineModule>()
-                .AddModule<D3D12RenderingModule>()
                 ;
         }
         else if (GlobalConfiguration.Platform == Platforms.Linux)

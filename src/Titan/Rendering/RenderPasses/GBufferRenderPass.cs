@@ -6,7 +6,7 @@ using Titan.Graphics.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 
-namespace Titan.Rendering.Experimental.RenderPasses;
+namespace Titan.Rendering.RenderPasses;
 
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
@@ -44,7 +44,7 @@ internal unsafe partial struct GBufferRenderPass
     [System]
     public static void CollectData(GBufferRenderPass* pass, ReadOnlySpan<Mesh3D> meshes)
     {
-
+        //read all mesh data, should be a mem cpy
     }
 
     [System]

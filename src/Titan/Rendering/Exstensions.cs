@@ -1,6 +1,6 @@
 using Titan.Platform.Win32.DXGI;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
 public static class Exstensions
 {

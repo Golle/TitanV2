@@ -8,7 +8,7 @@ using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
 [UnmanagedResource]
 internal unsafe partial struct RenderTargetCache

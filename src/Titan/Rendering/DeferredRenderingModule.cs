@@ -1,9 +1,9 @@
 using Titan.Application;
-using Titan.Rendering.Experimental.RenderPasses;
+using Titan.Rendering.RenderPasses;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
-internal class DeferredRenderingModule : IModule
+internal sealed class DeferredRenderingModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {

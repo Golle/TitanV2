@@ -4,7 +4,7 @@ using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Rendering.Resources;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
 public ref struct RootSignatureBuilder
 {

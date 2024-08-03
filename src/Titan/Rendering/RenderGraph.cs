@@ -11,12 +11,11 @@ using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering.D3D12;
 using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Systems;
 
-namespace Titan.Rendering.Experimental;
+namespace Titan.Rendering;
 
 public record struct RenderTarget(StringRef Name, RenderTargetFormat Format);
 public ref struct CreateRenderPassArgs
