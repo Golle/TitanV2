@@ -1,6 +1,8 @@
 using Titan.Core;
+using Titan.Core.Maths;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
+using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
@@ -27,9 +29,13 @@ internal unsafe partial struct BackbufferRenderPass
             Inputs = [BuiltInRenderTargets.DeferredLighting],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,
-            VertexShader = EngineAssetsRegistry.ShaderFullscreenVertex
+            VertexShader = EngineAssetsRegistry.ShaderFullscreenVertex,
+            ClearFunction = &ClearBackbuffer
         });
     }
+
+    private static void ClearBackbuffer(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
+        => commandList.ClearRenderTargetView(renderTargets[0], Color.Magenta);
 
     [System]
     public static void Render(in BackbufferRenderPass pass, in RenderGraph graph, in Window window)
