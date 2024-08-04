@@ -24,8 +24,8 @@ internal unsafe partial struct BackbufferRenderPass
         renderPass->PassHandle = graph.CreatePass("BackbufferRenderPass", new()
         {
             RootSignature = rootSignatureArgs,
-            Outputs = [BuiltInRenderTargets.Backbuffer],
             Inputs = [BuiltInRenderTargets.DeferredLighting],
+            Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,
             VertexShader = EngineAssetsRegistry.ShaderFullscreenVertex
         });

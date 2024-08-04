@@ -1,6 +1,7 @@
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Strings;
+using Titan.Platform.Win32;
 using Titan.Rendering.Resources;
 
 namespace Titan.Rendering;
@@ -18,4 +19,5 @@ public struct RenderPass
     public TitanArray<Handle<Texture>> Outputs;
 
     public CommandList CommandList;
+    public unsafe delegate*<ReadOnlySpan<Ptr<Texture>>, TitanOptional<Texture>, in CommandList, void> ClearFunction;
 }

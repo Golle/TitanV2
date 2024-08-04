@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Core.Strings;
@@ -17,15 +18,29 @@ using Titan.Systems;
 
 namespace Titan.Rendering;
 
-public record struct RenderTarget(StringRef Name, RenderTargetFormat Format);
+public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format);
+
+public record struct ShaderResourceConfig(string Name, RenderTargetFormat Format);
+public record struct RenderTargetConfig1(string Name, RenderTargetFormat Format, bool Clear = false, Color ClearColor = default);
 public ref struct CreateRenderPassArgs
 {
     public required CreateRootSignatureArgs RootSignature;
-    public ReadOnlySpan<RenderTarget> Inputs;
-    public ReadOnlySpan<RenderTarget> Outputs;
+    public ReadOnlySpan<RenderTargetConfig> Inputs;
+    public ReadOnlySpan<RenderTargetConfig> Outputs;
+
+    public ReadOnlySpan<ShaderResourceConfig> Inputs1;
+    public ReadOnlySpan<RenderTargetConfig1> Outputs1;
     public AssetDescriptor VertexShader;
     public AssetDescriptor PixelShader;
     //public AssetDescriptor ComputerShader;
+
+    /// <summary>
+    /// A function pointer to a Clear function that will be called in Begin.
+    /// 1. A span of Render Targets, same order as the pass was created.
+    /// 2. An optional depth buffer
+    /// 3. The command list
+    /// </summary>
+    public unsafe delegate*<ReadOnlySpan<Ptr<Texture>>, TitanOptional<Texture>, in CommandList, void> ClearFunction;
 }
 
 [UnmanagedResource]
@@ -96,6 +111,8 @@ internal unsafe partial struct RenderGraph
             pass->Inputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Inputs[i]);
         }
 
+        pass->ClearFunction = args.ClearFunction != null ? args.ClearFunction : &ClearFunctionStub;
+
         return index + HandleOffset;
     }
 
@@ -114,11 +131,13 @@ internal unsafe partial struct RenderGraph
         pass->CommandList.SetGraphicsRootSignature(_resourceManager->Access(pass->RootSignature)->Resource);
         pass->CommandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+        //NOTE(Jens): A lot of stack allocs, do we need all of them? :O
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
         TitanList<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargets = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[(int)pass->Outputs.Length];
+        TitanList<Ptr<Texture>> renderTargetTextures = stackalloc Ptr<Texture>[(int)pass->Outputs.Length];
         TitanList<int> inputTextures = stackalloc int[(int)pass->Inputs.Length];
 
-        foreach (var output in pass->Outputs.AsReadOnlySpan())
+        foreach (ref readonly var output in pass->Outputs.AsReadOnlySpan())
         {
             var isBackbuffer = output == _backbufferHandle;
             var transitionState = isBackbuffer
@@ -126,11 +145,12 @@ internal unsafe partial struct RenderGraph
                 : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
 
             var texture = _resourceManager->Access(output);
+            renderTargetTextures.Add(texture);
             barriers.Add(D3D12Helpers.Transition(texture->Resource, transitionState, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET));
             renderTargets.Add(texture->RTV.CPU);
         }
 
-        foreach (var input in pass->Inputs.AsReadOnlySpan())
+        foreach (ref readonly var input in pass->Inputs.AsReadOnlySpan())
         {
             var texture = _resourceManager->Access(input);
             //TODO(Jens): This transition should consider if it's a Pixel resource only or not.
@@ -139,7 +159,10 @@ internal unsafe partial struct RenderGraph
         }
         //TODO(Jens): Add InputTextures to the Root Constants. 
 
+        commandList.SetRenderTargets(renderTargets.AsPointer(), renderTargets.Count);
         commandList.ResourceBarriers(barriers);
+        pass->ClearFunction(renderTargetTextures, null, commandList);
+
         return true;
     }
 
@@ -339,11 +362,6 @@ internal unsafe partial struct RenderGraph
         }
     }
 
-    private void CreateResourceBarriers()
-    {
-
-    }
-
     private struct GraphDependencies
     {
         public uint InDegree;
@@ -351,5 +369,11 @@ internal unsafe partial struct RenderGraph
         private int _dependencyCount;
         public void AddDependency(int index) => _dependsOn[_dependencyCount++] = index;
         public ReadOnlySpan<int> GetDependencies() => _dependsOn.AsReadOnlySpan()[.._dependencyCount];
+    }
+
+
+    private static void ClearFunctionStub(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
+    {
+        // noop
     }
 }

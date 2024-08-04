@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Maths;
+using Titan.Core.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
@@ -54,7 +55,21 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
 
         commandList->OMSetRenderTargets(1, &texture->RTV.CPU, 1, &depthBuffer->DSV.CPU);
     }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ClearRenderTargetView(Texture* texture, in Color color)
+    {
+        Debug.Assert(commandList != null);
+        commandList->ClearRenderTargetView(texture->RTV.CPU, (float*)MemoryUtils.AsPointer(color), 0, null);
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ClearRenderTargetView(in Texture texture, in Color color)
+    {
+        Debug.Assert(commandList != null);
+        commandList->ClearRenderTargetView(texture.RTV.CPU, (float*)MemoryUtils.AsPointer(color), 0, null);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearRenderTargetView(Texture* texture, Color* color)
     {
         Debug.Assert(commandList != null);

@@ -16,7 +16,11 @@ public readonly unsafe struct Ptr<T>(T* ptr) where T : unmanaged
     public T* Get() => _value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref T AsRef() => ref *_value;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator T*(in Ptr<T> ptr) => ptr._value;
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Ptr<T>(T* ptr) => new(ptr);

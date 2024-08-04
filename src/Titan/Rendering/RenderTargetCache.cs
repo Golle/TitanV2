@@ -30,11 +30,11 @@ internal unsafe partial struct RenderTargetCache
         tracker._window = registry.GetResourcePointer<Window>();
     }
 
-    public Handle<Texture> GetOrCreateRenderTarget(in RenderTarget target)
+    public Handle<Texture> GetOrCreateRenderTarget(in RenderTargetConfig targetConfig)
     {
-        if (target.Format == RenderTargetFormat.BackBuffer)
+        if (targetConfig.Format == RenderTargetFormat.BackBuffer)
         {
-            Logger.Trace<RenderTargetCache>($"Using backbuffer. Name = {target.Name} Handle = {_swapchain->CurrentBackbuffer.Value}");
+            Logger.Trace<RenderTargetCache>($"Using backbuffer. Name = {targetConfig.Name} Handle = {_swapchain->CurrentBackbuffer.Value}");
             return _swapchain->CurrentBackbuffer;
         }
 
@@ -44,17 +44,17 @@ internal unsafe partial struct RenderTargetCache
 
         try
         {
-            var format = target.Format.AsDXGIFormat();
+            var format = targetConfig.Format.AsDXGIFormat();
 
             // check all cached resources
             for (var i = 0; i < _count; ++i)
             {
-                if (_resources[i].Identifier != target.Name)
+                if (_resources[i].Identifier != targetConfig.Name)
                 {
                     continue;
                 }
-                Debug.Assert(_resources[i].Format == format, $"Mismatch in formats for render target with ID = {target.Name.GetString()}");
-                Logger.Trace<RenderTargetCache>($"Found cached render target. Name = {target.Name} Handle = {_resources[i].Resource.Value}  Format = {format}");
+                Debug.Assert(_resources[i].Format == format, $"Mismatch in formats for render target with ID = {targetConfig.Name.GetString()}");
+                Logger.Trace<RenderTargetCache>($"Found cached render target. Name = {targetConfig.Name} Handle = {_resources[i].Resource.Value}  Format = {format}");
                 return _resources[i].Resource;
             }
 
@@ -75,13 +75,13 @@ internal unsafe partial struct RenderTargetCache
                 return Handle<Texture>.Invalid;
             }
 
-            Logger.Trace<RenderTargetCache>($"Created new render target. Name = {target.Name} Handle = {handle} Format = {format}");
+            Logger.Trace<RenderTargetCache>($"Created new render target. Name = {targetConfig.Name} Handle = {handle} Format = {format}");
             // Store the resource with its format and identifier
             _resources[_count++] = new()
             {
                 Resource = handle,
                 Format = format,
-                Identifier = target.Name,
+                Identifier = targetConfig.Name,
             };
 
             return handle;
