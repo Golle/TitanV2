@@ -17,6 +17,12 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
         get => _next;
     }
 
+    public bool IsEmpty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Count == 0;
+    }
+
     /// <summary>
     /// Adds an item to the list and increases the counter
     /// </summary>
@@ -38,6 +44,7 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
 
     public static implicit operator ReadOnlySpan<T>(in TitanList<T> list) => list.AsReadOnlySpan();
     public static implicit operator Span<T>(in TitanList<T> list) => list.AsSpan();
+    public static implicit operator T*(in TitanList<T> list) => list.AsPointer();
 
     public void Clear() => _next = 0;
 }

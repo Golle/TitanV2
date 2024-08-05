@@ -1,7 +1,5 @@
 using Titan.Core;
 using Titan.Core.Maths;
-using Titan.Graphics;
-using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
@@ -10,22 +8,23 @@ using Titan.Windows;
 
 namespace Titan.Rendering.RenderPasses;
 
+file struct BackbufferData
+{
+    public Color Color;
+}
+
 [UnmanagedResource]
 internal unsafe partial struct BackbufferRenderPass
 {
     private Handle<RenderPass> PassHandle;
+    private const uint DataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
 
     [System(SystemStage.Init)]
     public static void Init(BackbufferRenderPass* renderPass, in RenderGraph graph)
     {
-        var rootSignatureArgs = new RootSignatureBuilder()
-            .WithRanges(6, space: 10)
-            .WithSampler(SamplerState.Point, ShaderVisibility.Pixel)
-            .Build();
-
         renderPass->PassHandle = graph.CreatePass("BackbufferRenderPass", new()
         {
-            RootSignature = rootSignatureArgs,
+            RootSignatureBuilder = static builder => builder.WithRootConstant<BackbufferData>(register: 1, space: 7).Build(),
             Inputs = [BuiltInRenderTargets.DeferredLighting],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,
@@ -55,6 +54,10 @@ internal unsafe partial struct BackbufferRenderPass
             TopLeftY = 0
         };
         commandList.SetViewport(&viewPort);
+        commandList.SetGraphicsRootConstant(DataIndex, new BackbufferData
+        {
+            Color = Color.Green
+        });
 
         D3D12_RECT rect = new()
         {

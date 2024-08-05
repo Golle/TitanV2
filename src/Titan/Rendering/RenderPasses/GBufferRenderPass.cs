@@ -2,8 +2,6 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Maths;
 using Titan.ECS.Components;
-using Titan.Graphics;
-using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
@@ -19,17 +17,8 @@ internal unsafe partial struct GBufferRenderPass
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager)
     {
-        var rootSignatureArgs = new RootSignatureBuilder()
-            .WithConstantBuffer(ConstantBufferFlags.Static, space: 10)
-            .WithConstant(4, ShaderVisibility.Pixel, register: 0, space: 11)
-            .WithRanges(6, register: 0, space: 0)
-            .WithSampler(SamplerState.Linear, ShaderVisibility.Pixel)
-            .WithSampler(SamplerState.Point, ShaderVisibility.Pixel)
-            .Build();
-
         var passArgs = new CreateRenderPassArgs
         {
-            RootSignature = rootSignatureArgs,
             Outputs =
             [
                 BuiltInRenderTargets.GBufferAlbedo,
@@ -47,9 +36,9 @@ internal unsafe partial struct GBufferRenderPass
 
     private static void ClearFunction(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
     {
-        commandList.ClearRenderTargetView(renderTargets[0], Color.Red);
-        commandList.ClearRenderTargetView(renderTargets[1], Color.Green);
-        commandList.ClearRenderTargetView(renderTargets[2], Color.Blue);
+        commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.GBufferAlbedo.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[1], BuiltInRenderTargets.GBufferNormal.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[2], BuiltInRenderTargets.GBufferSpecular.OptimizedClearColor);
 
         if (depthBuffer.HasValue)
         {

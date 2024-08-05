@@ -73,8 +73,6 @@ namespace Titan.Sandbox
         public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
         private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager)
         {
-            assetsManager.Load<ShaderInfo>(EngineAssetsRegistry.ShaderGBuffer);
-
             if (_done)
             {
                 return;

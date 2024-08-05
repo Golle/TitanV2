@@ -132,11 +132,21 @@ internal unsafe partial struct AssetSystem
             Logger.Error<AssetSystem>($"Failed to allocate an array for the assets. Size = {sizeof(Asset) * (assetCount + 1)} bytes");
             return false;
         }
-        if (!memoryManager.TryAllocArray(out system->Dependencies, dependencyCount))
+
+        if (dependencyCount > 0)
         {
-            Logger.Error<AssetSystem>($"Failed to allocate an array for the asset dependencies. Size = {sizeof(AssetId) * dependencyCount} bytes");
-            return false;
+            //NOTE(Jens): We only allocate an array if there are dependencies.
+            if (!memoryManager.TryAllocArray(out system->Dependencies, dependencyCount))
+            {
+                Logger.Error<AssetSystem>($"Failed to allocate an array for the asset dependencies. Size = {sizeof(AssetId) * dependencyCount} bytes");
+                return false;
+            }
         }
+        else
+        {
+            system->Dependencies = TitanArray<AssetDependency>.Empty;
+        }
+
 
         Logger.Trace<AssetSystem>($"File buffer size {config.FileBufferMaxSize} bytes");
         if (!memoryManager.TryCreateGeneralAllocator(out system->Allocator, config.FileBufferMaxSize))
@@ -329,7 +339,10 @@ internal unsafe partial struct AssetSystem
         system->FileSystem.Release();
 
         memoryManager.FreeBuffer(ref system->LoadersData);
-        memoryManager.FreeArray(ref system->Dependencies);
         memoryManager.FreeArray(ref system->Assets);
+        if (system->Dependencies.IsValid)
+        {
+            memoryManager.FreeArray(ref system->Dependencies);
+        }
     }
 }

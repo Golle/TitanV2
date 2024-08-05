@@ -28,6 +28,7 @@ internal unsafe partial struct RenderTargetCache
         tracker._resourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
         tracker._swapchain = registry.GetResourcePointer<DXGISwapchain>();
         tracker._window = registry.GetResourcePointer<Window>();
+        tracker._resources = default;
     }
 
     public Handle<Texture> GetOrCreateRenderTarget(in RenderTargetConfig targetConfig)
@@ -54,7 +55,7 @@ internal unsafe partial struct RenderTargetCache
                     continue;
                 }
                 Debug.Assert(_resources[i].Format == format, $"Mismatch in formats for render target with ID = {targetConfig.Name.GetString()}");
-                Logger.Trace<RenderTargetCache>($"Found cached render target. Name = {targetConfig.Name} Handle = {_resources[i].Resource.Value}  Format = {format}");
+                Logger.Trace<RenderTargetCache>($"Found cached render target. Name = {targetConfig.Name.GetString()} Handle = {_resources[i].Resource.Value}  Format = {format}");
                 return _resources[i].Resource;
             }
 
@@ -65,7 +66,8 @@ internal unsafe partial struct RenderTargetCache
                 Height = (uint)_window->Height,
                 Width = (uint)_window->Width,
                 RenderTargetView = true,
-                ShaderVisible = true
+                ShaderVisible = true,
+                OptimizedClearColor = targetConfig.OptimizedClearColor
             });
 
             // well, we're in no luck here. This will crash the engine.

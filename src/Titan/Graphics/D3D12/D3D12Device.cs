@@ -4,6 +4,8 @@ using System.Text;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
+using Titan.Core.Memory;
 using Titan.Graphics.D3D12.Adapters;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
@@ -250,13 +252,13 @@ internal unsafe partial struct D3D12Device
         return resource;
     }
 
-    public readonly ID3D12Resource* CreateTexture(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
+    public readonly ID3D12Resource* CreateTexture(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE, D3D12_CLEAR_VALUE* clearValue = null)
     {
         Debug.Assert(width >= 0 && height >= 0);
-        return CreateTexture((uint)width, (uint)height, format, flags);
+        return CreateTexture((uint)width, (uint)height, format, flags, clearValue);
     }
 
-    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
+    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE, D3D12_CLEAR_VALUE* clearValue = null)
     {
         //NOTE(Jens): Add support for Mip levels etc.
         D3D12_RESOURCE_DESC resourceDesc = new()
@@ -284,7 +286,7 @@ internal unsafe partial struct D3D12Device
             D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE,
             &resourceDesc,
             D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON,
-            (D3D12_CLEAR_VALUE*)null,
+            clearValue,
             (ID3D12ProtectedResourceSession*)null,
             ID3D12Resource.Guid,
             (void**)&resource

@@ -182,7 +182,7 @@ internal class ObjParser
     private static void ParseFace(ref TokenCursor cursor, ref ParserContext context)
     {
         static bool IsLine(ref TokenCursor cursor) => cursor.Peek().Type is not TokenType.Slash;
-        static bool IsVertexWithoutTextures(ref TokenCursor cursor) => cursor.Peek().Type is TokenType.Slash && cursor.Peek(2).Type is TokenType.Slash;
+        //static bool IsVertexWithoutTextures(ref TokenCursor cursor) => cursor.Peek().Type is TokenType.Slash && cursor.Peek(2).Type is TokenType.Slash;
         static bool IsVertexWithTexture(ref TokenCursor cursor) => cursor.Peek().Type is TokenType.Slash && cursor.Peek(3).Type is not TokenType.Slash;
 
         cursor.Advance();

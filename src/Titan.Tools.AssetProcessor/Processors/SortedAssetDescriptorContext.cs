@@ -42,18 +42,6 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         };
         return AddAsset(data, metadata, descriptor);
     }
-
-    public bool TryAddShaderConfig(in ShaderConfigDescriptor configDescriptor, ReadOnlySpan<byte> data, ShaderInfoMetadata metadata)
-    {
-        var descriptor = new AssetDescriptor
-        {
-            Type = AssetType.ShaderInfo,
-            ShaderInfo = configDescriptor
-        };
-
-        return AddAsset(data, metadata, descriptor);
-    }
-
     public bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
     {
         var descriptor = new AssetDescriptor

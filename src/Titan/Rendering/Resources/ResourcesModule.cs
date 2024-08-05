@@ -7,7 +7,6 @@ internal class ResourcesModule : IModule
     {
         builder
             .AddAssetLoader<ShaderLoader>()
-            .AddAssetLoader<ShaderInfoLoader>()
             .AddAssetLoader<TextureLoader>()
             .AddAssetLoader<MeshLoader>();
 

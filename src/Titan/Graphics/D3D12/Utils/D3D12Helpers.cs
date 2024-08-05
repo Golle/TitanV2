@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Titan.Core.Maths;
 using Titan.Platform.Win32.D3D12;
+using Titan.Platform.Win32.DXGI;
 using static Titan.Platform.Win32.Win32Common;
 using static Titan.Platform.Win32.D3D12.D3D12_COMPARISON_FUNC;
 using static Titan.Platform.Win32.D3D12.D3D12_FILTER;
@@ -143,4 +145,12 @@ internal static class D3D12Helpers
                 pResource = resource
             }
         };
+
+    public static unsafe D3D12_CLEAR_VALUE ClearColor(DXGI_FORMAT format, in Color color)
+    {
+        D3D12_CLEAR_VALUE value = default;
+        value.Format = format;
+        *(Color*)value.Color = color;
+        return value;
+    }
 }

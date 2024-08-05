@@ -1,8 +1,0 @@
-{
-  "$type": "ShaderInfoMetadata",
-  "id": "1ae0e67b-9c78-4b69-bd88-fc344e1b420e",
-  "name": "ShaderDeferredLighting",
-  "fileSize": 111,
-  "dependsOn": [],
-  "skip": false
-}

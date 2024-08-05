@@ -155,6 +155,21 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootConstants(uint index, ReadOnlySpan<int> data)
+    {
+        fixed (int* ptr = data)
+        {
+            commandList->SetGraphicsRoot32BitConstants(index, (uint)data.Length, ptr, 0);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootConstant<T>(uint index, in T value) where T : unmanaged
+    {
+        Debug.Assert(sizeof(T) % 4 == 0);
+        commandList->SetGraphicsRoot32BitConstants(index, (uint)(sizeof(T) / 4u), MemoryUtils.AsPointer(value), 0);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootShaderResourceView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
         => commandList->SetGraphicsRootShaderResourceView(rootParameterIndex, bufferLocation);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

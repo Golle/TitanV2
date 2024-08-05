@@ -1,7 +1,11 @@
+using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12.Memory;
@@ -30,6 +34,7 @@ public record struct CreateTextureArgs
     public TitanBuffer InitialData { get; init; }
     public bool ShaderVisible { get; init; } // maybe we want specific shader visibility?
     public bool RenderTargetView { get; init; }
+    public Color OptimizedClearColor { get; init; }
 }
 
 public record struct CreateDepthBufferArgs
@@ -58,16 +63,44 @@ public ref struct CreatePipelineStateArgs
 
 public ref struct CreateRootSignatureArgs
 {
-    public ReadOnlySpan<ConstantsInfo> Constants;
-    public ReadOnlySpan<ConstantBufferInfo> ConstantBuffers;
-    public ReadOnlySpan<DescriptorRangesInfo> Ranges;
-    public ReadOnlySpan<SamplerInfo> Samplers;
+    public required ReadOnlySpan<RootSignatureParameter> Parameters;
 }
 
-public record struct ConstantsInfo(byte Count, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
-public record struct ConstantBufferInfo(ConstantBufferFlags Flags, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
-public record struct DescriptorRangesInfo(byte Count, ShaderDescriptorRangeType Type = ShaderDescriptorRangeType.ShaderResourceView, byte Register = 0, byte Space = 0);
-public record struct SamplerInfo(SamplerState State, ShaderVisibility Visibility = ShaderVisibility.All, byte Register = 0, byte Space = 0);
+public enum RootSignatureParameterType : byte
+{
+    Constant,
+    ConstantBuffer,
+    DescriptorRange,
+    Sampler
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct RootSignatureParameter
+{
+    [FieldOffset(0)]
+    public RootSignatureParameterType Type;
+
+    [FieldOffset(1)]
+    public byte Register;
+
+    [FieldOffset(2)]
+    public byte Space;
+
+    [FieldOffset(3)]
+    public ShaderVisibility Visibility;
+
+    [FieldOffset(3)]
+    public ShaderDescriptorRangeType RangeType;
+
+    [FieldOffset(4)]
+    public byte Count;
+
+    [FieldOffset(4)]
+    public ConstantBufferFlags ConstantBufferFlags;
+
+    [FieldOffset(4)]
+    public SamplerState SamplerState;
+}
 
 public enum ShaderVisibility : byte
 {
@@ -274,8 +307,16 @@ public unsafe partial struct D3D12ResourceManager
         var texture = _textures.AsPtr(handle);
         if (backbuffer == null)
         {
-            var flags = args.RenderTargetView ? D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE;
-            texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format, flags);
+            if (args.RenderTargetView)
+            {
+                var clearValue = D3D12Helpers.ClearColor(args.Format, args.OptimizedClearColor);
+                texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format, D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, &clearValue);
+            }
+            else
+            {
+                texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format);
+            }
+
             if (!texture->Resource.IsValid)
             {
                 Logger.Error<D3D12ResourceManager>("Failed to create the underlying resource for the texture.");
@@ -384,48 +425,45 @@ public unsafe partial struct D3D12ResourceManager
 
         var rootSignature = _rootSignatures.AsPtr(handle);
         TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[10];
-        TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[args.Samplers.Length];
-        Span<D3D12_DESCRIPTOR_RANGE1> rangeDescriptor = stackalloc D3D12_DESCRIPTOR_RANGE1[10];
+        TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[10];
 
-        // Set up the descriptor ranges
-        foreach (var range in args.Ranges)
+        var tempBufferSize = sizeof(D3D12_DESCRIPTOR_RANGE1) * 16;
+        var tempBuffer = stackalloc byte[tempBufferSize];
+        var tempAllocator = new BumpAllocator(tempBuffer, (uint)tempBufferSize);
+
+        foreach (ref readonly var parameter in args.Parameters)
         {
-            var type = range.Type switch
+            switch (parameter.Type)
             {
-                ShaderDescriptorRangeType.ShaderResourceView => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-                _ => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV
-            };
-            var ranges = rangeDescriptor[..range.Count];
-            D3D12Helpers.InitDescriptorRanges(ranges, type, range.Register, range.Space);
+                case RootSignatureParameterType.Constant:
+                    parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstants(parameter.Count, parameter.Register, parameter.Space, ToD3D12ShaderVisibility(parameter.Visibility)));
+                    break;
+                case RootSignatureParameterType.Sampler:
+                    samplers.Add(D3D12Helpers.CreateStaticSamplerDesc(parameter.SamplerState, parameter.Register, parameter.Space, ToD3D12ShaderVisibility(parameter.Visibility)));
+                    break;
+                case RootSignatureParameterType.ConstantBuffer:
+                    var constantBufferFlags = parameter.ConstantBufferFlags switch
+                    {
+                        ConstantBufferFlags.Volatile => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE,
+                        ConstantBufferFlags.Static => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC,
+                        _ => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_NONE
+                    };
+                    parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstantBufferView(parameter.Register, parameter.Space, constantBufferFlags, ToD3D12ShaderVisibility(parameter.Visibility)));
+                    break;
+                case RootSignatureParameterType.DescriptorRange:
 
-            //TODO(Jens): Add visibility if we need to.
-            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
-        }
+                    var type = parameter.RangeType switch
+                    {
+                        ShaderDescriptorRangeType.ShaderResourceView => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                        _ => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV
+                    };
+                    Debug.Assert(parameter.Count > 0);
+                    var ranges = tempAllocator.AllocateArray<D3D12_DESCRIPTOR_RANGE1>(parameter.Count);
+                    D3D12Helpers.InitDescriptorRanges(ranges, type, parameter.Register, parameter.Space);
 
-        foreach (var constantBuffer in args.ConstantBuffers)
-        {
-            var constantBufferFlags = constantBuffer.Flags switch
-            {
-                ConstantBufferFlags.Volatile => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE,
-                ConstantBufferFlags.Static => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC,
-                _ => D3D12_ROOT_DESCRIPTOR_FLAGS.D3D12_ROOT_DESCRIPTOR_FLAG_NONE
-            };
-            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstantBufferView(constantBuffer.Register, constantBuffer.Space, constantBufferFlags, ToD3D12ShaderVisibility(constantBuffer.Visibility)));
-        }
+                    parameters.Add(CD3DX12_ROOT_PARAMETER1.AsDescriptorTable(ranges));
 
-        foreach (var constant in args.Constants)
-        {
-            parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstants(constant.Count, constant.Register, constant.Space, ToD3D12ShaderVisibility(constant.Visibility)));
-        }
-
-        // Set up the samplers
-        if (args.Samplers.Length > 0)
-        {
-            for (var i = 0; i < args.Samplers.Length; ++i)
-            {
-                //NOTE(Jens): We can improve this by specifying the visibility of the static sampler.
-                var visibility = ToD3D12ShaderVisibility(args.Samplers[i].Visibility);
-                samplers.Add(D3D12Helpers.CreateStaticSamplerDesc(args.Samplers[i].State, (uint)i, 0, visibility));
+                    break;
             }
         }
 

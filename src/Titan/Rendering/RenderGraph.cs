@@ -7,7 +7,9 @@ using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Core.Strings;
+using Titan.Graphics;
 using Titan.Graphics.D3D12;
+using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
@@ -18,18 +20,13 @@ using Titan.Systems;
 
 namespace Titan.Rendering;
 
-public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format);
-
-public record struct ShaderResourceConfig(string Name, RenderTargetFormat Format);
-public record struct RenderTargetConfig1(string Name, RenderTargetFormat Format, bool Clear = false, Color ClearColor = default);
+public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
 public ref struct CreateRenderPassArgs
 {
-    public required CreateRootSignatureArgs RootSignature;
+    public Func<RootSignatureBuilder, CreateRootSignatureArgs>? RootSignatureBuilder;
     public ReadOnlySpan<RenderTargetConfig> Inputs;
     public ReadOnlySpan<RenderTargetConfig> Outputs;
 
-    public ReadOnlySpan<ShaderResourceConfig> Inputs1;
-    public ReadOnlySpan<RenderTargetConfig1> Outputs1;
     public AssetDescriptor VertexShader;
     public AssetDescriptor PixelShader;
     //public AssetDescriptor ComputerShader;
@@ -46,6 +43,15 @@ public ref struct CreateRenderPassArgs
 [UnmanagedResource]
 internal unsafe partial struct RenderGraph
 {
+
+    //NOTE(Jens): Make sure these are updated when we implement more.
+    public enum RootSignatureIndex : uint
+    {
+        Texture2D = 0,
+        InputTexturesIndex = 1,
+        CustomIndexStart
+    }
+
     private const byte HandleOffset = 123;
 
     private Inline16<RenderPass> _renderPasses;
@@ -54,6 +60,7 @@ internal unsafe partial struct RenderGraph
 
     private D3D12ResourceManager* _resourceManager;
     private D3D12CommandQueue* _commandQueue;
+    private D3D12Allocator* _d3d12Allocator;
     private RenderTargetCache* _resourceTracker;
 
     private AssetsManager _assetsManager;
@@ -78,11 +85,13 @@ internal unsafe partial struct RenderGraph
         graph._resourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
         graph._commandQueue = registry.GetResourcePointer<D3D12CommandQueue>();
         graph._resourceTracker = registry.GetResourcePointer<RenderTargetCache>();
+        graph._d3d12Allocator = registry.GetResourcePointer<D3D12Allocator>();
         graph._assetsManager = assetsManager;
         graph._renderPassCount = 0;
         graph._sortedPasses = default;
         graph._groups = default;
     }
+
 
 
     public readonly Handle<RenderPass> CreatePass(string name, in CreateRenderPassArgs args)
@@ -93,7 +102,12 @@ internal unsafe partial struct RenderGraph
         var pass = _renderPasses.AsPointer() + index;
         pass->Name = StringRef.Create(name);
 
-        pass->RootSignature = _resourceManager->CreateRootSignature(args.RootSignature);
+        var builder = CreateDefaultRootSignatureBuilder((byte)args.Inputs.Length);
+        var rootSignatureArgs = args.RootSignatureBuilder != null
+            ? args.RootSignatureBuilder(builder)
+            : builder.Build();
+
+        pass->RootSignature = _resourceManager->CreateRootSignature(rootSignatureArgs);
         //NOTE(Jens): Need support for Compute shaders as well.
         pass->PixelShader = _assetsManager.Load<ShaderAsset>(args.PixelShader);
         pass->VertexShader = _assetsManager.Load<ShaderAsset>(args.VertexShader);
@@ -116,6 +130,13 @@ internal unsafe partial struct RenderGraph
         return index + HandleOffset;
     }
 
+    private static RootSignatureBuilder CreateDefaultRootSignatureBuilder(byte numberOfInputs) =>
+        new RootSignatureBuilder()
+            .WithRanges(6, register: 0, space: 10)
+            .WithConstant(numberOfInputs, ShaderVisibility.Pixel, register: 0, space: 10)
+            .WithSampler(SamplerState.Point, ShaderVisibility.Pixel, register: 0, space: 10)
+            .WithSampler(SamplerState.Linear, ShaderVisibility.Pixel, register: 1, space: 10);
+
     public readonly bool Begin(in Handle<RenderPass> handle, out CommandList commandList)
     {
         Unsafe.SkipInit(out commandList);
@@ -137,6 +158,7 @@ internal unsafe partial struct RenderGraph
         TitanList<Ptr<Texture>> renderTargetTextures = stackalloc Ptr<Texture>[(int)pass->Outputs.Length];
         TitanList<int> inputTextures = stackalloc int[(int)pass->Inputs.Length];
 
+
         foreach (ref readonly var output in pass->Outputs.AsReadOnlySpan())
         {
             var isBackbuffer = output == _backbufferHandle;
@@ -157,9 +179,15 @@ internal unsafe partial struct RenderGraph
             barriers.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
             inputTextures.Add(texture->SRV.Index);
         }
-        //TODO(Jens): Add InputTextures to the Root Constants. 
 
-        commandList.SetRenderTargets(renderTargets.AsPointer(), renderTargets.Count);
+        commandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
+        commandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
+        if (!inputTextures.IsEmpty)
+        {
+            commandList.SetGraphicsRootConstants((uint)RootSignatureIndex.InputTexturesIndex, inputTextures);
+
+        }
+        commandList.SetRenderTargets(renderTargets, renderTargets.Count);
         commandList.ResourceBarriers(barriers);
         pass->ClearFunction(renderTargetTextures, null, commandList);
 
