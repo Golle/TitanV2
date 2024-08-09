@@ -1,13 +1,6 @@
+#ifndef _SHADER_GBUFFER
+#define _SHADER_GBUFFER
 
-
-struct VSPosTexColorOutput
-{
-    float4 Position : SV_Position;
-    float2 Texture : TEXCOORD;
-    float4 Color : COLOR;
-};
-
-/* GBuffer Structs */
 struct GBufferVertexOutput
 {
     float4 Position : SV_POSITION;
@@ -23,11 +16,4 @@ struct GBufferPixelOutput
     float4 Specular : SV_Target2;
 };
 
-
-/* Full screen */
-
-struct FullScreenVertexOutput 
-{
-    float4 Position : SV_POSITION;
-    float2 Texture : TEXCOORD0;
-};
+#endif

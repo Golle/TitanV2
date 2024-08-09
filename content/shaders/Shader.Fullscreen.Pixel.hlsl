@@ -1,5 +1,3 @@
-#include "common.hlsli"
-
 #define NUM_INPUTS 1
 #include "Shader.Engine.Defaults.hlsli"
 
@@ -14,6 +12,7 @@ float4 main(FullScreenVertexOutput input) : SV_TARGET
 {
     Texture2D tex = GetInputTexture(0);
     float4 c = tex.Sample(PointSampler, input.Texture);
+    return c;
     float4 v = RootConstantBuffer.Color;
     return v;
 }

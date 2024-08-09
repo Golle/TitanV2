@@ -48,8 +48,8 @@ internal unsafe partial struct DeferredLightingRenderPass
 
         D3D12_VIEWPORT viewPort = new()
         {
-            Height = window.Height/2f,
-            Width = window.Width/2f,
+            Height = window.Height,
+            Width = window.Width,
             MaxDepth = 1.0f,
             MinDepth = 0,
             TopLeftX = 0,

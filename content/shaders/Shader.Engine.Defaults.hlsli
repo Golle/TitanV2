@@ -1,3 +1,6 @@
+#ifndef _SHADER_ENGINE_DEFAULT
+#define _SHADER_ENGINE_DEFAULT
+
 Texture2D Textures[] : register(t0, space10);
 
 // nyi
@@ -25,3 +28,16 @@ Texture2D GetInputTexture(uint index)
 {
     return Textures[Inputs.Indicies[index]];
 }
+
+
+/* Shared structs */
+
+/* Full screen */
+
+struct FullScreenVertexOutput 
+{
+    float4 Position : SV_POSITION;
+    float2 Texture : TEXCOORD0;
+};
+
+#endif
