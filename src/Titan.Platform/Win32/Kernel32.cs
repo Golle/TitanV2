@@ -39,7 +39,10 @@ public unsafe partial struct Kernel32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    [SuppressGCTransition]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if !DEBUG
+    [SuppressGCTransition] // This causes issues when a debugger is attached.
+#endif
     public static partial uint WaitForSingleObject(
         HANDLE hHandle,
         uint dwMilliseconds
