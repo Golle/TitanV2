@@ -6,6 +6,7 @@ using Titan.Core.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
+using Titan.Platform.Win32.DXGI;
 
 namespace Titan.Rendering;
 
@@ -127,6 +128,19 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetIndexBuffer(in Buffer buffer)
+    {
+        Debug.Assert(buffer.Type is BufferType.Index);
+        var view = new D3D12_INDEX_BUFFER_VIEW
+        {
+            Format = DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
+            BufferLocation = buffer.Resource.Get()->GetGPUVirtualAddress(),
+            SizeInBytes = buffer.Size
+        };
+        commandList->IASetIndexBuffer(&view);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW view)
         => commandList->IASetIndexBuffer(&view);
 
@@ -172,9 +186,6 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootShaderResourceView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
         => commandList->SetGraphicsRootShaderResourceView(rootParameterIndex, bufferLocation);
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void IASetIndexBuffer(D3D12_INDEX_BUFFER_VIEW indexBufferView)
-        => commandList->IASetIndexBuffer(&indexBufferView);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)

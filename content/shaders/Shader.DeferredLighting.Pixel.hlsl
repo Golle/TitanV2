@@ -9,6 +9,6 @@ float4 main(FullScreenVertexOutput input): SV_TARGET0
     Texture2D normal = GetInputTexture(NormalIndex);
     Texture2D specular = GetInputTexture(SpecularIndex);
 
-    return normal.Sample(PointSampler, input.Texture);
+    return albedo.Sample(PointSampler, input.Texture);
     // return float4(1.0, 1.0, 1.0, 1.0);
 }

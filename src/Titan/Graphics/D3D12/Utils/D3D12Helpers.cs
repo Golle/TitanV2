@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
@@ -14,9 +15,8 @@ namespace Titan.Graphics.D3D12.Utils;
 
 internal static class D3D12Helpers
 {
-
     private static readonly D3D12_BLEND_DESC[] BlendStateDescs = new D3D12_BLEND_DESC[(int)BlendStateType.Count];
-
+    private static readonly Inline4<D3D12_HEAP_PROPERTIES> _heaps;
     static unsafe D3D12Helpers()
     {
         // set up the blend states
@@ -46,11 +46,38 @@ internal static class D3D12Helpers
 #if DEBUG
         Debug.Assert(Enum.GetValues(typeof(BlendStateType)).Length == 3, "Added new blend state descs but didn't update this code.");
 #endif
+
+        _heaps[(int)D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD] = new D3D12_HEAP_PROPERTIES
+        {
+            Type = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD,
+            CPUPageProperty = D3D12_CPU_PAGE_PROPERTY.D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+            MemoryPoolPreference = D3D12_MEMORY_POOL.D3D12_MEMORY_POOL_UNKNOWN,
+        };
+        _heaps[(int)D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT] = new D3D12_HEAP_PROPERTIES
+        {
+            Type = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT,
+            CPUPageProperty = D3D12_CPU_PAGE_PROPERTY.D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+            MemoryPoolPreference = D3D12_MEMORY_POOL.D3D12_MEMORY_POOL_UNKNOWN,
+        };
+        _heaps[(int)D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK] = new D3D12_HEAP_PROPERTIES()
+        {
+            Type = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK,
+            CPUPageProperty = D3D12_CPU_PAGE_PROPERTY.D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+            MemoryPoolPreference = D3D12_MEMORY_POOL.D3D12_MEMORY_POOL_UNKNOWN,
+        };
+
     }
     public static D3D12_BLEND_DESC GetBlendState(BlendStateType type)
     {
         Debug.Assert((int)type <= BlendStateDescs.Length && (int)type >= 0);
         return BlendStateDescs[(int)type];
+
+    }
+
+    public static unsafe D3D12_HEAP_PROPERTIES* GetHeap(D3D12_HEAP_TYPE type)
+    {
+        Debug.Assert(type != 0 && type != D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_CUSTOM);
+        return _heaps.GetPointer((int)type);
     }
     public static void InitDescriptorRanges(Span<D3D12_DESCRIPTOR_RANGE1> ranges, D3D12_DESCRIPTOR_RANGE_TYPE type, uint register = 0, uint space = 0)
     {

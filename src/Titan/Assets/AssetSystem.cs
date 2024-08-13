@@ -321,6 +321,7 @@ internal unsafe partial struct AssetSystem
         var initializer = new AssetLoaderInitializer(unmanagedResources, services); //TODO(Jens): Rename this struct.
         foreach (ref var loader in system->Loaders.AsSpan())
         {
+            
             if (loader.Context == null)
             {
                 continue;

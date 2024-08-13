@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core;
@@ -24,6 +22,7 @@ namespace Titan.Graphics.D3D12;
 public record struct CreateBufferArgs(uint Count, int Stride, BufferType Type, TitanBuffer InitialData = default)
 {
     public bool CpuVisible { get; init; }
+    public bool ShaderVisible { get; init; }
 }
 
 public record struct CreateTextureArgs
@@ -186,15 +185,28 @@ public unsafe partial struct D3D12ResourceManager
 
         //NOTE(Jens): Creating a buffer like this is not very good in a bindless renderer. 
 
-        var resourceState = args.Type switch
-        {
-            BufferType.Index => D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDEX_BUFFER,
-            BufferType.Vertex or BufferType.Constant or _ => D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-        };
+        //var resourceState = args.Type switch
+        //{
+        //    BufferType.Index => D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDEX_BUFFER,
+        //    BufferType.Vertex or BufferType.Constant or _ => D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+        //};
 
+        //if (args.InitialData.IsValid)
+        //{
+        //    resourceState = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COPY_DEST;
+        //}
+
+        //if (args.InitialData.IsValid)
+        //{
+            
+        //}
+        var resourceState = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
         var size = (uint)args.Stride * args.Count;
+        var flags = args.ShaderVisible
+            ? D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE
+            : D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
-        buffer->Resource = _device->CreateBuffer(size, true, resourceState);
+        buffer->Resource = _device->CreateBuffer(size, args.CpuVisible, resourceState, flags);
         if (!buffer->Resource.IsValid)
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the {nameof(ID3D12Resource)}.");
@@ -206,6 +218,20 @@ public unsafe partial struct D3D12ResourceManager
         buffer->Stride = (uint)args.Stride;
         buffer->Count = args.Count;
         buffer->Type = args.Type;
+
+        if (args.ShaderVisible)
+        {
+            buffer->SRV = _allocator->Allocate(DescriptorHeapType.ShaderResourceView);
+            if (!buffer->SRV.IsValid)
+            {
+                Logger.Error<D3D12ResourceManager>("Failed to allocate the SRV for buffer.");
+                buffer->Resource.Dispose();
+                _buffers.SafeFree(handle);
+                return Handle<Buffer>.Invalid;
+            }
+
+            _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, buffer->Count, buffer->Stride);
+        }
 
         if (!args.InitialData.IsValid)
         {

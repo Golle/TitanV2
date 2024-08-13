@@ -313,7 +313,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.SetViewport(&viewport);
         commandList.SetScissorRect(&rect);
         //commandList.SetIndexBuffer();
-        commandList.IASetIndexBuffer(data.IndexBufferView);
+        commandList.SetIndexBuffer(data.IndexBufferView);
         //commandList.DrawInstanced();
         var mesh = assetsManager.Get(data.Mesh);
         for (var i = 0; i < mesh.SubMeshCount; ++i)

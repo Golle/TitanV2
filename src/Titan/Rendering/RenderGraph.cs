@@ -20,10 +20,24 @@ using Titan.Systems;
 
 namespace Titan.Rendering;
 
+
+public ref struct RenderContext
+{
+    public CommandList CommandList;
+
+
+    internal RenderContext(int a)
+    {
+
+    }
+
+
+}
+
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
 public ref struct CreateRenderPassArgs
 {
-    public Func<RootSignatureBuilder, CreateRootSignatureArgs>? RootSignatureBuilder;
+    public Func<RootSignatureBuilder, RootSignatureBuilder>? RootSignatureBuilder;
     public ReadOnlySpan<RenderTargetConfig> Inputs;
     public ReadOnlySpan<RenderTargetConfig> Outputs;
 
@@ -43,7 +57,6 @@ public ref struct CreateRenderPassArgs
 [UnmanagedResource]
 internal unsafe partial struct RenderGraph
 {
-
     //NOTE(Jens): Make sure these are updated when we implement more.
     public enum RootSignatureIndex : uint
     {
@@ -57,6 +70,7 @@ internal unsafe partial struct RenderGraph
     private Inline16<RenderPass> _renderPasses;
     private Inline16<Ptr<RenderPass>> _sortedPasses;
     private Inline8<RenderPassGroup> _groups;
+
 
     private D3D12ResourceManager* _resourceManager;
     private D3D12CommandQueue* _commandQueue;
@@ -91,9 +105,7 @@ internal unsafe partial struct RenderGraph
         graph._sortedPasses = default;
         graph._groups = default;
     }
-
-
-
+    
     public readonly Handle<RenderPass> CreatePass(string name, in CreateRenderPassArgs args)
     {
         var index = Interlocked.Increment(ref Unsafe.AsRef(in _renderPassCount)) - 1;
@@ -103,9 +115,10 @@ internal unsafe partial struct RenderGraph
         pass->Name = StringRef.Create(name);
 
         var builder = CreateDefaultRootSignatureBuilder((byte)args.Inputs.Length);
-        var rootSignatureArgs = args.RootSignatureBuilder != null
-            ? args.RootSignatureBuilder(builder)
-            : builder.Build();
+        var rootSignatureArgs = (args.RootSignatureBuilder != null
+                ? args.RootSignatureBuilder(builder)
+                : builder)
+            .Build();
 
         pass->RootSignature = _resourceManager->CreateRootSignature(rootSignatureArgs);
         //NOTE(Jens): Need support for Compute shaders as well.
@@ -162,6 +175,8 @@ internal unsafe partial struct RenderGraph
         foreach (ref readonly var output in pass->Outputs.AsReadOnlySpan())
         {
             var isBackbuffer = output == _backbufferHandle;
+
+            //TODO(Jens): Don't transition resource to the Common state.
             var transitionState = isBackbuffer
                 ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT
                 : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
@@ -212,6 +227,7 @@ internal unsafe partial struct RenderGraph
 
         foreach (var input in pass->Inputs.AsReadOnlySpan())
         {
+            //NOTE(Jens): Transition back to common is bad becasue its using a lot of resources (or slow). We need a better way to handle this.
             var texture = _resourceManager->Access(input);
             barriers.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON));
         }
@@ -403,5 +419,16 @@ internal unsafe partial struct RenderGraph
     private static void ClearFunctionStub(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
     {
         // noop
+    }
+
+    public readonly void DestroyPass(Handle<RenderPass> handle)
+    {
+        Debug.Assert(handle.IsValid);
+        var pass = _renderPasses.GetPointer(handle-HandleOffset);
+        _assetsManager.Unload(ref pass->PixelShader);
+        _assetsManager.Unload(ref pass->VertexShader);
+        _resourceManager->DestroyPipelineState(pass->PipelineState);
+        _resourceManager->DestroyRootSignature(pass->RootSignature);
+        pass = default;
     }
 }

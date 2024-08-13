@@ -94,6 +94,16 @@ internal unsafe partial struct RenderTargetCache
         }
     }
 
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(RenderTargetCache* cache, in D3D12ResourceManager resourceManager)
+    {
+        for (var i = 0; i < cache->_count; ++i)
+        {
+            resourceManager.DestroyTexture(cache->_resources[i].Resource);
+        }
+
+        *cache = default;
+    }
     private struct CachedResource
     {
         public StringRef Identifier;

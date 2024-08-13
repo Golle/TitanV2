@@ -24,7 +24,7 @@ internal unsafe partial struct BackbufferRenderPass
     {
         renderPass->PassHandle = graph.CreatePass("BackbufferRenderPass", new()
         {
-            RootSignatureBuilder = static builder => builder.WithRootConstant<BackbufferData>(register: 1, space: 7).Build(),
+            RootSignatureBuilder = static builder => builder.WithRootConstant<BackbufferData>(register: 1, space: 7),
             Inputs = [BuiltInRenderTargets.DeferredLighting],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,

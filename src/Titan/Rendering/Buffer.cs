@@ -1,3 +1,5 @@
+using Titan.Graphics;
+using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 
@@ -14,4 +16,5 @@ public struct Buffer
     // D3D12
     internal ComPtr<ID3D12Resource> Resource;
     internal uint StartOffset;
+    internal D3D12DescriptorHandle SRV;
 }

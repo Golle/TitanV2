@@ -6,7 +6,7 @@ Texture2D Textures[] : register(t0, space10);
 // nyi
 Texture3D Textures3D[] : register(t0, space11);
 ByteAddressBuffer BufferTable[] : register(t0, space12);
-ByteAddressBuffer VertexBufferTable[] : register(t0, space13);
+// ByteAddressBuffer VertexBufferTable[] : register(t0, space13);
 ByteAddressBuffer IndexBufferTable[] : register(t0, space14);
 // end nyi
 

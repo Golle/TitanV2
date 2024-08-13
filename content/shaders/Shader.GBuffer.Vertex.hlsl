@@ -8,8 +8,10 @@ GBufferVertexOutput main( uint id : SV_VertexID )
 	float2 uv = float2((id << 1) & 2, id & 2);
 	float4 pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
 
+    StructuredBuffer<Vertex> vertices = GBuffer[Root.VertexBufferIndex];
+    Vertex v = vertices[id];
     GBufferVertexOutput output;
-
+    
     output.Position = pos;
     output.WorldPosition = float3(0.0,0.0,0.0);
     output.WorldNormal = float3(0.0,0.0,0.0);
