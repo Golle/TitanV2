@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -20,18 +22,10 @@ using Titan.Systems;
 
 namespace Titan.Rendering;
 
-
-public ref struct RenderContext
+[StructLayout(LayoutKind.Sequential, Size = 256)]
+internal struct FrameData
 {
-    public CommandList CommandList;
-
-
-    internal RenderContext(int a)
-    {
-
-    }
-
-
+    public Matrix4x4 ViewProjection;
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
@@ -62,6 +56,7 @@ internal unsafe partial struct RenderGraph
     {
         Texture2D = 0,
         InputTexturesIndex = 1,
+        FrameDataIndex = 2,
         CustomIndexStart
     }
 
@@ -80,11 +75,15 @@ internal unsafe partial struct RenderGraph
     private AssetsManager _assetsManager;
     private AtomicBumpAllocator _allocator;
 
-    private bool IsReady;
+
+    private bool _isReady;
     private int _renderPassCount;
     private uint _groupCount;
+    public readonly bool IsReady => _isReady;
 
     private Handle<Texture> _backbufferHandle;
+    private Handle<Buffer> _frameDataConstantBuffer;
+    private MappedGPUResource<FrameData> _frameDataGPU;
 
 
     [System(SystemStage.PreInit)]
@@ -105,7 +104,24 @@ internal unsafe partial struct RenderGraph
         graph._sortedPasses = default;
         graph._groups = default;
     }
-    
+
+    [System(SystemStage.Init)]
+    public static void Init(RenderGraph* graph, in D3D12ResourceManager resourceManager)
+    {
+        graph->_frameDataConstantBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<FrameData>(1, BufferType.Constant, cpuVisible: true, shaderVisible: true));
+        if (graph->_frameDataConstantBuffer.IsInvalid)
+        {
+            Logger.Error<RenderGraph>("Failed to allocate the frame data buffer.");
+            return;
+        }
+
+        if (!resourceManager.TryMapBuffer(graph->_frameDataConstantBuffer, out graph->_frameDataGPU))
+        {
+            Logger.Error<RenderGraph>("Failed to map the frame data constant buffer.");
+            return;
+        }
+    }
+
     public readonly Handle<RenderPass> CreatePass(string name, in CreateRenderPassArgs args)
     {
         var index = Interlocked.Increment(ref Unsafe.AsRef(in _renderPassCount)) - 1;
@@ -147,13 +163,14 @@ internal unsafe partial struct RenderGraph
         new RootSignatureBuilder()
             .WithRanges(6, register: 0, space: 10)
             .WithConstant(numberOfInputs, ShaderVisibility.Pixel, register: 0, space: 10)
+            .WithConstantBuffer(ConstantBufferFlags.Static, ShaderVisibility.All, register: 0, space: 11)
             .WithSampler(SamplerState.Point, ShaderVisibility.Pixel, register: 0, space: 10)
             .WithSampler(SamplerState.Linear, ShaderVisibility.Pixel, register: 1, space: 10);
 
     public readonly bool Begin(in Handle<RenderPass> handle, out CommandList commandList)
     {
         Unsafe.SkipInit(out commandList);
-        if (!IsReady)
+        if (!_isReady)
         {
             return false;
         }
@@ -202,6 +219,10 @@ internal unsafe partial struct RenderGraph
             commandList.SetGraphicsRootConstants((uint)RootSignatureIndex.InputTexturesIndex, inputTextures);
 
         }
+
+        var frameDataBuffer = _resourceManager->Access(_frameDataConstantBuffer);
+
+        commandList.SetGraphicsRootConstantBuffer((uint)RootSignatureIndex.FrameDataIndex, frameDataBuffer);
         commandList.SetRenderTargets(renderTargets, renderTargets.Count);
         commandList.ResourceBarriers(barriers);
         pass->ClearFunction(renderTargetTextures, null, commandList);
@@ -209,8 +230,21 @@ internal unsafe partial struct RenderGraph
         return true;
     }
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly CommandList GetCommandList(in Handle<RenderPass> handle)
+    {
+        var index = handle.Value - HandleOffset;
+        return _renderPasses[index].CommandList;
+    }
+
     public readonly void End(in Handle<RenderPass> handle)
     {
+        if (!IsReady || handle.IsInvalid)
+        {
+            return;
+        }
+
         var index = handle.Value - HandleOffset;
         var pass = _renderPasses.AsPointer() + index;
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
@@ -235,10 +269,10 @@ internal unsafe partial struct RenderGraph
         pass->CommandList.Close();
     }
 
-    [System(SystemStage.PreUpdate)]
+    [System(SystemStage.First)]
     public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain)
     {
-        if (graph.IsReady)
+        if (graph._isReady)
         {
             return;
         }
@@ -255,7 +289,7 @@ internal unsafe partial struct RenderGraph
         }
         graph.SortRenderGraph();
 
-        graph.IsReady = true;
+        graph._isReady = true;
         graph._backbufferHandle = swapchain.CurrentBackbuffer;
     }
 
@@ -263,7 +297,7 @@ internal unsafe partial struct RenderGraph
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
     public static void PostUpdate(in RenderGraph graph, in D3D12CommandQueue commandQueue)
     {
-        if (!graph.IsReady)
+        if (!graph._isReady)
         {
             return;
         }
@@ -424,11 +458,23 @@ internal unsafe partial struct RenderGraph
     public readonly void DestroyPass(Handle<RenderPass> handle)
     {
         Debug.Assert(handle.IsValid);
-        var pass = _renderPasses.GetPointer(handle-HandleOffset);
+        var pass = _renderPasses.GetPointer(handle - HandleOffset);
         _assetsManager.Unload(ref pass->PixelShader);
         _assetsManager.Unload(ref pass->VertexShader);
         _resourceManager->DestroyPipelineState(pass->PipelineState);
         _resourceManager->DestroyRootSignature(pass->RootSignature);
         pass = default;
+    }
+
+
+    [System(SystemStage.PostShutdown)]
+    public static void Shutdown(ref RenderGraph graph, IMemoryManager memoryManager, in D3D12ResourceManager resourceManager)
+    {
+        memoryManager.FreeAllocator(graph._allocator);
+        //TODO(Jens): Add delayed resource disposal
+        resourceManager.Unmap(graph._frameDataGPU);
+        //resourceManager.DestroyBuffer(graph._frameDataConstantBuffer);
+
+        graph = default;
     }
 }

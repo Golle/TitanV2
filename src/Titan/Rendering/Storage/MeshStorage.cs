@@ -3,9 +3,10 @@ using System.Runtime.InteropServices;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Core.Maths;
 using Titan.Core.Memory;
+using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
+using Titan.Graphics.D3D12.Upload;
 using Titan.Platform.Win32;
 using Titan.Rendering.Resources;
 using Titan.Resources;
@@ -13,32 +14,65 @@ using Titan.Systems;
 
 namespace Titan.Rendering.Storage;
 
+/// <summary>
+/// Data stored on the GPU that's required for each model. (Maybe root signature?)
+/// </summary>
 
+[StructLayout(LayoutKind.Sequential)]
+internal struct MeshInstanceData
+{
+    public uint VertexIndex;
+    public uint MaterialIndex;
+    public TitanArray<SubmeshData> Submeshes;
+}
+
+
+/// <summary>
+/// The mesh information, stored on the CPU side.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct MeshInstance
 {
-    public Matrix4x4 ModelMatrix;
-    public Color TestColor;
+    //public TitanArray<MeshInstanceSubmesh> Submeshes;
+
 }
 
-public ref struct CreateMeshArgs<TIndexType> where TIndexType : unmanaged
+public ref struct CreateMeshArgs
 {
     public required ReadOnlySpan<Vertex> Vertices { get; init; }
     public required ReadOnlySpan<SubMesh> SubMeshes { get; init; }
-    public ReadOnlySpan<TIndexType> Indices { get; init; }
-
+    public ReadOnlySpan<uint> Indices { get; init; }
 }
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct SubmeshData
+{
+    public uint IndexOffset;
+    public uint IndexCount;
+    public uint VertexOffset;
+    public uint VertexCount;
+}
+
+
 [UnmanagedResource]
 internal unsafe partial struct MeshStorage
 {
     public Handle<Buffer> IndexBufferHandle;
     public Handle<Buffer> VertexBufferHandle;
     public Handle<Buffer> MeshInstancesHandle;
-    //private TitanArray<int> FreeList;
-    private D3D12ResourceManager* _resourceManager;
 
-    private uint _next;
+    private ulong _indexBufferOffset;
+    private ulong _vertexBufferOffset;
+    private uint _meshInstanceOffset;
+
     private MeshInstance* _gpuInstances;
+    private TitanArray<MeshInstanceData> _cpuInstances;
+
+    private D3D12ResourceManager* _resourceManager;
+    private D3D12UploadQueue* _uploadQueue;
+
+    private GeneralAllocator _allocator;
+    private SpinLock _allocatorLock;
 
     [System(SystemStage.Init)]
     public static void Init(MeshStorage* storage, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry registry)
@@ -77,28 +111,66 @@ internal unsafe partial struct MeshStorage
             return;
         }
 
-        storage->_resourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
-
-    }
-
-
-    public Handle<MeshInstance> CreateMesh<T>(in CreateMeshArgs<T> args) where T : unmanaged, INumber<T>
-    {
-        var offset = Interlocked.Increment(ref _next); // first allocation will be offset 1
-        // allcate a handle
-        // allocate a GPU buffer
-
-        var instance = new MeshInstance
+        if (!memoryManager.TryAllocArray(out storage->_cpuInstances, meshCount))
         {
-            ModelMatrix = Matrix4x4.Identity,
-            TestColor = offset == 1 ? Color.Yellow : Color.Green
-        };
+            Logger.Error<MeshStorage>("Failed to allocate buffer for meshes.");
+            return;
+        }
 
-        MemoryUtils.Copy(_gpuInstances + offset, &instance, sizeof(MeshInstance));
+        if (!memoryManager.TryCreateGeneralAllocator(out storage->_allocator, MemoryUtils.KiloBytes(4), MemoryUtils.KiloBytes(4)))
+        {
+            Logger.Error<MeshStorage>("Failed to create the allocator for submeshes.");
+            return;
+        }
 
-        return offset;
+        storage->_resourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
+        storage->_uploadQueue = registry.GetResourcePointer<D3D12UploadQueue>();
+
     }
 
+
+    public Handle<MeshInstance> CreateMesh(in CreateMeshArgs args)
+    {
+        var meshIndex = Interlocked.Increment(ref _meshInstanceOffset); // first allocation will be offset 1
+
+        var data = _cpuInstances.GetPointer(meshIndex);
+        data->Submeshes = AllocSubmeshData((uint)args.SubMeshes.Length);
+        foreach (ref readonly var submesh in args.SubMeshes)
+        {
+            //args.SubMeshes
+        }
+        var vertexBuffer = _resourceManager->Access(VertexBufferHandle);
+        var indexBuffer = _resourceManager->Access(IndexBufferHandle);
+
+        var numberOfVertices = args.Vertices.Length;
+        var numberOfIndices = args.Indices.Length;
+        var numberOfSubmeshes = args.SubMeshes.Length;
+
+        fixed (Vertex* pVertices = args.Vertices)
+        {
+            //TODO(Jens): need support for offsets/regions for uploads
+            _uploadQueue->Upload(vertexBuffer->Resource, new(pVertices, (uint)(numberOfVertices * sizeof(Vertex))));
+        }
+
+        //TODO(Jens): Add support for 2 bytes indices
+        fixed (uint* pIndices = args.Indices)
+        {
+            //TODO(Jens): need support for offsets/regions for uploads
+            _uploadQueue->Upload(indexBuffer->Resource, new(pIndices, (uint)(args.Indices.Length * sizeof(uint))));
+        }
+
+
+        //MemoryUtils.Copy(_gpuInstances + offset, &instance, sizeof(MeshInstance));
+
+        return meshIndex;
+    }
+
+
+    public readonly MeshInstance* Access(in Handle<MeshInstance> handle)
+    {
+
+        return null;
+    }
 
     public void DestroyMesh(Handle<MeshInstance> handle)
     {
@@ -112,5 +184,24 @@ internal unsafe partial struct MeshStorage
 
 
 
+    }
+
+    private TitanArray<SubmeshData> AllocSubmeshData(uint count)
+    {
+        if (count == 0)
+        {
+            return TitanArray<SubmeshData>.Empty;
+        }
+
+        var lockTaken = false;
+        _allocatorLock.Enter(ref lockTaken);
+        try
+        {
+            return _allocator.AllocArray<SubmeshData>(count);
+        }
+        finally
+        {
+            _allocatorLock.Exit();
+        }
     }
 }

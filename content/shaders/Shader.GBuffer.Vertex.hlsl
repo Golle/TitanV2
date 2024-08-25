@@ -13,7 +13,8 @@ GBufferVertexOutput main( uint id : SV_VertexID )
     GBufferVertexOutput output;
     
     output.Position = pos;
-    output.WorldPosition = float3(0.0,0.0,0.0);
+    
+    output.WorldPosition = mul(FrameDataBuffer.ViewProjection, float4(v.Position, 0)).xyz;
     output.WorldNormal = float3(0.0,0.0,0.0);
     output.Texture = uv;
     return output;

@@ -12,6 +12,7 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
     {
         try
         {
+            //TODO(Jens): Implement submesh/material compression, so that we can draw all submeshes that share a material in a single call.
             var lines = await File.ReadAllTextAsync(metadata.ContentFileFullPath);
             var wavefrontObj = ObjParser.Parse(lines);
 
@@ -35,8 +36,6 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                 throw new FileNotFoundException("Missing material file", mtlFile);
             }
 
-
-
             var mtlFileLines = await File.ReadAllLinesAsync(mtlFile);
             var parsedMaterials = MtlParser.Parse(mtlFileLines);
 
@@ -44,12 +43,13 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
 
             void HandleObject(ObjectGroup obj)
             {
-                var indices = wavefrontObj.Indicies[obj.IndexOffset..];
+                var modelIndices = wavefrontObj.Indicies[obj.IndexOffset..];
                 var materials = wavefrontObj.FaceMaterials[obj.FaceOffset..obj.FaceCount];
                 var faceVertices = wavefrontObj.FaceVertices[obj.FaceOffset..obj.FaceCount];
 
                 List<Vertex> vertices = new();
                 List<SubMesh> meshes = new();
+                List<uint> indices = new();
 
                 var currentMaterial = materials[0]!;
                 //var material = parsedMaterials.First(m => m.Name == currentMaterial);
@@ -63,20 +63,22 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                         meshes.Add(new SubMesh
                         {
                             VertexCount = vertices.Count - vertexOffset,
-                            VertexOffset = vertexOffset
+                            VertexOffset = vertexOffset,
+                            IndexCount = vertices.Count - vertexOffset,
+                            IndexOffset = vertexOffset,
                         });
                         vertexOffset = vertices.Count;
                     }
 
                     var vertexCount = faceVertices[i];
-                    var firstVertex = IndexToVertex(indices[indexOffset], wavefrontObj);
+                    var firstVertex = IndexToVertex(modelIndices[indexOffset], wavefrontObj);
                     for (var j = 1; j < vertexCount - 1; ++j)
                     {
-                        var secondVertex = IndexToVertex(indices[indexOffset + j], wavefrontObj);
-                        var thirdVertex = IndexToVertex(indices[indexOffset + j + 1], wavefrontObj);
+                        var secondVertex = IndexToVertex(modelIndices[indexOffset + j], wavefrontObj);
+                        var thirdVertex = IndexToVertex(modelIndices[indexOffset + j + 1], wavefrontObj);
 
                         //NOTE(Jens): This will add the same vertices several times. This is fine for the first version, but in the future we want to compress this and use indices.
-                        
+
                         vertices.Add(firstVertex);
                         vertices.Add(thirdVertex); //OBJ file has the wrong order (need to verify this). So we swap third and second to make it compatible with D3D12
                         vertices.Add(secondVertex);
@@ -88,15 +90,23 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                 {
                     VertexCount = vertices.Count - vertexOffset,
                     VertexOffset = vertexOffset,
+                    IndexCount = vertices.Count - vertexOffset,
+                    IndexOffset = vertexOffset,
                 });
+
+                for (var i = 0u; i < vertices.Count; ++i)
+                {
+                    indices.Add(i);
+                }
 
                 using var stream = new MemoryStream();
                 stream.Write(MemoryMarshal.AsBytes<SubMesh>(meshes.ToArray()));
                 stream.Write(MemoryMarshal.AsBytes<Vertex>(vertices.ToArray()));
+                stream.Write(MemoryMarshal.AsBytes<uint>(indices.ToArray()));
 
                 if (!context.TryAddMesh(new MeshDescriptor
                 {
-                    IndexCount = -1,
+                    IndexCount = (uint)indices.Count,
                     MaterialCount = -1,
                     SubMeshCount = (uint)meshes.Count,
                     VertexCount = (uint)vertices.Count
@@ -133,4 +143,6 @@ public struct SubMesh
 {
     public int VertexOffset;
     public int VertexCount;
+    public int IndexOffset;
+    public int IndexCount;
 }

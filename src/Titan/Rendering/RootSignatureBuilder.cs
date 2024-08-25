@@ -38,7 +38,7 @@ public ref struct RootSignatureBuilder
     public ref RootSignatureBuilder WithConstantBuffer(ConstantBufferFlags flags, ShaderVisibility visibility = ShaderVisibility.All, byte register = 0, byte space = 0) =>
         ref Add(new RootSignatureParameter
         {
-            Type = RootSignatureParameterType.Sampler,
+            Type = RootSignatureParameterType.ConstantBuffer,
             Space = space,
             ConstantBufferFlags = flags,
             Register = register,

@@ -1,3 +1,4 @@
+using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Platform.Win32;
@@ -36,6 +37,7 @@ internal unsafe partial struct BackbufferRenderPass
     private static void ClearBackbuffer(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
         => commandList.ClearRenderTargetView(renderTargets[0], Color.Magenta);
 
+
     [System]
     public static void Render(in BackbufferRenderPass pass, in RenderGraph graph, in Window window)
     {
@@ -67,7 +69,6 @@ internal unsafe partial struct BackbufferRenderPass
             Top = 0
         };
         commandList.SetScissorRect(&rect);
-
         commandList.DrawInstanced(3, 1);
         graph.End(pass.PassHandle);
     }

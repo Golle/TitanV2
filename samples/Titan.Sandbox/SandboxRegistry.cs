@@ -54,7 +54,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 208688,
+                Length = 250432,
                 Offset = 524288,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.obj")
@@ -65,7 +65,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Mesh = new()
             {
-                IndexCount = -1,
+                IndexCount = 10434,
                 VertexCount = 10434,
                 SubMeshCount = 1,
                 MaterialCount = -1,
@@ -79,7 +79,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 67108864,
-                Offset = 732976,
+                Offset = 774720,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png")
 #else
@@ -103,8 +103,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 20896,
-                Offset = 67841840,
+                Length = 25088,
+                Offset = 67883584,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj")
 #else
@@ -114,7 +114,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Mesh = new()
             {
-                IndexCount = -1,
+                IndexCount = 1044,
                 VertexCount = 1044,
                 SubMeshCount = 2,
                 MaterialCount = -1,

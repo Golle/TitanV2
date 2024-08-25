@@ -1,6 +1,4 @@
 using Titan.Core;
-using Titan.Core.Maths;
-using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32;
@@ -38,14 +36,13 @@ internal unsafe partial struct DeferredLightingRenderPass
         commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.DeferredLighting.OptimizedClearColor);
     }
 
-    [System]
-    public static void Render(in DeferredLightingRenderPass pass, in RenderGraph graph, in D3D12ResourceManager resourceManager, in Window window)
+    [System(SystemStage.PreUpdate)]
+    public static void BeginPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in Window window)
     {
         if (!graph.Begin(pass.PassHandle, out var commandList))
         {
             return;
         }
-
         D3D12_VIEWPORT viewPort = new()
         {
             Height = window.Height,
@@ -56,7 +53,7 @@ internal unsafe partial struct DeferredLightingRenderPass
             TopLeftY = 0
         };
         commandList.SetViewport(&viewPort);
-        
+
         D3D12_RECT rect = new()
         {
             Bottom = window.Height,
@@ -65,6 +62,16 @@ internal unsafe partial struct DeferredLightingRenderPass
             Top = 0
         };
         commandList.SetScissorRect(&rect);
+    }
+
+    [System]
+    public static void EndPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in D3D12ResourceManager resourceManager)
+    {
+        if (!graph.IsReady)
+        {
+            return;
+        }
+        var commandList = graph.GetCommandList(pass.PassHandle);
 
         //commandList.ClearRenderTargetView();
 

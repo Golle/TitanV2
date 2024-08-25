@@ -1,9 +1,9 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
-using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Rendering.Storage;
 
@@ -38,22 +38,12 @@ internal unsafe partial struct MeshLoader
     {
         Debug.Assert(descriptor.Type == AssetType.Mesh);
         ref readonly var meshDescriptor = ref descriptor.Mesh;
+        var verticesOffset = meshDescriptor.SubMeshCount * sizeof(SubMesh);
+        var indicesOffset = verticesOffset + meshDescriptor.VertexCount * sizeof(Vertex);
+
         var subMeshes = buffer.SliceArray<SubMesh>(0, meshDescriptor.SubMeshCount);
-        var vertices = buffer.SliceArray<Vertex>((uint)sizeof(SubMesh) * meshDescriptor.SubMeshCount, meshDescriptor.VertexCount);
-
-        //NOTE(Jens): We Fake an index buffer since it hasn't been implemented yet.
-        var indices = stackalloc int[(int)vertices.Length];
-        for (var i = 0; i < vertices.Length; ++i)
-        {
-            indices[i] = i;
-        }
-
-        var handle = _meshStorage->CreateMesh(new CreateMeshArgs<int>
-        {
-            Vertices = vertices,
-            Indices = new (indices, (int)vertices.Length),
-            SubMeshes = subMeshes
-        });
+        var vertices = buffer.SliceArray<Vertex>((uint)verticesOffset, meshDescriptor.VertexCount);
+        var indices = buffer.SliceArray<uint>((uint)indicesOffset, meshDescriptor.IndexCount);
 
         var mesh = _meshes.SafeAlloc();
         if (mesh == null)
@@ -62,39 +52,34 @@ internal unsafe partial struct MeshLoader
             return null;
         }
 
-        mesh->VertexBuffer = _resourceManager->CreateBuffer(new CreateBufferArgs(vertices.Length, sizeof(Vertex), BufferType.Vertex, vertices.AsBuffer()));
-        mesh->SubMeshCount = subMeshes.Length;
-        subMeshes.AsReadOnlySpan().CopyTo(mesh->SubMeshes);
+        mesh->InstanceHandle = _meshStorage->CreateMesh(new CreateMeshArgs
+        {
+            SubMeshes = subMeshes,
+            Vertices = vertices,
+            Indices = indices
+        });
 
-
-
-        //mesh->IndexBuffer = _resourceManager->CreateBuffer(new CreateBufferArgs(vertices.Length, sizeof(ushort), BufferType.Index, new TitanBuffer(indices, sizeof(ushort) * vertices.Length)));
-        mesh->IndexBuffer = _resourceManager->CreateBuffer(new CreateBufferArgs(vertices.Length, sizeof(uint), BufferType.Index, new TitanBuffer(indices, sizeof(uint) * vertices.Length)));
-        mesh->IndexCount = vertices.Length;
         return mesh;
     }
 
     public void Unload(MeshAsset* asset)
     {
-        _resourceManager->DestroyBuffer(asset->VertexBuffer);
-        _resourceManager->DestroyBuffer(asset->IndexBuffer);
         *asset = default;
         _meshes.SafeFree(asset);
     }
 }
 
 [Asset(AssetType.Mesh)]
-internal partial struct MeshAsset
+[StructLayout(LayoutKind.Sequential, Size = 8)]
+public partial struct MeshAsset
 {
-    public Handle<Buffer> VertexBuffer;
-    public Handle<Buffer> IndexBuffer;
-    public uint SubMeshCount;
-    public uint IndexCount;
-    public Inline16<SubMesh> SubMeshes;
+    internal Handle<MeshInstance> InstanceHandle;
 }
 
 public struct SubMesh
 {
     public int VertexOffset;
     public int VertexCount;
+    public int IndexOffset;
+    public int IndexCount;
 }

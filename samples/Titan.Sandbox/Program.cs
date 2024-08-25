@@ -54,7 +54,7 @@ namespace Titan.Sandbox
     {
         private Entity _entity;
         private bool _done;
-        
+
         [System]
         public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
         {
@@ -88,9 +88,9 @@ namespace Titan.Sandbox
             else
             {
                 _entity = entityManager.CreateEntity();
-                entityManager.AddComponent<Transform3D>(_entity);
+                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.Zero));
                 entityManager.AddComponent<TransformRect>(_entity);
-                entityManager.AddComponent(_entity, new Mesh3D
+                entityManager.AddComponent(_entity, new Mesh
                 {
                     Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book)
                 });
@@ -138,7 +138,7 @@ namespace Titan.Sandbox
         {
             if (_assetHandle.IsInvalid)
             {
-                _assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);
+                //_assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);
             }
         }
     }

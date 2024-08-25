@@ -1,7 +1,9 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Memory;
 using Titan.ECS.Components;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
@@ -22,7 +24,7 @@ internal unsafe partial struct GBufferRenderPass
     private const uint MeshInstanceIndex = PassDataIndex + 1;
 
     [System(SystemStage.Init)]
-    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager)
+    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
     {
         var passArgs = new CreateRenderPassArgs
         {
@@ -42,6 +44,13 @@ internal unsafe partial struct GBufferRenderPass
         };
 
         renderPass->PassHandle = renderGraph.CreatePass("GBuffer", passArgs);
+
+        var renderableCount = 2048u;
+        //if (!memoryManager.TryAllocArray(out renderPass->Renderables, renderableCount))
+        //{
+        //    Logger.Error<GBufferRenderPass>($"Failed to allocate memory for the renderables. Size = {sizeof(Renderable) * renderableCount} bytes");
+        //    return;
+        //}
     }
 
     private static void ClearFunction(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
@@ -56,15 +65,9 @@ internal unsafe partial struct GBufferRenderPass
         }
     }
 
-    [System]
-    public static void CollectData(GBufferRenderPass* pass, ReadOnlySpan<Mesh3D> meshes)
-    {
-        //read all mesh data, should be a mem cpy
 
-    }
-
-    [System]
-    public static void RecordCommandList(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
+    [System(SystemStage.PreUpdate)]
+    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
@@ -78,9 +81,8 @@ internal unsafe partial struct GBufferRenderPass
             MeshInstanceIndex = (uint)resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.Index
         };
         commandList.SetGraphicsRootConstant(PassDataIndex, rootPassData);
-        commandList.SetGraphicsRootConstant(MeshInstanceIndex, 1);
 
-        //NOTE(Jens): Not sure what to do with these.
+        //NOTE(Jens): Not sure what to do with these. 
         D3D12_VIEWPORT viewPort = new()
         {
             Height = window.Height,
@@ -100,12 +102,53 @@ internal unsafe partial struct GBufferRenderPass
         };
         commandList.SetScissorRect(&rect);
         commandList.SetViewport(&viewPort);
-
-        commandList.DrawInstanced(3, 1);
-
-        graph.End(pass->PassHandle);
     }
 
+    /// <summary>
+    /// Renders the meshes. This function will be called multiple times depending on the archetypes
+    /// </summary>
+    [System]
+    public static void RenderMeshes(GBufferRenderPass* pass, ReadOnlySpan<Mesh> meshes, ReadOnlySpan<Transform3D> transform, in AssetsManager assetsManager, in MeshStorage storage, in RenderGraph graph)
+    {
+        if (!graph.IsReady)
+        {
+            return;
+        }
+
+        var commandList = graph.GetCommandList(pass->PassHandle);
+        var count = meshes.Length;
+        for (var i = 0; i < count; ++i)
+        {
+            ref readonly var mesh = ref meshes[i];
+            if (!assetsManager.IsLoaded(mesh.Asset))
+            {
+                continue;
+            }
+
+            ref readonly var asset = ref assetsManager.Get(mesh.Asset);
+            var ins = storage.Access(asset.InstanceHandle);
+            /*
+             * Get the MeshInstanceId - contains vertex buffer offset
+             *
+             */
+
+            // foreach mesh
+            //{
+            //    commandList.SetGraphicsRootConstant(MeshInstanceIndex, renderable.MeshInstanceIndex);
+            //    commandList.DrawIndexedInstanced(renderable.IndexCount, 1, renderable.IndexOffset, (int)renderable.VertexOffset);
+            //}
+
+        }
+    }
+
+    /// <summary>
+    /// Ends the pass and closes the command list.
+    /// </summary>
+    [System]
+    public static void EndPass(in GBufferRenderPass pass, in RenderGraph graph)
+        => graph.End(pass.PassHandle);
+
+    
     [System(SystemStage.Shutdown)]
     public static void Shutdown(GBufferRenderPass* pass, in RenderGraph graph)
     {
@@ -121,3 +164,4 @@ internal unsafe partial struct GBufferRenderPass
         public uint MeshInstanceIndex;
     }
 }
+

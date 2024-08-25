@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Platform.Win32;
@@ -164,6 +165,13 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
         => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
 
+
+    public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, Buffer* buffer)
+    {
+        Debug.Assert(buffer != null);
+        Debug.Assert(buffer->SRV.IsValid);
+        commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, buffer->Resource.Get()->GetGPUVirtualAddress());
+    }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootConstantBufferView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
         => commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);

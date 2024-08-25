@@ -13,13 +13,14 @@ internal static class Helpers
 
         var systemStage = (int)constructorArguments[0].Value!;
         var executionType = (int)constructorArguments[1].Value!;
+        var order = (int)constructorArguments[2].Value!;
 
         var method = (IMethodSymbol)context.TargetSymbol;
         var type = method.ContainingType;
 
 
         var parameters = ReadParameters(method);
-        return new SystemType(type, method, systemStage, executionType, context.TargetNode, parameters);
+        return new SystemType(type, method, systemStage, executionType, order, context.TargetNode, parameters);
     }
 
     public static ComponentType ReadComponentType(GeneratorAttributeSyntaxContext syntaxContext)

@@ -67,30 +67,30 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         data->Mesh = meshHandle;
         ref readonly var mesh = ref assetsManager.Get(meshHandle);
-        data->VertexBuffer = resourceManager.Access(mesh.VertexBuffer)->Resource;
-        data->IndexBuffer = resourceManager.Access(mesh.IndexBuffer)->Resource;
-        data->Count = mesh.IndexCount;
+        //data->VertexBuffer = resourceManager.Access(mesh.VertexBuffer)->Resource;
+        //data->IndexBuffer = resourceManager.Access(mesh.IndexBuffer)->Resource;
+        //data->Count = mesh.IndexCount;
 
-        var cbSize = (uint)sizeof(TestData);
-        data->ConstantBuffer = device.CreateBuffer(cbSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        //var cbSize = (uint)sizeof(TestData);
+        //data->ConstantBuffer = device.CreateBuffer(cbSize, true, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-        D3D12_INDEX_BUFFER_VIEW indexBufferView = new()
-        {
-            BufferLocation = data->IndexBuffer.Get()->GetGPUVirtualAddress(),
-            Format = DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
-            SizeInBytes = sizeof(uint) * mesh.IndexCount
-        };
-        data->IndexBufferView = indexBufferView;
+        //D3D12_INDEX_BUFFER_VIEW indexBufferView = new()
+        //{
+        //    BufferLocation = data->IndexBuffer.Get()->GetGPUVirtualAddress(),
+        //    Format = DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
+        //    SizeInBytes = sizeof(uint) * mesh.IndexCount
+        //};
+        //data->IndexBufferView = indexBufferView;
 
 
-        // Constant buffer
-        var srv = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
-        device.CreateConstantBufferView(cbSize, data->ConstantBuffer.Get()->GetGPUVirtualAddress(), srv.CPU);
-        data->ConstantBuffer.Get()->Map(0, null, &data->ConstantBufferMap);
+        //// Constant buffer
+        //var srv = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
+        //device.CreateConstantBufferView(cbSize, data->ConstantBuffer.Get()->GetGPUVirtualAddress(), srv.CPU);
+        //data->ConstantBuffer.Get()->Map(0, null, &data->ConstantBufferMap);
 
-        // Vertex buffer (any mesh really)
-        var srv1 = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
-        device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)mesh.IndexCount, (uint)sizeof(Vertex));
+        //// Vertex buffer (any mesh really)
+        //var srv1 = allocator.Allocate(DescriptorHeapType.ShaderResourceView);
+        //device.CreateShaderResourceView1(data->VertexBuffer, srv1.CPU, (uint)mesh.IndexCount, (uint)sizeof(Vertex));
 
         data->DepthBuffer = resourceManager.CreateDepthBuffer(new CreateDepthBufferArgs
         {
@@ -316,12 +316,12 @@ internal unsafe partial struct D3D12FullScreenRenderer
         commandList.SetIndexBuffer(data.IndexBufferView);
         //commandList.DrawInstanced();
         var mesh = assetsManager.Get(data.Mesh);
-        for (var i = 0; i < mesh.SubMeshCount; ++i)
-        {
-            commandList.DrawIndexedInstanced((uint)mesh.SubMeshes[i].VertexCount, 1, (uint)mesh.SubMeshes[i].VertexOffset, mesh.SubMeshes[i].VertexOffset, 0);
-            //commandList.DrawIndexedInstanced(3/*(uint)mesh.SubMeshes[i].VertexCount*/, 1, 0, 0, 0);
-        }
-        //commandList.DrawInstanced(, 1);
+        //for (var i = 0; i < mesh.SubMeshCount; ++i)
+        //{
+        //    commandList.DrawIndexedInstanced((uint)mesh.SubMeshes[i].VertexCount, 1, (uint)mesh.SubMeshes[i].VertexOffset, mesh.SubMeshes[i].VertexOffset, 0);
+        //    //commandList.DrawIndexedInstanced(3/*(uint)mesh.SubMeshes[i].VertexCount*/, 1, 0, 0, 0);
+        //}
+        ////commandList.DrawInstanced(, 1);
 
         commandList.Transition(backbuffer, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_PRESENT);
         commandList.Close();

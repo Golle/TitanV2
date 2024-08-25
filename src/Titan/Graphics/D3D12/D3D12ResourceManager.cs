@@ -9,6 +9,7 @@ using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Upload;
 using Titan.Graphics.D3D12.Utils;
+using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Rendering;
@@ -23,6 +24,13 @@ public record struct CreateBufferArgs(uint Count, int Stride, BufferType Type, T
 {
     public bool CpuVisible { get; init; }
     public bool ShaderVisible { get; init; }
+
+    public static unsafe CreateBufferArgs Create<T>(uint count, BufferType type, TitanBuffer initialData = default, bool cpuVisible = false, bool shaderVisible = false) where T : unmanaged
+        => new(count, sizeof(T), type, initialData)
+        {
+            CpuVisible = cpuVisible,
+            ShaderVisible = shaderVisible
+        };
 }
 
 public record struct CreateTextureArgs
@@ -115,6 +123,13 @@ public enum ConstantBufferFlags : byte
     Volatile
 }
 
+public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<Buffer> handle) where T : unmanaged
+{
+    public T* Ptr => resource;
+    public Handle<Buffer> Handle => handle;
+    public void Write(in T value) => *resource = value;
+}
+
 [UnmanagedResource]
 public unsafe partial struct D3D12ResourceManager
 {
@@ -175,6 +190,7 @@ public unsafe partial struct D3D12ResourceManager
         Debug.Assert(args.Stride > 0);
 
         Debug.Assert(args.Type != BufferType.Index || args.Stride is 2 or 4);
+        Debug.Assert(args.Type != BufferType.Constant || (args.Stride * args.Count) % 256 == 0, "Constant buffers must be a multiple of 256");
 
         var handle = _buffers.SafeAlloc();
         if (handle.IsInvalid)
@@ -198,7 +214,7 @@ public unsafe partial struct D3D12ResourceManager
 
         //if (args.InitialData.IsValid)
         //{
-            
+
         //}
         var resourceState = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
         var size = (uint)args.Stride * args.Count;
@@ -230,7 +246,16 @@ public unsafe partial struct D3D12ResourceManager
                 return Handle<Buffer>.Invalid;
             }
 
-            _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, buffer->Count, buffer->Stride);
+            switch (args.Type)
+            {
+                case BufferType.Constant:
+                    _device->CreateConstantBufferView(buffer->Size, buffer->Resource.Get()->GetGPUVirtualAddress(), buffer->SRV.CPU);
+                    break;
+                case BufferType.Index:
+                case BufferType.Vertex:
+                    _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, buffer->Count, buffer->Stride);
+                    break;
+            }
         }
 
         if (!args.InitialData.IsValid)
@@ -269,6 +294,28 @@ public unsafe partial struct D3D12ResourceManager
         *buffer = default;
 
         _buffers.SafeFree(handle);
+    }
+
+    public readonly bool TryMapBuffer<T>(in Handle<Buffer> handle, out MappedGPUResource<T> resource) where T : unmanaged
+    {
+        var buffer = Access(handle);
+        Debug.Assert(buffer->Resource.IsValid);
+        T* data;
+        var result = buffer->Resource.Get()->Map(0, null, (void**)&data);
+        if (Win32Common.SUCCEEDED(result))
+        {
+            resource = new MappedGPUResource<T>(data, handle);
+            return true;
+        }
+        resource = default;
+        return false;
+    }
+
+    public readonly void Unmap<T>(in MappedGPUResource<T> resource) where T : unmanaged
+    {
+        var buffer = Access(resource.Handle);
+        Debug.Assert(buffer->Resource.IsValid);
+        buffer->Resource.Get()->Unmap(0, null);
     }
 
     public readonly Handle<Texture> CreateDepthBuffer(in CreateDepthBufferArgs args)

@@ -22,7 +22,12 @@ struct InputTextures
     uint Indicies[NUM_INPUTS];
 };
 
+struct FrameData {
+    float4x4 ViewProjection;
+};
+
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);
+ConstantBuffer<FrameData> FrameDataBuffer:  register(b0, space11);
 
 Texture2D GetInputTexture(uint index)
 {
