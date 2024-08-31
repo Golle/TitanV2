@@ -73,8 +73,6 @@ internal unsafe partial struct DeferredLightingRenderPass
         }
         var commandList = graph.GetCommandList(pass.PassHandle);
 
-        //commandList.ClearRenderTargetView();
-
         commandList.DrawInstanced(3, 1);
 
         graph.End(pass.PassHandle);

@@ -1,22 +1,17 @@
 #ifndef _SHADER_GBUFFER
 #define _SHADER_GBUFFER
 
-struct RootConstant 
+struct GBufferPassData 
 {
     uint VertexBufferIndex;
-    uint MeshInstancesIndex;
+    int MeshInstancesIndex;
 };
 
-struct MeshStuff 
+struct MeshInstance
 {
-    uint MeshInstanceId;
-};
-
-struct MeshInstance 
-{
-    float4x4 ModelMatrix;
-    float4 TestColor;
-    // uint MaterialIndex;
+    // should be material
+    int AlbedoIndex;
+    float3 _padding;
 };
 
 struct Vertex
@@ -25,11 +20,10 @@ struct Vertex
     float2 UV;
 };
 
-ConstantBuffer<RootConstant> Root : register(b0, space0);
-ConstantBuffer<MeshStuff> MeshStuffs : register(b1, space0);
-StructuredBuffer<Vertex> GBuffer[] : register(t0, space13);
-StructuredBuffer<MeshInstance> MeshInstances[] : register(t0, space15);
+ConstantBuffer<GBufferPassData> PassData : register(b0, space0);
 
+StructuredBuffer<Vertex> GBuffer[] : register(t0, space13);
+StructuredBuffer<MeshInstance> MeshInstances[] : register(t0, space14);
 
 struct GBufferVertexOutput
 {
@@ -46,9 +40,10 @@ struct GBufferPixelOutput
     float4 Specular : SV_Target2;
 };
 
-struct MaterialData 
-{
-    uint AlbedoIndex;
-};
+//todo: implement later
+// struct MaterialData 
+// {
+//     uint AlbedoIndex;
+// };
 
 #endif

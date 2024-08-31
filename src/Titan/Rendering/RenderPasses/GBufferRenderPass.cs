@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
@@ -21,7 +22,7 @@ internal unsafe partial struct GBufferRenderPass
 {
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
-    private const uint MeshInstanceIndex = PassDataIndex + 1;
+    //private const uint MeshInstanceIndex = PassDataIndex + 1;
 
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
@@ -44,13 +45,6 @@ internal unsafe partial struct GBufferRenderPass
         };
 
         renderPass->PassHandle = renderGraph.CreatePass("GBuffer", passArgs);
-
-        var renderableCount = 2048u;
-        //if (!memoryManager.TryAllocArray(out renderPass->Renderables, renderableCount))
-        //{
-        //    Logger.Error<GBufferRenderPass>($"Failed to allocate memory for the renderables. Size = {sizeof(Renderable) * renderableCount} bytes");
-        //    return;
-        //}
     }
 
     private static void ClearFunction(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
@@ -120,24 +114,24 @@ internal unsafe partial struct GBufferRenderPass
         for (var i = 0; i < count; ++i)
         {
             ref readonly var mesh = ref meshes[i];
-            if (!assetsManager.IsLoaded(mesh.Asset))
+            Debug.Assert(mesh.InstanceIndex.IsValid, "Unexpected order of initializing the instance handle.. Fix!");
+            if (mesh.MeshData == null)
             {
                 continue;
             }
 
-            ref readonly var asset = ref assetsManager.Get(mesh.Asset);
-            var ins = storage.Access(asset.InstanceHandle);
-            /*
-             * Get the MeshInstanceId - contains vertex buffer offset
-             *
-             */
+            storage.UpdateMeshInstance(mesh.InstanceIndex, new MeshInstance
+            {
+                AlbedoIndex = 1 // todo: we need a material system for this to work.
+            });
 
-            // foreach mesh
-            //{
-            //    commandList.SetGraphicsRootConstant(MeshInstanceIndex, renderable.MeshInstanceIndex);
-            //    commandList.DrawIndexedInstanced(renderable.IndexCount, 1, renderable.IndexOffset, (int)renderable.VertexOffset);
-            //}
+            var index = mesh.MeshData->VertexBufferIndex;
 
+            foreach (ref readonly var submesh in mesh.MeshData->Submeshes.AsReadOnlySpan())
+            {
+                //commandList.SetGraphicsRootConstant(MeshInstanceIndex, renderable.MeshInstanceIndex);
+                commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, 0);
+            }
         }
     }
 
@@ -148,7 +142,7 @@ internal unsafe partial struct GBufferRenderPass
     public static void EndPass(in GBufferRenderPass pass, in RenderGraph graph)
         => graph.End(pass.PassHandle);
 
-    
+
     [System(SystemStage.Shutdown)]
     public static void Shutdown(GBufferRenderPass* pass, in RenderGraph graph)
     {

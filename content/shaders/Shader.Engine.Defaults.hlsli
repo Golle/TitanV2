@@ -22,8 +22,10 @@ struct InputTextures
     uint Indicies[NUM_INPUTS];
 };
 
-struct FrameData {
+struct FrameData 
+{
     float4x4 ViewProjection;
+    float4 TESTColor;
 };
 
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);

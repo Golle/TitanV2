@@ -9,6 +9,7 @@ using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Core.Strings;
+using Titan.ECS.Systems;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
@@ -26,6 +27,7 @@ namespace Titan.Rendering;
 internal struct FrameData
 {
     public Matrix4x4 ViewProjection;
+    public Color TESTColor;
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
@@ -295,12 +297,19 @@ internal unsafe partial struct RenderGraph
 
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void PostUpdate(in RenderGraph graph, in D3D12CommandQueue commandQueue)
+    public static void ExeucuteCommandLists(in RenderGraph graph, in D3D12CommandQueue commandQueue, in CameraSystem cameraSystem)
     {
         if (!graph._isReady)
         {
             return;
         }
+
+        //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
+        graph._frameDataGPU.Write(new FrameData
+        {
+            ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
+            TESTColor = Color.Red with { G = 0.3f }
+        });
 
         Span<CommandList> commandListBuffer = stackalloc CommandList[10];
 

@@ -52,7 +52,7 @@ internal unsafe partial struct MeshLoader
             return null;
         }
 
-        mesh->InstanceHandle = _meshStorage->CreateMesh(new CreateMeshArgs
+        mesh->MeshDataHandle = _meshStorage->CreateMesh(new CreateMeshArgs
         {
             SubMeshes = subMeshes,
             Vertices = vertices,
@@ -73,7 +73,7 @@ internal unsafe partial struct MeshLoader
 [StructLayout(LayoutKind.Sequential, Size = 8)]
 public partial struct MeshAsset
 {
-    internal Handle<MeshInstance> InstanceHandle;
+    internal Handle<MeshData> MeshDataHandle;
 }
 
 public struct SubMesh

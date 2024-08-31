@@ -112,25 +112,25 @@ namespace Titan.Sandbox
         [System(SystemStage.Update, SystemExecutionType.Inline)]
         public static void Update(in InputState inputState)
         {
-            if (inputState.IsKeyDown(KeyCode.W))
-            {
-                Logger.Info<ATestSystem>("Moving forward!");
-            }
+            //if (inputState.IsKeyDown(KeyCode.W))
+            //{
+            //    Logger.Info<ATestSystem>("Moving forward!");
+            //}
 
-            if (inputState.IsKeyDown(KeyCode.A))
-            {
-                Logger.Info<ATestSystem>("Turning left");
-            }
+            //if (inputState.IsKeyDown(KeyCode.A))
+            //{
+            //    Logger.Info<ATestSystem>("Turning left");
+            //}
 
-            if (inputState.IsKeyDown(KeyCode.D))
-            {
-                Logger.Info<ATestSystem>("Turning right");
-            }
+            //if (inputState.IsKeyDown(KeyCode.D))
+            //{
+            //    Logger.Info<ATestSystem>("Turning right");
+            //}
 
-            if (inputState.IsKeyDown(KeyCode.S))
-            {
-                Logger.Info<ATestSystem>("Moving backwards");
-            }
+            //if (inputState.IsKeyDown(KeyCode.S))
+            //{
+            //    Logger.Info<ATestSystem>("Moving backwards");
+            //}
         }
 
         [System]

@@ -30,6 +30,7 @@ internal unsafe partial struct ComponentSystem
         manager->_registry = unmanagedResources.GetResourcePointer<ArchetypeRegistry>();
     }
 
+    //TODO(Jens): See if we should move this to last. Making it possible to interact with entities in both PreUpdate, Update and PostUpdate.
     [System(SystemStage.PostUpdate)]
     public static void ExecuteCommands(ComponentSystem* system, in InputState inputState)
     {

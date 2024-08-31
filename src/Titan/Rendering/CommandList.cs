@@ -165,7 +165,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
         => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
 
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, Buffer* buffer)
     {
         Debug.Assert(buffer != null);

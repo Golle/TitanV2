@@ -95,8 +95,9 @@ internal unsafe partial struct RenderTargetCache
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(RenderTargetCache* cache, in D3D12ResourceManager resourceManager)
+    public static void Shutdown(RenderTargetCache* cache, in D3D12ResourceManager resourceManager, in DXGISwapchain _)
     {
+        //NOTE(Jens): adding a dependency to Swapchain will prevent a crash from happening. I think we need to do this in some other way if we want to support cleaning up.
         for (var i = 0; i < cache->_count; ++i)
         {
             resourceManager.DestroyTexture(cache->_resources[i].Resource);
