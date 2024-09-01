@@ -92,7 +92,8 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<TransformRect>(_entity);
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book)
+                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book),
+                    TextureAsset = assetsManager.Load<TextureAsset>(EngineAssetsRegistry.BookTexture),
                 });
 
                 //for (var i = 0; i < 1000; ++i)

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Titan.Assets;
 using Titan.Core;
+using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.Rendering.Storage;
 
@@ -27,8 +28,10 @@ public partial struct Transform3D
 public partial struct Mesh
 {
     public AssetHandle<MeshAsset> Asset;
+    public AssetHandle<TextureAsset> TextureAsset;
     public Handle<MeshInstance> InstanceIndex;
     public Matrix4x4 ModelMatrix;
 
     internal unsafe MeshData* MeshData;
+    
 }

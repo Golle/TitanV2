@@ -11,7 +11,25 @@
 //     output.Color =  float4(1.0, 1.0, 1.0, 1.0);
 //     return output;
 // }
+float3 RotateAroundAxis(float3 p, float3 axis, float angle)
+{
+    float3 rotatedPoint;
+    float cosAngle = cos(angle);
+    float sinAngle = sin(angle);
+    float oneMinusCos = 1 - cosAngle;
 
+    // Rotation matrix
+    float3x3 rotationMatrix;
+    rotationMatrix[0] = float3(cosAngle + axis.x * axis.x * oneMinusCos, axis.x * axis.y * oneMinusCos - axis.z * sinAngle, axis.x * axis.z * oneMinusCos + axis.y * sinAngle);
+    rotationMatrix[1] = float3(axis.y * axis.x * oneMinusCos + axis.z * sinAngle, cosAngle + axis.y * axis.y * oneMinusCos, axis.y * axis.z * oneMinusCos - axis.x * sinAngle);
+    rotationMatrix[2] = float3(axis.z * axis.x * oneMinusCos - axis.y * sinAngle, axis.z * axis.y * oneMinusCos + axis.x * sinAngle, cosAngle + axis.z * axis.z * oneMinusCos);
+
+    rotatedPoint.x = dot(p, rotationMatrix[0]);
+    rotatedPoint.y = dot(p, rotationMatrix[1]);
+    rotatedPoint.z = dot(p, rotationMatrix[2]);
+
+    return rotatedPoint;
+}
 VSOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : SV_InstanceID)
 {
     // float2 textureCoords = float2((VertexIdx << 1) & 2, VertexIdx & 2);

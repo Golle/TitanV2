@@ -102,7 +102,7 @@ internal unsafe partial struct GBufferRenderPass
     /// Renders the meshes. This function will be called multiple times depending on the archetypes
     /// </summary>
     [System]
-    public static void RenderMeshes(GBufferRenderPass* pass, ReadOnlySpan<Mesh> meshes, ReadOnlySpan<Transform3D> transform, in AssetsManager assetsManager, in MeshStorage storage, in RenderGraph graph)
+    public static void RenderMeshes(GBufferRenderPass* pass, ReadOnlySpan<Mesh> meshes, ReadOnlySpan<Transform3D> transform, in AssetsManager assetsManager, in MeshStorage storage, in RenderGraph graph, in D3D12ResourceManager resourceManager)
     {
         if (!graph.IsReady)
         {
@@ -120,9 +120,15 @@ internal unsafe partial struct GBufferRenderPass
                 continue;
             }
 
+            if (!assetsManager.IsLoaded(mesh.TextureAsset))
+            {
+                continue;
+            }
+
+            var textureIndex = resourceManager.Access(assetsManager.Get(mesh.TextureAsset).Handle)->SRV.Index;
             storage.UpdateMeshInstance(mesh.InstanceIndex, new MeshInstance
             {
-                AlbedoIndex = 1 // todo: we need a material system for this to work.
+                AlbedoIndex = textureIndex // todo: we need a material system for this to work.
             });
 
             var index = mesh.MeshData->VertexBufferIndex;
