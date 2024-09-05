@@ -31,11 +31,13 @@ internal struct FrameData
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
+public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f);
 public ref struct CreateRenderPassArgs
 {
     public Func<RootSignatureBuilder, RootSignatureBuilder>? RootSignatureBuilder;
     public ReadOnlySpan<RenderTargetConfig> Inputs;
     public ReadOnlySpan<RenderTargetConfig> Outputs;
+    public DepthBufferConfig? DepthBuffer;
 
     public AssetDescriptor VertexShader;
     public AssetDescriptor PixelShader;
@@ -156,6 +158,11 @@ internal unsafe partial struct RenderGraph
             pass->Inputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Inputs[i]);
         }
 
+        if (args.DepthBuffer.HasValue)
+        {
+            pass->DepthBuffer = _resourceTracker->GetOrCreateDepthBuffer(args.DepthBuffer.Value);
+        }
+
         pass->ClearFunction = args.ClearFunction != null ? args.ClearFunction : &ClearFunctionStub;
 
         return index + HandleOffset;
@@ -163,7 +170,8 @@ internal unsafe partial struct RenderGraph
 
     private static RootSignatureBuilder CreateDefaultRootSignatureBuilder(byte numberOfInputs) =>
         new RootSignatureBuilder()
-            .WithRanges(6, register: 0, space: 10)
+            // Predefined slots for bindless resources.
+            .WithDecriptorRange(6, register: 0, space: 10)
             .WithConstant(numberOfInputs, ShaderVisibility.Pixel, register: 0, space: 10)
             .WithConstantBuffer(ConstantBufferFlags.Static, ShaderVisibility.All, register: 0, space: 11)
             .WithSampler(SamplerState.Point, ShaderVisibility.Pixel, register: 0, space: 10)
@@ -183,13 +191,14 @@ internal unsafe partial struct RenderGraph
         pass->CommandList = commandList = _commandQueue->GetCommandList(pass->PipelineState);
         pass->CommandList.SetGraphicsRootSignature(_resourceManager->Access(pass->RootSignature)->Resource);
         pass->CommandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        pass->CommandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
+        pass->CommandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
 
         //NOTE(Jens): A lot of stack allocs, do we need all of them? :O
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
         TitanList<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargets = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[(int)pass->Outputs.Length];
         TitanList<Ptr<Texture>> renderTargetTextures = stackalloc Ptr<Texture>[(int)pass->Outputs.Length];
         TitanList<int> inputTextures = stackalloc int[(int)pass->Inputs.Length];
-
 
         foreach (ref readonly var output in pass->Outputs.AsReadOnlySpan())
         {
@@ -214,20 +223,28 @@ internal unsafe partial struct RenderGraph
             inputTextures.Add(texture->SRV.Index);
         }
 
-        commandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
-        commandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
+
         if (!inputTextures.IsEmpty)
         {
             commandList.SetGraphicsRootConstants((uint)RootSignatureIndex.InputTexturesIndex, inputTextures);
-
         }
 
         var frameDataBuffer = _resourceManager->Access(_frameDataConstantBuffer);
-
         commandList.SetGraphicsRootConstantBuffer((uint)RootSignatureIndex.FrameDataIndex, frameDataBuffer);
-        commandList.SetRenderTargets(renderTargets, renderTargets.Count);
+
+        Texture* depthBuffer = null;
+        if (pass->DepthBuffer.IsValid)
+        {
+            depthBuffer = _resourceManager->Access(pass->DepthBuffer);
+            commandList.SetRenderTargets(renderTargets, renderTargets.Count, &depthBuffer->DSV.CPU);
+        }
+        else
+        {
+            commandList.SetRenderTargets(renderTargets, renderTargets.Count);
+        }
+
         commandList.ResourceBarriers(barriers);
-        pass->ClearFunction(renderTargetTextures, null, commandList);
+        pass->ClearFunction(renderTargetTextures, depthBuffer, commandList);
 
         return true;
     }
@@ -351,6 +368,7 @@ internal unsafe partial struct RenderGraph
         {
             pass.PipelineState = _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
             {
+                Depth = GetDeptStencilArgs(pass, _resourceManager),
                 RenderTargets = pass.Outputs,
                 RootSignature = pass.RootSignature,
                 VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
@@ -362,6 +380,21 @@ internal unsafe partial struct RenderGraph
                 Logger.Error<RenderGraph>($"Failed to create the pipeline state for render pass. Name = {pass.Name.GetString()}");
                 return false;
             }
+        }
+
+        static DepthStencilArgs GetDeptStencilArgs(in RenderPass pass, D3D12ResourceManager* resourceManager)
+        {
+            if (pass.DepthBuffer.IsInvalid)
+            {
+                return default;
+            }
+
+            return new()
+            {
+                Format = resourceManager->Access(pass.DepthBuffer)->Format,
+                DepthEnabled = true,
+                StencilEnabled = false, //TODO(Jens): Add support for stencil tests
+            };
         }
 
         return true;

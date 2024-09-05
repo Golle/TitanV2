@@ -4,5 +4,6 @@ public enum BufferType
 {
     Vertex,
     Index,
-    Constant
+    Constant,
+    Structured
 }

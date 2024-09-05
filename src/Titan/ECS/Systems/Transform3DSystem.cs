@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using Titan.Core.Maths;
 using Titan.ECS.Components;

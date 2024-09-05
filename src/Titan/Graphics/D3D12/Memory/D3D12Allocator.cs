@@ -81,7 +81,6 @@ internal unsafe partial struct D3D12Allocator
         }
     }
 
-
     public readonly D3D12DescriptorHandle Allocate(DescriptorHeapType type)
     {
         //NOTE(Jens): There's a race condition with Alloc and Free. Can it ever happen?
@@ -94,6 +93,7 @@ internal unsafe partial struct D3D12Allocator
         var gpuStart = heap->ShaderVisible ? heap->GPUStart.ptr + offset : 0ul;
 
         return new(type, cpuStart, gpuStart, index);
+
     }
 
     public readonly void Free(in D3D12DescriptorHandle handle)
@@ -103,6 +103,7 @@ internal unsafe partial struct D3D12Allocator
         var index = Interlocked.Decrement(ref heap->Count);
         heap->FreeList[index] = handle.Index;
         //TODO(Jens): Add debug check for returning the same handle multiple times.
+
     }
 
     [System(SystemStage.PostShutdown)]

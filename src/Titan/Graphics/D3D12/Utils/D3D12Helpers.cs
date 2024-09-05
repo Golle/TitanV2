@@ -79,13 +79,13 @@ internal static class D3D12Helpers
         Debug.Assert(type != 0 && type != D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_CUSTOM);
         return _heaps.GetPointer((int)type);
     }
-    public static void InitDescriptorRanges(Span<D3D12_DESCRIPTOR_RANGE1> ranges, D3D12_DESCRIPTOR_RANGE_TYPE type, uint register = 0, uint space = 0)
+    public static void InitDescriptorRanges(Span<D3D12_DESCRIPTOR_RANGE1> ranges, D3D12_DESCRIPTOR_RANGE_TYPE type, uint registerStart = 0, uint space = 0)
     {
         for (var i = 0; i < ranges.Length; ++i)
         {
             ranges[i] = new D3D12_DESCRIPTOR_RANGE1
             {
-                BaseShaderRegister = 0,
+                BaseShaderRegister = registerStart,
                 Flags = D3D12_DESCRIPTOR_RANGE_FLAGS.D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE,
                 NumDescriptors = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
                 OffsetInDescriptorsFromTableStart = 0,

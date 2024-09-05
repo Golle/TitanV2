@@ -46,6 +46,7 @@ public record struct CreateTextureArgs
 
 public record struct CreateDepthBufferArgs
 {
+    public required DXGI_FORMAT Format { get; init; }
     public required uint Width { get; init; }
     public required uint Height { get; init; }
     public float ClearValue { get; init; }
@@ -191,6 +192,7 @@ public unsafe partial struct D3D12ResourceManager
 
         Debug.Assert(args.Type != BufferType.Index || args.Stride is 2 or 4);
         Debug.Assert(args.Type != BufferType.Constant || (args.Stride * args.Count) % 256 == 0, "Constant buffers must be a multiple of 256");
+        Debug.Assert(args.Type != BufferType.Structured || (args.Stride % 16) == 0, "A structured buffer must be 16 byte aligned.");
 
         var handle = _buffers.SafeAlloc();
         if (handle.IsInvalid)
@@ -246,11 +248,13 @@ public unsafe partial struct D3D12ResourceManager
                 return Handle<Buffer>.Invalid;
             }
 
+            //TODO(Jens): Revisit this code. Creating the ConstantBUfferView instead of ShaderResourceView makes the CB non accessible in the shader 1 out of 10 tries..
             switch (args.Type)
             {
                 case BufferType.Constant:
                     _device->CreateConstantBufferView(buffer->Size, buffer->Resource.Get()->GetGPUVirtualAddress(), buffer->SRV.CPU);
                     break;
+                case BufferType.Structured:
                 case BufferType.Index:
                 case BufferType.Vertex:
                     _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, buffer->Count, buffer->Stride);
@@ -328,7 +332,12 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var texture = _textures.AsPtr(handle);
-        texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height);
+        *texture = default;
+
+        texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height, args.Format);
+        texture->Width = args.Width;
+        texture->Height = args.Height;
+        texture->Format = args.Format;
         if (!texture->Resource.IsValid)
         {
             Logger.Error<D3D12ResourceManager>("Failed to create the DepthBuffer.");
@@ -378,6 +387,7 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var texture = _textures.AsPtr(handle);
+        *texture = default;
         if (backbuffer == null)
         {
             if (args.RenderTargetView)
@@ -477,6 +487,7 @@ public unsafe partial struct D3D12ResourceManager
         }
     }
 
+
     /// <summary>
     /// Creates a new root signature with ranges, constants, constant buffers and static samplers.
     /// <remarks>
@@ -504,6 +515,7 @@ public unsafe partial struct D3D12ResourceManager
         var tempBuffer = stackalloc byte[tempBufferSize];
         var tempAllocator = new BumpAllocator(tempBuffer, (uint)tempBufferSize);
 
+        Logger.Trace<D3D12ResourceManager>($"Creating root signature. {args.Parameters.Length} {tempBufferSize} bytes");
         foreach (ref readonly var parameter in args.Parameters)
         {
             switch (parameter.Type)
@@ -524,7 +536,6 @@ public unsafe partial struct D3D12ResourceManager
                     parameters.Add(CD3DX12_ROOT_PARAMETER1.AsConstantBufferView(parameter.Register, parameter.Space, constantBufferFlags, ToD3D12ShaderVisibility(parameter.Visibility)));
                     break;
                 case RootSignatureParameterType.DescriptorRange:
-
                     var type = parameter.RangeType switch
                     {
                         ShaderDescriptorRangeType.ShaderResourceView => D3D12_DESCRIPTOR_RANGE_TYPE.D3D12_DESCRIPTOR_RANGE_TYPE_SRV,

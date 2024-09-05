@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
@@ -22,7 +21,6 @@ internal unsafe partial struct GBufferRenderPass
 {
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
-    //private const uint MeshInstanceIndex = PassDataIndex + 1;
 
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
@@ -30,8 +28,11 @@ internal unsafe partial struct GBufferRenderPass
         var passArgs = new CreateRenderPassArgs
         {
             RootSignatureBuilder = static builder => builder
-                .WithRootConstant<GBufferPassData>()
-                .WithConstant(1, register: 1),
+                .WithRootConstant<uint>() // the index of the Meshinstance we're rendering.
+                .WithDecriptorRange(1, space: 0) // Vertex buffer
+                .WithDecriptorRange(1, space: 1) // IndexBuffer
+                .WithDecriptorRange(1, space: 2) // MeshInstance
+            ,
             Outputs =
             [
                 BuiltInRenderTargets.GBufferAlbedo,
@@ -39,6 +40,7 @@ internal unsafe partial struct GBufferRenderPass
                 BuiltInRenderTargets.GBufferSpecular,
             ],
             Inputs = [],
+            DepthBuffer = BuiltInDepthsBuffers.GbufferDepthBuffer,
             ClearFunction = &ClearFunction,
             VertexShader = EngineAssetsRegistry.ShaderGBufferVertex,
             PixelShader = EngineAssetsRegistry.ShaderGBufferPixel
@@ -68,13 +70,14 @@ internal unsafe partial struct GBufferRenderPass
             return;
         }
 
-        commandList.SetIndexBuffer(*resourceManager.Access(meshStorage.IndexBufferHandle));
-        var rootPassData = new GBufferPassData
-        {
-            VertexBufferIndex = (uint)resourceManager.Access(meshStorage.VertexBufferHandle)->SRV.Index,
-            MeshInstanceIndex = (uint)resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.Index
-        };
-        commandList.SetGraphicsRootConstant(PassDataIndex, rootPassData);
+        commandList.SetIndexBuffer(resourceManager.Access(meshStorage.IndexBufferHandle)); // remove when we support indexing into the index buffer inside the shader.
+
+        var vertexBufferIndex = resourceManager.Access(meshStorage.VertexBufferHandle)->SRV.GPU;
+        var meshInstanceIndex = resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.GPU;
+        //var indexBufferIndex = resourceManager.Access(meshStorage.IndexBufferHandle)->SRV.GPU;
+        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, vertexBufferIndex);
+        //commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 2, indexBufferIndex);
+        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 3, meshInstanceIndex);
 
         //NOTE(Jens): Not sure what to do with these. 
         D3D12_VIEWPORT viewPort = new()
@@ -131,11 +134,9 @@ internal unsafe partial struct GBufferRenderPass
                 AlbedoIndex = textureIndex // todo: we need a material system for this to work.
             });
 
-            var index = mesh.MeshData->VertexBufferIndex;
-
+            commandList.SetGraphicsRootConstant(PassDataIndex, mesh.InstanceIndex.Value);
             foreach (ref readonly var submesh in mesh.MeshData->Submeshes.AsReadOnlySpan())
             {
-                //commandList.SetGraphicsRootConstant(MeshInstanceIndex, renderable.MeshInstanceIndex);
                 commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, 0);
             }
         }
@@ -146,7 +147,9 @@ internal unsafe partial struct GBufferRenderPass
     /// </summary>
     [System]
     public static void EndPass(in GBufferRenderPass pass, in RenderGraph graph)
-        => graph.End(pass.PassHandle);
+    {
+        graph.End(pass.PassHandle);
+    }
 
 
     [System(SystemStage.Shutdown)]
@@ -157,11 +160,10 @@ internal unsafe partial struct GBufferRenderPass
         pass->PassHandle = Handle<RenderPass>.Invalid;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct GBufferPassData
     {
-        public uint VertexBufferIndex;
-        public uint MeshInstanceIndex;
+        public int MeshIndex;
     }
 }
 

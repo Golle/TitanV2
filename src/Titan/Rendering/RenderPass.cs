@@ -17,6 +17,7 @@ public struct RenderPass
 
     public TitanArray<Handle<Texture>> Inputs;
     public TitanArray<Handle<Texture>> Outputs;
+    public Handle<Texture> DepthBuffer;
 
     public CommandList CommandList;
     public unsafe delegate*<ReadOnlySpan<Ptr<Texture>>, TitanOptional<Texture>, in CommandList, void> ClearFunction;

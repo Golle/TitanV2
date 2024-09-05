@@ -3,7 +3,6 @@ using Titan.Input;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Titan.ECS.Systems;
 

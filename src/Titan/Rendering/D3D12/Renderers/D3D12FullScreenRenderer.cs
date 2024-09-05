@@ -94,6 +94,7 @@ internal unsafe partial struct D3D12FullScreenRenderer
 
         data->DepthBuffer = resourceManager.CreateDepthBuffer(new CreateDepthBufferArgs
         {
+            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
             Height = (uint)window.Height,
             Width = (uint)window.Width,
             ClearValue = 1.0f

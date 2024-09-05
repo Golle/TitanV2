@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Strings;
@@ -31,6 +32,49 @@ internal unsafe partial struct RenderTargetCache
         tracker._resources = default;
     }
 
+    public Handle<Texture> GetOrCreateDepthBuffer(in DepthBufferConfig depthConfig)
+    {
+        var gotLock = false;
+        _lock.Enter(ref gotLock);
+        Debug.Assert(gotLock);
+
+        try
+        {
+            var format = depthConfig.Format.AsDXGIFormat();
+
+            if (TryGetCachedResource(depthConfig.Name, format, out var existingHandle))
+            {
+                return existingHandle;
+            }
+
+            var handle = _resourceManager->CreateDepthBuffer(new CreateDepthBufferArgs
+            {
+                Format = format,
+                Height = (uint)_window->Height,
+                Width = (uint)_window->Width,
+                ClearValue = depthConfig.ClearValue
+            });
+            if (handle.IsInvalid)
+            {
+                Logger.Error<RenderTargetCache>("Failed to create the DeptBuffer resource.");
+                return Handle<Texture>.Invalid;
+            }
+            Logger.Trace<RenderTargetCache>($"Created new DepthBuffer. Name = {depthConfig.Name} Handle = {handle} Format = {format}");
+            // Store the resource with its format and identifier
+            _resources[_count++] = new()
+            {
+                Resource = handle,
+                Format = format,
+                Identifier = depthConfig.Name,
+            };
+
+            return handle;
+        }
+        finally
+        {
+            _lock.Exit();
+        }
+    }
     public Handle<Texture> GetOrCreateRenderTarget(in RenderTargetConfig targetConfig)
     {
         if (targetConfig.Format == RenderTargetFormat.BackBuffer)
@@ -47,16 +91,9 @@ internal unsafe partial struct RenderTargetCache
         {
             var format = targetConfig.Format.AsDXGIFormat();
 
-            // check all cached resources
-            for (var i = 0; i < _count; ++i)
+            if (TryGetCachedResource(targetConfig.Name, format, out var existingHandle))
             {
-                if (_resources[i].Identifier != targetConfig.Name)
-                {
-                    continue;
-                }
-                Debug.Assert(_resources[i].Format == format, $"Mismatch in formats for render target with ID = {targetConfig.Name.GetString()}");
-                Logger.Trace<RenderTargetCache>($"Found cached render target. Name = {targetConfig.Name.GetString()} Handle = {_resources[i].Resource.Value}  Format = {format}");
-                return _resources[i].Resource;
+                return existingHandle;
             }
 
             // if there are no cached resource, create a new one
@@ -92,6 +129,24 @@ internal unsafe partial struct RenderTargetCache
         {
             _lock.Exit();
         }
+    }
+
+    public bool TryGetCachedResource(StringRef name, DXGI_FORMAT format, out Handle<Texture> handle)
+    {
+        Unsafe.SkipInit(out handle);
+        for (var i = 0; i < _count; ++i)
+        {
+            if (_resources[i].Identifier != name)
+            {
+                continue;
+            }
+            Debug.Assert(_resources[i].Format == format, $"Mismatch in formats for resource with ID = {name.GetString()}");
+            Logger.Trace<RenderTargetCache>($"Found cached resource. Name = {name.GetString()} Handle = {_resources[i].Resource.Value} Format = {format}");
+            handle = _resources[i].Resource;
+            return true;
+        }
+
+        return false;
     }
 
     [System(SystemStage.Shutdown)]

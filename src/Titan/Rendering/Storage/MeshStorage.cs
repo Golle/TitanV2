@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
@@ -41,7 +40,7 @@ internal struct SubmeshData
 /// <summary>
 /// This is stored on the GPU, have to be 16 byte aligned.
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Size = 16)]
+[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
 public struct MeshInstance
 {
     public int AlbedoIndex;
@@ -80,24 +79,24 @@ internal unsafe partial struct MeshStorage
     public static void Init(MeshStorage* storage, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager, UnmanagedResourceRegistry registry)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
-        var indexBufferSize = config.MemoryConfig.InitialIndexBufferSize / sizeof(uint);
-        var vertexBufferSize = config.MemoryConfig.InitialVertexBufferSize / (uint)sizeof(Vertex);
+        var indicesCount = config.MemoryConfig.InitialIndexBufferSize / sizeof(uint);
+        var verticesCount = config.MemoryConfig.InitialVertexBufferSize / (uint)sizeof(Vertex);
         var meshCount = config.Resources.MaxMeshes;
 
         //TODO(Jens): Make these buffers not CPU Visible, we want to use async upload queues, but for now we keep it simple.
-        storage->IndexBufferHandle = resourceManager.CreateBuffer(new CreateBufferArgs(indexBufferSize, sizeof(uint), BufferType.Index) { CpuVisible = true, ShaderVisible = false });
-        storage->VertexBufferHandle = resourceManager.CreateBuffer(new CreateBufferArgs(vertexBufferSize, sizeof(Vertex), BufferType.Vertex) { CpuVisible = true, ShaderVisible = true });
-        storage->MeshInstancesHandle = resourceManager.CreateBuffer(new CreateBufferArgs(meshCount, sizeof(MeshInstance), BufferType.Constant) { CpuVisible = true, ShaderVisible = true });
+        storage->IndexBufferHandle = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indicesCount, BufferType.Index, cpuVisible: true, shaderVisible: false));
+        storage->VertexBufferHandle = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(verticesCount, BufferType.Vertex, cpuVisible: true, shaderVisible: true));
+        storage->MeshInstancesHandle = resourceManager.CreateBuffer(CreateBufferArgs.Create<MeshInstance>(meshCount, BufferType.Structured, cpuVisible: true, shaderVisible: true));
 
         if (storage->IndexBufferHandle.IsInvalid)
         {
-            Logger.Error<MeshStorage>($"Failed to init the Indexbuffer. Size = {indexBufferSize} bytes.");
+            Logger.Error<MeshStorage>($"Failed to init the Indexbuffer. Size = {indicesCount} bytes.");
             return;
         }
 
         if (storage->VertexBufferHandle.IsInvalid)
         {
-            Logger.Error<MeshStorage>($"Failed to create the VertexBuffer. Size = {vertexBufferSize} bytes.");
+            Logger.Error<MeshStorage>($"Failed to create the VertexBuffer. Size = {verticesCount} bytes.");
             return;
         }
 
@@ -129,11 +128,6 @@ internal unsafe partial struct MeshStorage
         storage->_uploadQueue = registry.GetResourcePointer<D3D12UploadQueue>();
     }
 
-    //public Handle<MeshInstance> CreateMeshInstance(in Handle<MeshData> mesh)
-    //{
-
-
-    //}
 
     [System(SystemStage.PreUpdate)]
     public static void PostUpdate(ref MeshStorage storage, Span<Mesh> meshes, in AssetsManager assetsManager)
@@ -185,7 +179,7 @@ internal unsafe partial struct MeshStorage
         var indexBuffer = _resourceManager->Access(IndexBufferHandle);
 
         var numberOfVertices = args.Vertices.Length;
-        var numberOfIndices = args.Indices.Length; 
+        var numberOfIndices = args.Indices.Length;
 
         fixed (Vertex* pVertices = args.Vertices)
         {
@@ -209,13 +203,17 @@ internal unsafe partial struct MeshStorage
         => _meshData.AsPtr(handle);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void UpdateMeshInstance(in Handle<MeshInstance> handle, in MeshInstance data)
+    public readonly void UpdateMeshInstance(in Handle<MeshInstance> handle, MeshInstance data)
     {
         //NOTE(Jens): We can skip this check, if the handle is invalid we'd just write to an empty slot.
         Debug.Assert(handle.IsValid);
+        byte* data1;
+        var id3D12Resource = _resourceManager->Access(MeshInstancesHandle)->Resource.Get();
+        id3D12Resource->Map(0, null, (void**)&data1);
+        MemoryUtils.Copy(data1 + (sizeof(MeshInstance) * handle.Value), &data, sizeof(MeshInstance));
+        id3D12Resource->Unmap(0, null);
 
-        var instance = _gpuInstances + handle.Value;
-        *instance = data;
+        //MemoryUtils.Copy(_gpuInstances + handle.Value, &data, sizeof(MeshInstance));
     }
 
     public void DestroyMesh(Handle<MeshInstance> handle)

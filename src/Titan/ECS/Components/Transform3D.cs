@@ -1,7 +1,6 @@
 using System.Numerics;
 using Titan.Assets;
 using Titan.Core;
-using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.Rendering.Storage;
 

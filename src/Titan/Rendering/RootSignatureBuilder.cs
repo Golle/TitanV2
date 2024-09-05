@@ -46,7 +46,7 @@ public ref struct RootSignatureBuilder
         });
 
     [UnscopedRef]
-    public ref RootSignatureBuilder WithRanges(byte count, ShaderDescriptorRangeType type = ShaderDescriptorRangeType.ShaderResourceView, byte register = 0, byte space = 0) =>
+    public ref RootSignatureBuilder WithDecriptorRange(byte count, ShaderDescriptorRangeType type = ShaderDescriptorRangeType.ShaderResourceView, byte register = 0, byte space = 0) =>
         ref Add(new RootSignatureParameter
         {
             Type = RootSignatureParameterType.DescriptorRange,

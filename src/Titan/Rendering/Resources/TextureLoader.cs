@@ -48,7 +48,7 @@ internal unsafe partial struct TextureLoader
 
         ref readonly var texture2D = ref descriptor.Texture2D;
 
-        var asset = _pool.Alloc();
+        var asset = _pool.SafeAlloc();
         if (asset == null)
         {
             Logger.Error<TextureLoader>("Failed to allocate a slot for the texture asset.");
@@ -77,6 +77,7 @@ internal unsafe partial struct TextureLoader
     public void Unload(TextureAsset* asset)
     {
         Debug.Assert(asset != null);
+        _pool.SafeFree(asset);
         _resourceManager->DestroyTexture(asset->Handle);
     }
 }

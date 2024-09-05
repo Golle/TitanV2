@@ -1,4 +1,3 @@
-using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Platform.Win32;

@@ -2,5 +2,5 @@ namespace Titan.Rendering;
 
 public enum DepthBufferFormat
 {
-    F32
+    D32
 }

@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Platform.Win32;
@@ -127,6 +126,10 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, uint startInstanceLocation = 0)
         => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetIndexBuffer(Buffer* buffer) 
+        => SetIndexBuffer(* buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIndexBuffer(in Buffer buffer)

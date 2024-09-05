@@ -1,10 +1,9 @@
 #ifndef _SHADER_GBUFFER
 #define _SHADER_GBUFFER
 
-struct GBufferPassData 
+struct GBufferDrawData 
 {
-    uint VertexBufferIndex;
-    int MeshInstancesIndex;
+    uint MeshInstanceIndex;
 };
 
 struct MeshInstance
@@ -20,10 +19,12 @@ struct Vertex
     float2 UV;
 };
 
-ConstantBuffer<GBufferPassData> PassData : register(b0, space0);
 
-StructuredBuffer<Vertex> GBuffer[] : register(t0, space13);
-StructuredBuffer<MeshInstance> MeshInstances[] : register(t0, space14);
+ConstantBuffer<GBufferDrawData> PassData : register(b0, space0);
+
+StructuredBuffer<Vertex> GBuffer : register(t0, space0);
+StructuredBuffer<uint> IndexBuffer : register(t0, space1);
+StructuredBuffer<MeshInstance> MeshInstances : register(t0, space2);
 
 struct GBufferVertexOutput
 {

@@ -4,8 +4,6 @@ using System.Text;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Core.Maths;
-using Titan.Core.Memory;
 using Titan.Graphics.D3D12.Adapters;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
@@ -358,7 +356,7 @@ internal unsafe partial struct D3D12Device
     public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
         => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 
-    public readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, float depthClearValue = 1.0f, byte stencilClearValue = 0)
+    public readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, DXGI_FORMAT format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, float depthClearValue = 1.0f, byte stencilClearValue = 0)
     {
         D3D12_CLEAR_VALUE clearValue = new()
         {

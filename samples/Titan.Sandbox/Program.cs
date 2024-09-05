@@ -28,7 +28,9 @@ App.Create(appConfig)
     .AddPersistedConfig(new WindowConfig(1024, 768, true, true))
     .AddPersistedConfig(new RenderingConfig
     {
+#if DEBUG
         Debug = true
+#endif
     })
     .AddRegistry<SandboxRegistry>()
     .Build()
