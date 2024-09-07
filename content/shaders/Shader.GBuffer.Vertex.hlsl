@@ -1,6 +1,5 @@
-#include "Shader.GBuffer.hlsli"
-#define NUM_INPUTS 0
 #include "Shader.Engine.Defaults.hlsli"
+#include "Shader.GBuffer.hlsli"
 
 GBufferVertexOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : SV_InstanceID) 
 {
@@ -8,13 +7,15 @@ GBufferVertexOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : 
 	// float4 pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
 
     Vertex v = GBuffer[VertexIdx];
+
+    MeshInstance instance = MeshInstances[PassData.MeshInstanceIndex];
     
     GBufferVertexOutput output;
     output.Position = mul(float4(v.Position, 1.0), FrameDataBuffer.ViewProjection);
+    output.WorldPosition = mul(float4(v.Position, 1.0), instance.ModelMatrix).xyz;
+    output.WorldNormal = normalize(mul(v.Normal, (float3x3)instance.ModelMatrix));
     output.Texture = v.UV;
-    output.WorldPosition = mul(FrameDataBuffer.ViewProjection, float4(v.Position, 0)).xyz;
-    output.WorldNormal = float3(0.0,0.0,0.0);
-    
+
     return output;
 }
 

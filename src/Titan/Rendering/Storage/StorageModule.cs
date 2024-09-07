@@ -6,7 +6,8 @@ internal class StorageModule : IModule
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
         builder
-            .AddSystemsAndResource<MeshStorage>();
+            .AddSystemsAndResource<MeshStorage>()
+            .AddSystemsAndResource<LightStorage>();
 
         return true;
     }

@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
+using Titan.Core.Maths;
 using Titan.Rendering.Resources;
 using Titan.Rendering.Storage;
 
@@ -32,5 +35,28 @@ public partial struct Mesh
     public Matrix4x4 ModelMatrix;
 
     internal unsafe MeshData* MeshData;
-    
+}
+
+[Component]
+[StructLayout(LayoutKind.Explicit)]
+public partial struct Light
+{
+    [FieldOffset(0)]
+    public LightType LightType;
+    [FieldOffset(1)]
+    internal short LightIndex;
+    [FieldOffset(4)]
+    public ColorRGB Color;
+    [FieldOffset(16)]
+    public float Radius;
+    [FieldOffset(16)]
+    public float Intensity;
+    [FieldOffset(20)]
+    public Vector3 Direction;
+}
+
+public enum LightType : byte
+{
+    Point,
+    Directional
 }

@@ -103,7 +103,7 @@ static bool ProcessEngineAssets(string titanDirectory, TitanConfig config, bool 
     Console.WriteLine($"\tInput = {content}");
     Console.WriteLine($"\tOutput = {binary}");
 
-    var arguments = $"--path {content} --output {binary} --code ./src/Titan/ --name Titan.EngineAssetsRegistry";
+    var arguments = $"--path {content} --output {binary} --code ./src/Titan/ --name Titan.Assets.EngineAssetsRegistry";
     var result = RunProgram(assetProcessorPath, arguments, titanDirectory, redirectOutput: !logging);
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");

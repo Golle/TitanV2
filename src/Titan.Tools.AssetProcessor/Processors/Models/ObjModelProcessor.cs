@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
@@ -86,6 +87,22 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
 
                     indexOffset += vertexCount;
                 }
+
+                //NOTE(Jens): If there are no normals, we calculate them.
+                if (wavefrontObj.Normals.IsEmpty)
+                {
+                    if (vertices.Count % 3 != 0)
+                    {
+                        context.AddDiagnostics(DiagnosticsLevel.Error, "The number of vertices is not a multiple of 3. This is not supported at the moment.");
+                        return;
+                    }
+
+                    var verticesSpan = CollectionsMarshal.AsSpan(vertices);
+                    for (var i = 0; i < verticesSpan.Length; i += 3)
+                    {
+                        CalculateAndSetFaceNormals(verticesSpan.Slice(i, 3));
+                    }
+                }
                 meshes.Add(new SubMesh
                 {
                     VertexCount = vertices.Count - vertexOffset,
@@ -127,16 +144,31 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
             new()
             {
                 Position = obj.Positions[index.Position - 1],
-                Texture = obj.Textures[index.Texture - 1]
+                Texture = obj.Textures[index.Texture - 1],
+                Normal = index.Normal == -1 ? Vector3.Zero : obj.Normals[index.Normal - 1]
             };
     }
 
+    private static void CalculateAndSetFaceNormals(Span<Vertex> vertices)
+    {
+        Debug.Assert(vertices.Length == 3);
+
+        var edge1 = vertices[1].Position - vertices[0].Position;
+        var edge2 = vertices[2].Position - vertices[0].Position;
+
+        var normal = Vector3.Normalize(Vector3.Cross(edge1, edge2));
+        foreach (ref var vertex in vertices)
+        {
+            vertex.Normal = normal;
+        }
+    }
 }
 
 public struct Vertex
 {
     public Vector3 Position;
     public Vector2 Texture;
+    public Vector3 Normal;
 }
 
 public struct SubMesh

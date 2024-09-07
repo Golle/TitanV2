@@ -1,6 +1,6 @@
 namespace Titan.Graphics;
 
-public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxMeshes, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures, uint MaxShaders);
+public record struct ResourceConfig(uint MaxTextures, uint MaxMaterials, uint MaxMeshes, uint MaxLights, uint MaxBuffers, uint MaxPipelineStates, uint MaxRootSignatures, uint MaxShaders);
 
 public unsafe struct GPUMemoryConfig
 {

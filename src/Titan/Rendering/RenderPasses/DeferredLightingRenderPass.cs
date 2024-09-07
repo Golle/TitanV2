@@ -1,4 +1,6 @@
+using Titan.Assets;
 using Titan.Core;
+using Titan.ECS.Components;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32;
@@ -62,6 +64,22 @@ internal unsafe partial struct DeferredLightingRenderPass
             Top = 0
         };
         commandList.SetScissorRect(&rect);
+    }
+
+    [System]
+    public static void RenderLights(DeferredLightingRenderPass* pass, in RenderGraph graph, ReadOnlySpan<Light> lights, ReadOnlySpan<Transform3D> transforms)
+    {
+
+        if (!graph.IsReady)
+        {
+            return;
+        }
+
+        var commandList = graph.GetCommandList(pass->PassHandle);
+
+        
+
+
     }
 
     [System]

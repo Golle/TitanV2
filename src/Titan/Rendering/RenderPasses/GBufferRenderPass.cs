@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
@@ -131,7 +132,8 @@ internal unsafe partial struct GBufferRenderPass
             var textureIndex = resourceManager.Access(assetsManager.Get(mesh.TextureAsset).Handle)->SRV.Index;
             storage.UpdateMeshInstance(mesh.InstanceIndex, new MeshInstance
             {
-                AlbedoIndex = textureIndex // todo: we need a material system for this to work.
+                AlbedoIndex = textureIndex, // todo: we need a material system for this to work.
+                ModelMatrix = Matrix4x4.Identity
             });
 
             commandList.SetGraphicsRootConstant(PassDataIndex, mesh.InstanceIndex.Value);

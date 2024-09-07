@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
@@ -40,10 +41,12 @@ internal struct SubmeshData
 /// <summary>
 /// This is stored on the GPU, have to be 16 byte aligned.
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
+[StructLayout(LayoutKind.Sequential)]
 public struct MeshInstance
 {
+    public Matrix4x4 ModelMatrix;
     public int AlbedoIndex;
+    private unsafe fixed float _padding[3];
 }
 
 public ref struct CreateMeshArgs

@@ -104,7 +104,8 @@ internal unsafe partial struct RenderTargetCache
                 Width = (uint)_window->Width,
                 RenderTargetView = true,
                 ShaderVisible = true,
-                OptimizedClearColor = targetConfig.OptimizedClearColor
+                OptimizedClearColor = targetConfig.OptimizedClearColor,
+                DebugName = targetConfig.Name.GetString()
             });
 
             // well, we're in no luck here. This will crash the engine.

@@ -12,7 +12,7 @@ public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, boo
     public const uint DefaultUAVCount = 1024;
     public const uint DefaultTempSRVCount = 256;
     public static readonly uint DefaultTempConstantBufferSize = MemoryUtils.MegaBytes(32);
-    
+
     public static readonly uint DefaultVertexBufferSize = MemoryUtils.MegaBytes(256);
     public static readonly uint DefaultIndexBufferSize = MemoryUtils.MegaBytes(64);
 
@@ -21,6 +21,7 @@ public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, boo
     public const uint DefaultMaxTextures = 1024;
     public const uint DefaultMaxMaterials = 512;
     public const uint DefaultMaxMeshes = 512;
+    public const uint DefaultMaxLights = 1024;
 
     public const uint DefaultMaxBuffers = 1024;
     public const uint DefaultMaxPipelineStates = 256;
@@ -34,6 +35,6 @@ public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, boo
     public static D3D12Config Default => new(D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_1, false, true, DefaultClearColor)
     {
         MemoryConfig = new(DefaultSRVCount, DefaultRTVCount, DefaultDSVCount, DefaultUAVCount, DefaultTempConstantBufferSize, DefaultTempSRVCount, DefaultVertexBufferSize, DefaultIndexBufferSize),
-        Resources = new(DefaultMaxTextures, DefaultMaxMaterials, DefaultMaxMeshes, DefaultMaxBuffers, DefaultMaxPipelineStates, DefaultMaxRootSignatures, DefaultMaxShaders)
+        Resources = new(DefaultMaxTextures, DefaultMaxMaterials, DefaultMaxMeshes, DefaultMaxLights, DefaultMaxBuffers, DefaultMaxPipelineStates, DefaultMaxRootSignatures, DefaultMaxShaders)
     };
 }

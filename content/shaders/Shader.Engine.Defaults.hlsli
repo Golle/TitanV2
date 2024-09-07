@@ -13,13 +13,9 @@ ByteAddressBuffer IndexBufferTable[] : register(t0, space14);
 SamplerState PointSampler : register(s0, space10);
 SamplerState LinearSampler : register(s1, space10);
 
-#ifndef NUM_INPUTS 
-#define NUM_INPUTS 4
-#endif
-
 struct InputTextures
 {
-    uint Indicies[NUM_INPUTS];
+    int4 Indicies;
 };
 
 struct FrameData 
@@ -33,7 +29,9 @@ ConstantBuffer<FrameData> FrameDataBuffer:  register(b0, space11);
 
 Texture2D GetInputTexture(uint index)
 {
-    return Textures[Inputs.Indicies[index]];
+    // We only support 4 textures at the moment.
+    int textureIndex =  Inputs.Indicies[index];
+    return Textures[textureIndex];
 }
 
 

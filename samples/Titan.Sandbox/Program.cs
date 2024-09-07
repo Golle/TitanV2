@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
@@ -96,6 +98,18 @@ namespace Titan.Sandbox
                 {
                     Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book),
                     TextureAsset = assetsManager.Load<TextureAsset>(EngineAssetsRegistry.BookTexture),
+                });
+
+
+                var lightEntity = entityManager.CreateEntity();
+                entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY*10));
+                entityManager.AddComponent(lightEntity, new Light()
+                {
+                    Color = Color.Magenta,
+                    Direction = -Vector3.UnitY,
+                    Intensity = 100f,
+                    Radius = 100f,
+                    LightType = LightType.Point
                 });
 
                 //for (var i = 0; i < 1000; ++i)

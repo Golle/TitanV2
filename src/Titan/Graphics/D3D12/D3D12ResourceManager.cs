@@ -42,6 +42,7 @@ public record struct CreateTextureArgs
     public bool ShaderVisible { get; init; } // maybe we want specific shader visibility?
     public bool RenderTargetView { get; init; }
     public Color OptimizedClearColor { get; init; }
+    public string? DebugName { get; init; }
 }
 
 public record struct CreateDepthBufferArgs
@@ -455,6 +456,10 @@ public unsafe partial struct D3D12ResourceManager
         texture->Height = args.Height;
         texture->Format = args.Format;
 
+        if (args.DebugName != null)
+        {
+            D3D12Helpers.SetName(texture->Resource, args.DebugName);
+        }
         return handle;
     }
 

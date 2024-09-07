@@ -8,6 +8,7 @@ struct GBufferDrawData
 
 struct MeshInstance
 {
+    float4x4 ModelMatrix;
     // should be material
     int AlbedoIndex;
     float3 _padding;
@@ -17,6 +18,7 @@ struct Vertex
 {
     float3 Position;
     float2 UV;
+    float3 Normal;
 };
 
 
