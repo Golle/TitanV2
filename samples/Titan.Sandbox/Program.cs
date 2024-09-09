@@ -45,7 +45,7 @@ namespace Titan.Sandbox
         public static bool Build(IAppBuilder builder, AppConfig config)
         {
             builder
-                .AddSystems<ATestSystem>()
+                //.AddSystems<TheGameLightSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
                 ;
 
@@ -101,16 +101,33 @@ namespace Titan.Sandbox
                 });
 
 
-                var lightEntity = entityManager.CreateEntity();
-                entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY*10));
-                entityManager.AddComponent(lightEntity, new Light()
+                
                 {
-                    Color = Color.Magenta,
-                    Direction = -Vector3.UnitY,
-                    Intensity = 100f,
-                    Radius = 100f,
-                    LightType = LightType.Point
-                });
+                    var lightEntity = entityManager.CreateEntity();
+                    entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY * 10));
+                    entityManager.AddComponent(lightEntity, new Light()
+                    {
+                        Color = Color.White,
+                        Direction = -Vector3.UnitY,
+                        Intensity = 100f,
+                        Radius = 100f,
+                        LightType = LightType.Point
+                    });
+
+                }
+                {
+                    var lightEntity = entityManager.CreateEntity();
+                    entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitZ * 10));
+                    entityManager.AddComponent(lightEntity, new Light()
+                    {
+                        Color = new ColorRGB(0.4f, 0.8f,1f),
+                        Direction = -Vector3.UnitY,
+                        Intensity = 100f,
+                        Radius = 100f,
+                        LightType = LightType.Point
+                    });
+
+                }
 
                 //for (var i = 0; i < 1000; ++i)
                 //{
@@ -122,40 +139,29 @@ namespace Titan.Sandbox
         }
     }
 
-    internal partial struct ATestSystem
+    internal partial struct TheGameLightSystem
     {
-        private static AssetHandle<MeshAsset> _assetHandle;
-
-        [System(SystemStage.Update, SystemExecutionType.Inline)]
-        public static void Update(in InputState inputState)
+        //[System]
+        public static void Update(in InputState inputState, Span<Light> lights)
         {
-            //if (inputState.IsKeyDown(KeyCode.W))
-            //{
-            //    Logger.Info<ATestSystem>("Moving forward!");
-            //}
+            ColorRGB color = Color.White;
 
-            //if (inputState.IsKeyDown(KeyCode.A))
-            //{
-            //    Logger.Info<ATestSystem>("Turning left");
-            //}
-
-            //if (inputState.IsKeyDown(KeyCode.D))
-            //{
-            //    Logger.Info<ATestSystem>("Turning right");
-            //}
-
-            //if (inputState.IsKeyDown(KeyCode.S))
-            //{
-            //    Logger.Info<ATestSystem>("Moving backwards");
-            //}
-        }
-
-        [System]
-        public static void LoadModelTest(AssetsManager assetsManager)
-        {
-            if (_assetHandle.IsInvalid)
+            if (inputState.IsKeyDown(KeyCode.One))
             {
-                //_assetHandle = assetsManager.Load<MeshAsset>(SandboxRegistry.TileLowRed);
+                color = Color.Red;
+            }
+            else if (inputState.IsKeyDown(KeyCode.Two))
+            {
+                color = Color.Green;
+            }
+            else if (inputState.IsKeyDown(KeyCode.Three))
+            {
+                color = Color.Blue;
+            }
+
+            foreach (ref var light in lights)
+            {
+                light.Color = color;
             }
         }
     }

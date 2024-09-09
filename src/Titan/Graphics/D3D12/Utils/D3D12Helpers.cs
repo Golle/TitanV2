@@ -43,8 +43,20 @@ internal static class D3D12Helpers
             blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND.D3D12_BLEND_SRC_ALPHA;
             blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND.D3D12_BLEND_ONE;
         }
+
+        {
+            ref var blendDesc = ref BlendStateDescs[(int)BlendStateType.Additive];
+            blendDesc.RenderTarget[0].BlendEnable = 1;
+            blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP.D3D12_BLEND_OP_ADD;
+            blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP.D3D12_BLEND_OP_ADD;
+            blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND.D3D12_BLEND_ONE;
+            blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND.D3D12_BLEND_ZERO;
+            blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE.D3D12_COLOR_WRITE_ENABLE_ALL;
+            blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND.D3D12_BLEND_ONE;
+            blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND.D3D12_BLEND_ONE;
+        }
 #if DEBUG
-        Debug.Assert(Enum.GetValues(typeof(BlendStateType)).Length == 3, "Added new blend state descs but didn't update this code.");
+        Debug.Assert(Enum.GetValues(typeof(BlendStateType)).Length == 4, "Added new blend state descs but didn't update this code.");
 #endif
 
         _heaps[(int)D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD] = new D3D12_HEAP_PROPERTIES

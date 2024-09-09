@@ -1,6 +1,7 @@
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Maths;
+using Titan.Graphics;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
@@ -26,6 +27,7 @@ internal unsafe partial struct BackbufferRenderPass
         renderPass->PassHandle = graph.CreatePass("BackbufferRenderPass", new()
         {
             RootSignatureBuilder = static builder => builder.WithRootConstant<BackbufferData>(register: 1, space: 7),
+            BlendState = BlendStateType.AlphaBlend,
             Inputs = [BuiltInRenderTargets.DeferredLighting],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,

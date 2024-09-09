@@ -6,6 +6,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.ECS.Components;
+using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
@@ -34,8 +35,10 @@ internal unsafe partial struct GBufferRenderPass
                 .WithDecriptorRange(1, space: 1) // IndexBuffer
                 .WithDecriptorRange(1, space: 2) // MeshInstance
             ,
+            BlendState = BlendStateType.AlphaBlend, //NOTE(Jens): maybe it should be disabled?
             Outputs =
             [
+                BuiltInRenderTargets.GBufferPosition,
                 BuiltInRenderTargets.GBufferAlbedo,
                 BuiltInRenderTargets.GBufferNormal,
                 BuiltInRenderTargets.GBufferSpecular,
@@ -52,9 +55,10 @@ internal unsafe partial struct GBufferRenderPass
 
     private static void ClearFunction(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
     {
-        commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.GBufferAlbedo.OptimizedClearColor);
-        commandList.ClearRenderTargetView(renderTargets[1], BuiltInRenderTargets.GBufferNormal.OptimizedClearColor);
-        commandList.ClearRenderTargetView(renderTargets[2], BuiltInRenderTargets.GBufferSpecular.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.GBufferPosition.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[1], BuiltInRenderTargets.GBufferAlbedo.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[2], BuiltInRenderTargets.GBufferNormal.OptimizedClearColor);
+        commandList.ClearRenderTargetView(renderTargets[3], BuiltInRenderTargets.GBufferSpecular.OptimizedClearColor);
 
         if (depthBuffer.HasValue)
         {
@@ -66,6 +70,10 @@ internal unsafe partial struct GBufferRenderPass
     [System(SystemStage.PreUpdate)]
     public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
     {
+        if (graph.IsReady)
+        {
+
+        }
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
             return;
@@ -152,7 +160,6 @@ internal unsafe partial struct GBufferRenderPass
     {
         graph.End(pass.PassHandle);
     }
-
 
     [System(SystemStage.Shutdown)]
     public static void Shutdown(GBufferRenderPass* pass, in RenderGraph graph)

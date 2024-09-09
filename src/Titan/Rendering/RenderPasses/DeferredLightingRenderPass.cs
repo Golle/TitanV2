@@ -1,9 +1,11 @@
 using Titan.Assets;
 using Titan.Core;
 using Titan.ECS.Components;
+using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32;
+using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
@@ -14,19 +16,27 @@ namespace Titan.Rendering.RenderPasses;
 internal unsafe partial struct DeferredLightingRenderPass
 {
     private Handle<RenderPass> PassHandle;
+    private const uint RootConstantLightIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
+    private const uint RootConstantLightStorageIndex = RootConstantLightIndex + 1;
 
     [System(SystemStage.Init)]
     public static void Init(DeferredLightingRenderPass* renderPass, in RenderGraph graph)
     {
         renderPass->PassHandle = graph.CreatePass("DeferredLighting", new()
         {
+            RootSignatureBuilder = static builder => builder
+                .WithConstant(1, ShaderVisibility.Pixel)
+                .WithDecriptorRange(1, register: 0, space: 0),
+            BlendState = BlendStateType.Additive,
             Outputs = [BuiltInRenderTargets.DeferredLighting],
             Inputs =
             [
+                BuiltInRenderTargets.GBufferPosition,
                 BuiltInRenderTargets.GBufferAlbedo,
                 BuiltInRenderTargets.GBufferNormal,
                 BuiltInRenderTargets.GBufferSpecular
             ],
+
             PixelShader = EngineAssetsRegistry.ShaderDeferredLightingPixel,
             VertexShader = EngineAssetsRegistry.ShaderDeferredLightingVertex,
             ClearFunction = &ClearFunction
@@ -39,7 +49,7 @@ internal unsafe partial struct DeferredLightingRenderPass
     }
 
     [System(SystemStage.PreUpdate)]
-    public static void BeginPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in Window window)
+    public static void BeginPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in Window window, in LightStorage lightStorage, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass.PassHandle, out var commandList))
         {
@@ -54,7 +64,6 @@ internal unsafe partial struct DeferredLightingRenderPass
             TopLeftX = 0,
             TopLeftY = 0
         };
-        commandList.SetViewport(&viewPort);
 
         D3D12_RECT rect = new()
         {
@@ -63,13 +72,17 @@ internal unsafe partial struct DeferredLightingRenderPass
             Left = 0,
             Top = 0
         };
+
+        commandList.SetViewport(&viewPort);
         commandList.SetScissorRect(&rect);
+
+        commandList.SetGraphicsRootDescriptorTable(RootConstantLightStorageIndex, resourceManager.Access(lightStorage.LightStorageHandle)->SRV.GPU);
+
     }
 
     [System]
-    public static void RenderLights(DeferredLightingRenderPass* pass, in RenderGraph graph, ReadOnlySpan<Light> lights, ReadOnlySpan<Transform3D> transforms)
+    public static void RenderLights(DeferredLightingRenderPass* pass, in RenderGraph graph, ReadOnlySpan<Light> lights)
     {
-
         if (!graph.IsReady)
         {
             return;
@@ -77,8 +90,13 @@ internal unsafe partial struct DeferredLightingRenderPass
 
         var commandList = graph.GetCommandList(pass->PassHandle);
 
-        
 
+        foreach (ref readonly var light in lights.Slice(1,1))
+        {
+            var index = (int)light.LightIndex;
+            commandList.SetGraphicsRootConstant(RootConstantLightIndex, index);
+            commandList.DrawInstanced(3,1);
+        }
 
     }
 

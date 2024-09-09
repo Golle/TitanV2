@@ -21,7 +21,8 @@ struct InputTextures
 struct FrameData 
 {
     float4x4 ViewProjection;
-    float4 TESTColor;
+    float3 CameraPosition;
+    float1 _padding;
 };
 
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);
@@ -34,10 +35,10 @@ Texture2D GetInputTexture(uint index)
     return Textures[textureIndex];
 }
 
-
-/* Shared structs */
-
-/* Full screen */
+float3 GetCameraPosition()
+{
+    return FrameDataBuffer.CameraPosition;
+}
 
 struct FullScreenVertexOutput 
 {

@@ -68,6 +68,7 @@ public ref struct CreatePipelineStateArgs
     public D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology { get; init; }
     public required ReadOnlySpan<Handle<Texture>> RenderTargets { get; init; }
     public DepthStencilArgs Depth { get; init; }
+    public BlendStateType BlendState { get; init; }
 }
 
 public ref struct CreateRootSignatureArgs
@@ -619,7 +620,7 @@ public unsafe partial struct D3D12ResourceManager
         var pipelineState = _pipelineStates.AsPtr(handle);
 
         var psoStream = new D3D12PipelineSubobjectStream()
-                .Blend(D3D12Helpers.GetBlendState(BlendStateType.AlphaBlend)) //TODO(Jens): Should be configurable, but keep it simple for now.
+                .Blend(D3D12Helpers.GetBlendState(args.BlendState)) //TODO(Jens): Should be configurable, but keep it simple for now.
                 .Topology(args.Topology)
                 .Razterizer(D3D12_RASTERIZER_DESC.Default() with
                 {

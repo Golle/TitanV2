@@ -1,5 +1,4 @@
-#define NUM_INPUTS 0
-#include "Shader.Engine.Defaults.hlsli"
+#include "Shader.DeferredLighting.hlsli"
 
 FullScreenVertexOutput main( uint id : SV_VertexID )
 {

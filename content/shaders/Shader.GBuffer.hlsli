@@ -38,9 +38,10 @@ struct GBufferVertexOutput
 
 struct GBufferPixelOutput
 {
-    float4 Albedo : SV_Target0;
-    float4 Normal : SV_Target1;
-    float4 Specular : SV_Target2;
+    float4 Position: SV_TARGET0;
+    float4 Albedo : SV_Target1;
+    float4 Normal : SV_Target2;
+    float4 Specular : SV_Target3;
 };
 
 //todo: implement later

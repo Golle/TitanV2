@@ -27,7 +27,7 @@ namespace Titan.Rendering;
 internal struct FrameData
 {
     public Matrix4x4 ViewProjection;
-    public Color TESTColor;
+    public Vector3 CameraPosition;
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
@@ -41,6 +41,8 @@ public ref struct CreateRenderPassArgs
 
     public AssetDescriptor VertexShader;
     public AssetDescriptor PixelShader;
+
+    public BlendStateType BlendState;
     //public AssetDescriptor ComputerShader;
 
     /// <summary>
@@ -147,7 +149,7 @@ internal unsafe partial struct RenderGraph
 
         pass->Outputs = _allocator.AllocateArray<Handle<Texture>>(args.Outputs.Length);
         pass->Inputs = _allocator.AllocateArray<Handle<Texture>>(args.Inputs.Length);
-
+        pass->BlendState = args.BlendState;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
             pass->Outputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Outputs[i]);
@@ -325,7 +327,7 @@ internal unsafe partial struct RenderGraph
         graph._frameDataGPU.Write(new FrameData
         {
             ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
-            TESTColor = Color.Red with { G = 0.3f }
+            CameraPosition = cameraSystem.DefaultCamera.Position
         });
 
         Span<CommandList> commandListBuffer = stackalloc CommandList[10];
@@ -368,6 +370,7 @@ internal unsafe partial struct RenderGraph
         {
             pass.PipelineState = _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
             {
+                BlendState = pass.BlendState,
                 Depth = GetDeptStencilArgs(pass, _resourceManager),
                 RenderTargets = pass.Outputs,
                 RootSignature = pass.RootSignature,

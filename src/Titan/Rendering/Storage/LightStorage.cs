@@ -66,7 +66,6 @@ internal unsafe partial struct LightStorage
         }
     }
 
-
     [System(SystemStage.PreUpdate)]
     public static void Update(LightStorage* storage, Span<Light> lights, ReadOnlySpan<Transform3D> transforms)
     {

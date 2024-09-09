@@ -1,6 +1,7 @@
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Strings;
+using Titan.Graphics;
 using Titan.Platform.Win32;
 using Titan.Rendering.Resources;
 
@@ -21,4 +22,5 @@ public struct RenderPass
 
     public CommandList CommandList;
     public unsafe delegate*<ReadOnlySpan<Ptr<Texture>>, TitanOptional<Texture>, in CommandList, void> ClearFunction;
+    public BlendStateType BlendState;
 }
