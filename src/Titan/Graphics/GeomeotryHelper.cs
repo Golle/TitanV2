@@ -1,12 +1,6 @@
-using System.Numerics;
+using Titan.Rendering;
 
 namespace Titan.Graphics;
-
-internal struct Vertex
-{
-    public Vector3 Position;
-    public Vector2 UV;
-}
 
 internal ref struct Plane(ReadOnlySpan<Vertex> vertices, ReadOnlySpan<ushort> indices)
 {
@@ -27,6 +21,7 @@ internal ref struct Box(ReadOnlySpan<Vertex> vertices, ReadOnlySpan<ushort> indi
     public unsafe uint IndicesSize => (uint)(Indices.Length * sizeof(ushort));
     public unsafe uint TotalSize => VerticesSize + IndicesSize;
 }
+
 internal static class GeomeotryHelper
 {
 

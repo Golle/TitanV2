@@ -156,13 +156,13 @@ public unsafe struct ID3D12GraphicsCommandList4 : INativeGuid
     public void SetGraphicsRoot32BitConstants(uint RootParameterIndex, uint Num32BitValuesToSet, void* pSrcData, uint DestOffsetIn32BitValues)
         => ((delegate* unmanaged[Stdcall]<void*, uint, uint, void*, uint, void>)_vtbl[36])(Unsafe.AsPointer(ref this), RootParameterIndex, Num32BitValuesToSet, pSrcData, DestOffsetIn32BitValues);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetComputeRootConstantBufferView(uint RootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS BufferLocation)
         => ((delegate* unmanaged[Stdcall]<void*, uint, D3D12_GPU_VIRTUAL_ADDRESS, void>)_vtbl[37])(Unsafe.AsPointer(ref this), RootParameterIndex, BufferLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootConstantBufferView(uint RootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS BufferLocation)
         => ((delegate* unmanaged[Stdcall]<void*, uint, D3D12_GPU_VIRTUAL_ADDRESS, void>)_vtbl[38])(Unsafe.AsPointer(ref this), RootParameterIndex, BufferLocation);
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetComputeRootShaderResourceView(uint RootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS BufferLocation)

@@ -1,9 +1,8 @@
-﻿#define WIN32_THREAD_TRACE
+#define WIN32_THREAD_TRACE
 
 using System.Diagnostics;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
-using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Core.Threading.Platform;
 internal readonly unsafe struct Win32NativeThreadApi : INativeThreadApi
@@ -43,13 +42,13 @@ internal readonly unsafe struct Win32NativeThreadApi : INativeThreadApi
     public static bool Join(in NativeThreadHandle handle)
     {
         Trace($"Joining Native Thread. Id = {handle.ThreadId} Handle = {handle.Handle} Source Thread ID = {GetCurrentThreadId()}");
-        //NOTE(Jens): add a timeout
-        var result = Kernel32.WaitForSingleObject(handle.Handle, INFINITE);
+        var result = Kernel32.WaitForSingleObject(handle.Handle, 3000); // wait up to 3 seconds. This should never happen in a normal use case.
         if (result != 0)
         {
             Logger.Warning<Win32NativeThreadApi>($"{nameof(Kernel32.WaitForSingleObject)} returned unexpected code: 0x{result:x8}");
             return false;
         }
+
         return true;
     }
 

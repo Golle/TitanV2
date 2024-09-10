@@ -78,7 +78,7 @@ internal unsafe struct DescriptorHeapOld
         return true;
     }
 
-    public DescriptorHandle Allocate()
+    public D3D12DescriptorHandle Allocate()
     {
         var gotLock = false;
         _lock.Enter(ref gotLock);
@@ -92,7 +92,7 @@ internal unsafe struct DescriptorHeapOld
         return new(_type, cpuStart, gpuStart, (int)index);
     }
 
-    public void Free(in DescriptorHandle handle)
+    public void Free(in D3D12DescriptorHandle handle)
     {
         Debug.Assert(handle.Type == _type, $"Expected type = {_type}. Got {handle.Type}");
 

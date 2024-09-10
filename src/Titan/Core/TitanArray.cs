@@ -28,11 +28,14 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
     /// </summary>
     public bool IsValid => ptr != null;
 
+    public TitanList<T> AsList() => new(ptr, Length);
+
     public Span<T> AsSpan() => new(ptr, (int)Length);
 
     public ReadOnlySpan<T> AsReadOnlySpan() => new(ptr, (int)Length);
 
     public static implicit operator ReadOnlySpan<T>(in TitanArray<T> arr) => arr.AsSpan();
+    public static implicit operator Span<T>(in TitanArray<T> arr) => arr.AsSpan();
     /// <summary>
     /// Returns true for unitialized arrays and also empty arrays.
     /// <remarks>Length == 0 is Empty, no matter if the pointer is valid or not.</remarks>

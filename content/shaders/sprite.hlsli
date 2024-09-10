@@ -1,7 +1,5 @@
 #include "bindless.hlsli"
-
-SamplerState LinearSampler : register(s0);
-SamplerState PointSampler : register(s1);
+#include "static_samplers.hlsli"
 
 // cbuffer PerDrawData : register(b1, space1)
 // {

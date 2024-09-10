@@ -11,7 +11,6 @@
 //     output.Color =  float4(1.0, 1.0, 1.0, 1.0);
 //     return output;
 // }
-
 float3 RotateAroundAxis(float3 p, float3 axis, float angle)
 {
     float3 rotatedPoint;
@@ -31,7 +30,6 @@ float3 RotateAroundAxis(float3 p, float3 axis, float angle)
 
     return rotatedPoint;
 }
-
 VSOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : SV_InstanceID)
 {
     // float2 textureCoords = float2((VertexIdx << 1) & 2, VertexIdx & 2);

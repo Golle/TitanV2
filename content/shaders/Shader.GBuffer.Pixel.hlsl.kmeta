@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "1d0c5b20-6d66-4fd7-b5bc-7c54ab1107fa",
+  "name": "ShaderGBufferPixel",
+  "fileSize": 169,
+  "dependsOn": [],
+  "skip": false
+}

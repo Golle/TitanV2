@@ -7,7 +7,7 @@ using Titan.Core.Memory;
 
 namespace Titan.Core.Threading;
 
-public record JobSystemConfig(uint NumberOfWOrkers, uint MaxQueuedJobs) : IConfiguration, IDefault<JobSystemConfig>
+public record JobSystemConfig(uint NumberOfWorkers, uint MaxQueuedJobs) : IConfiguration, IDefault<JobSystemConfig>
 {
     public static uint DefaultNumberOfWorkers = (uint)(Environment.ProcessorCount - 1);
     public static uint DefaultMaxQueuedJobs = 1024;
@@ -40,28 +40,28 @@ internal sealed unsafe class JobSystem(IThreadManager threadManager) : IJobSyste
             Logger.Error<JobSystem>($"The {nameof(MaxQueuedJobs)} config value must be a power of 2. Value = {config.MaxQueuedJobs}");
             return false;
         }
-        if (config.NumberOfWOrkers == 0)
+        if (config.NumberOfWorkers == 0)
         {
             Logger.Error<JobSystem>("The number of workers must be greater than 0.");
             return false;
         }
 
-        Logger.Trace<JobSystem>($"Init Job System. Number of Workers = {config.NumberOfWOrkers} Max Queued Jobs = {config.MaxQueuedJobs}");
+        Logger.Trace<JobSystem>($"Init Job System. Number of Workers = {config.NumberOfWorkers} Max Queued Jobs = {config.MaxQueuedJobs}");
 
-        if (config.NumberOfWOrkers > Environment.ProcessorCount)
+        if (config.NumberOfWorkers > Environment.ProcessorCount)
         {
-            Logger.Warning<JobSystem>($"You're about to create more workers than there are CPU cores. Worker count = {config.NumberOfWOrkers} CPU Cores = {Environment.ProcessorCount}");
+            Logger.Warning<JobSystem>($"You're about to create more workers than there are CPU cores. Worker count = {config.NumberOfWorkers} CPU Cores = {Environment.ProcessorCount}");
         }
 
-        if (!memoryManager.TryAllocArray(out _workers, config.NumberOfWOrkers))
+        if (!memoryManager.TryAllocArray(out _workers, config.NumberOfWorkers))
         {
-            Logger.Error<JobSystem>($"Failed to allocate memory for the Workers. Count = {config.NumberOfWOrkers} Size = {config.NumberOfWOrkers * sizeof(Worker)}");
+            Logger.Error<JobSystem>($"Failed to allocate memory for the Workers. Count = {config.NumberOfWorkers} Size = {config.NumberOfWorkers * sizeof(Worker)}");
             return false;
         }
 
         if (!memoryManager.TryAllocArray(out _jobs, config.MaxQueuedJobs))
         {
-            Logger.Error<JobSystem>($"Failed to allocate memory for the Jobs. Count = {config.MaxQueuedJobs} Size = {config.NumberOfWOrkers * sizeof(Job)}");
+            Logger.Error<JobSystem>($"Failed to allocate memory for the Jobs. Count = {config.MaxQueuedJobs} Size = {config.NumberOfWorkers * sizeof(Job)}");
             return false;
         }
 

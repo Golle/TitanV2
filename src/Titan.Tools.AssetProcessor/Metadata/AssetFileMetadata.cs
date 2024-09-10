@@ -8,6 +8,7 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 [JsonPolymorphic]
 [JsonDerivedType(typeof(ImageMetadata), nameof(ImageMetadata))]
 [JsonDerivedType(typeof(ShaderMetadata), nameof(ShaderMetadata))]
+[JsonDerivedType(typeof(ShaderInfoMetadata), nameof(ShaderInfoMetadata))]
 [JsonDerivedType(typeof(ObjModelMetadata), nameof(ObjModelMetadata))]
 [JsonDerivedType(typeof(MtlMetadata), nameof(MtlMetadata))]
 [JsonDerivedType(typeof(AsepriteMetadata), nameof(AsepriteMetadata))]
@@ -17,11 +18,11 @@ internal abstract class AssetFileMetadata
     public Guid Id { get; set; } = Guid.NewGuid();
     public string? Name { get; set; }
     public long FileSize { get; set; }
-    public Guid[] DependsOn { get; set; } = Array.Empty<Guid>();
+    public Guid[] DependsOn { get; set; } = [];
     public bool Skip { get; set; }
 
     [JsonIgnore]
-    public IReadOnlyList<AssetFileMetadata> Dependencies { get; set; } = Array.Empty<AssetFileMetadata>();
+    public IReadOnlyList<AssetFileMetadata> Dependencies { get; set; } = [];
 
     [JsonIgnore]
     public string ContentFileFullPath { get; set; } = string.Empty;

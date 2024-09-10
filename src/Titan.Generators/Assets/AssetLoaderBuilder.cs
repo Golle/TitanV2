@@ -68,9 +68,9 @@ internal static class AssetLoaderBuilder
                 .EndIndentation()
                 .AppendLine()
 
-                .AppendLine($"public static void* Load(void* context, in {TitanTypes.AssetDescriptor} descriptor, {TitanTypes.TitanBuffer} buffer)")
+                .AppendLine($"public static void* Load(void* context, in {TitanTypes.AssetDescriptor} descriptor, {TitanTypes.TitanBuffer} buffer, {TitanTypes.ReadOnlySpan}<{TitanTypes.AssetDependency}> dependencies)")
                 .BeginIndentation()
-                .AppendLine($"=> (({type.Name}*)context)->Load(descriptor, buffer);")
+                .AppendLine($"=> (({type.Name}*)context)->Load(descriptor, buffer, dependencies);")
                 .EndIndentation()
                 .AppendLine()
 

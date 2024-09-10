@@ -27,7 +27,7 @@ public unsafe struct ResourcePool<T> where T : unmanaged
 
         return true;
     }
-
+    
     public readonly Handle<T> SafeAlloc()
     {
         Lock();

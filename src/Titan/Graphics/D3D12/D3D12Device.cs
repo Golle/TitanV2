@@ -1,10 +1,10 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics.D3D12.Adapters;
-using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
@@ -20,32 +20,12 @@ namespace Titan.Graphics.D3D12;
 [UnmanagedResource]
 internal unsafe partial struct D3D12Device
 {
-    //NOTE(Jens): These heaps should be managed by the caller, and not by the device
-    private static readonly D3D12_HEAP_PROPERTIES DefaultHeap = new()
-    {
-        Type = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT,
-        CPUPageProperty = D3D12_CPU_PAGE_PROPERTY.D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        MemoryPoolPreference = D3D12_MEMORY_POOL.D3D12_MEMORY_POOL_UNKNOWN,
-        CreationNodeMask = 0,
-        VisibleNodeMask = 0
-    };
-
-    //NOTE(Jens): These heaps should be managed by the caller, and not by the device
-    private static readonly D3D12_HEAP_PROPERTIES UploadHeap = new()
-    {
-        Type = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD,
-        CPUPageProperty = D3D12_CPU_PAGE_PROPERTY.D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        MemoryPoolPreference = D3D12_MEMORY_POOL.D3D12_MEMORY_POOL_UNKNOWN,
-        CreationNodeMask = 0,
-        VisibleNodeMask = 0
-    };
-
     public ComPtr<ID3D12Device4> Device;
 
     public static implicit operator ID3D12Device4*(in D3D12Device device) => device.Device.Get();
 
     [System(SystemStage.PreInit)]
-    public static void Init(D3D12Device* device, in D3D12Adapter d3d12Adapter, IConfigurationManager configurationManager)
+    public static void PreInit(ref D3D12Device device, in D3D12Adapter d3d12Adapter, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<D3D12Config>();
         ref readonly var adapter = ref d3d12Adapter.PrimaryAdapter;
@@ -53,7 +33,7 @@ internal unsafe partial struct D3D12Device
         Logger.Trace<D3D12Device>($"Creating a {nameof(ID3D12Device4)} with FeatureLevel {config.FeatureLevel}.");
 
         using var timer = new MeasureTime<D3D12Device>("Created device in {0} ms.");
-        var hr = D3D12CreateDevice((IUnknown*)adapter.Adapter.Get(), config.FeatureLevel, ID3D12Device4.Guid, (void**)device->Device.GetAddressOf());
+        var hr = D3D12CreateDevice((IUnknown*)adapter.Adapter.Get(), config.FeatureLevel, ID3D12Device4.Guid, (void**)device.Device.GetAddressOf());
         if (FAILED(hr))
         {
             Logger.Error<D3D12Device>($"Failed to create a {nameof(ID3D12Device4)} with feature level {config.FeatureLevel}. HRESULT = {hr}");
@@ -61,10 +41,10 @@ internal unsafe partial struct D3D12Device
     }
 
     [System(SystemStage.PostShutdown)]
-    public static void Shutdown(D3D12Device* device)
+    public static void Shutdown(ref D3D12Device device)
     {
         Logger.Trace<D3D12Device>($"Destroying the {nameof(ID3D12Device4)}.");
-        device->Device.Dispose();
+        device.Device.Dispose();
     }
 
 
@@ -220,7 +200,7 @@ internal unsafe partial struct D3D12Device
     public readonly ID3D12Resource* CreateBuffer(uint size, bool isCpuVisible = false, D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE)
     {
         //NOTE(Jens): These should be handled by the caller and not by the device. When we do that change we'll manage all memory by ourselves and not use CommittedResource
-        var heap = isCpuVisible ? UploadHeap : DefaultHeap;
+        var heap = D3D12Helpers.GetHeap(isCpuVisible ? D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT);
         D3D12_RESOURCE_DESC resourceDesc = new()
         {
             Dimension = D3D12_RESOURCE_DIMENSION.D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -241,7 +221,7 @@ internal unsafe partial struct D3D12Device
 
         var resourceState = isCpuVisible ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_GENERIC_READ : state;
         ID3D12Resource* resource;
-        var hr = Device.Get()->CreateCommittedResource1(&heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, null, null, ID3D12Resource.Guid, (void**)&resource);
+        var hr = Device.Get()->CreateCommittedResource1(heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, null, null, ID3D12Resource.Guid, (void**)&resource);
         if (FAILED(hr))
         {
             Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12Resource)} with HRESULT {hr}");
@@ -250,7 +230,13 @@ internal unsafe partial struct D3D12Device
         return resource;
     }
 
-    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format)
+    public readonly ID3D12Resource* CreateTexture(int width, int height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE, D3D12_CLEAR_VALUE* clearValue = null)
+    {
+        Debug.Assert(width >= 0 && height >= 0);
+        return CreateTexture((uint)width, (uint)height, format, flags, clearValue);
+    }
+
+    public readonly ID3D12Resource* CreateTexture(uint width, uint height, DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE, D3D12_CLEAR_VALUE* clearValue = null)
     {
         //NOTE(Jens): Add support for Mip levels etc.
         D3D12_RESOURCE_DESC resourceDesc = new()
@@ -258,7 +244,7 @@ internal unsafe partial struct D3D12Device
             Width = width,
             Height = height,
             Format = format,
-            Flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE,
+            Flags = flags,
             DepthOrArraySize = 1, // change this when we support other types of textures.
             Alignment = 0,
             Layout = D3D12_TEXTURE_LAYOUT.D3D12_TEXTURE_LAYOUT_UNKNOWN,
@@ -272,13 +258,13 @@ internal unsafe partial struct D3D12Device
         };
 
         ID3D12Resource* resource;
-        var heapProperties = DefaultHeap;
+        var heap = D3D12Helpers.GetHeap(D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT);
         var hr = Device.Get()->CreateCommittedResource1(
-            &heapProperties,
+            heap,
             D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE,
             &resourceDesc,
             D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON,
-            (D3D12_CLEAR_VALUE*)null,
+            clearValue,
             (ID3D12ProtectedResourceSession*)null,
             ID3D12Resource.Guid,
             (void**)&resource
@@ -370,7 +356,7 @@ internal unsafe partial struct D3D12Device
     public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
         => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 
-    public  readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, float depthClearValue = 1.0f, byte stencilClearValue = 0)
+    public readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, DXGI_FORMAT format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, float depthClearValue = 1.0f, byte stencilClearValue = 0)
     {
         D3D12_CLEAR_VALUE clearValue = new()
         {
@@ -399,22 +385,20 @@ internal unsafe partial struct D3D12Device
             Flags = D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
         };
 
-        fixed (D3D12_HEAP_PROPERTIES* heap = &DefaultHeap)
+        var heap = D3D12Helpers.GetHeap(D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT);
+        ID3D12Resource* resource;
+        var hr = Device.Get()->CreateCommittedResource(heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, ID3D12Resource.Guid, (void**)&resource);
+        if (FAILED(hr))
         {
-            ID3D12Resource* resource;
-            var hr = Device.Get()->CreateCommittedResource(heap, D3D12_HEAP_FLAGS.D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, ID3D12Resource.Guid, (void**)&resource);
-            if (FAILED(hr))
-            {
-                Logger.Error<D3D12Device>($"Failed to create the DepthBuffer. HRESULT = {hr}");
-                return null;
-            }
-            return resource;
+            Logger.Error<D3D12Device>($"Failed to create the DepthBuffer. HRESULT = {hr}");
+            return null;
         }
+        return resource;
     }
 
     public readonly void CreateDepthStencilView(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
     {
-        D3D12_DEPTH_STENCIL_VIEW_DESC desc= new()
+        D3D12_DEPTH_STENCIL_VIEW_DESC desc = new()
         {
             Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
             ViewDimension = D3D12_DSV_DIMENSION.D3D12_DSV_DIMENSION_TEXTURE2D,

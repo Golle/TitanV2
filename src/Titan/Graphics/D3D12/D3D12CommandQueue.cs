@@ -1,32 +1,47 @@
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Graphics.Rendering;
+using Titan.Core.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
+using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 namespace Titan.Graphics.D3D12;
 
 [UnmanagedResource]
 internal unsafe partial struct D3D12CommandQueue
 {
-    public const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
-    public const uint CommandListCount = GlobalConfiguration.CommandBufferCount;
+    private struct QueuedCommandList
+    {
+        public Inline4<Ptr<ID3D12CommandList>> CommandLists;
+        public uint Count;
+    }
 
-    public const uint TotalCommandListCount = BufferCount * CommandListCount;
+    private const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
+    private const uint CommandListCount = GlobalConfiguration.CommandBufferCount;
 
-    public uint BufferIndex;
-    public uint Next;
+    private const uint TotalCommandListCount = BufferCount * CommandListCount;
 
-    public ComPtr<ID3D12CommandQueue> Queue;
+    private uint BufferIndex;
+    private uint Next;
 
-    public Inline3<Inline16<ComPtr<ID3D12CommandAllocator>>> Allocators;
-    public Inline3<Inline16<ComPtr<ID3D12GraphicsCommandList4>>> CommandLists;
+    private ComPtr<ID3D12CommandQueue> Queue;
+
+    private Inline3<Inline16<ComPtr<ID3D12CommandAllocator>>> Allocators;
+    private Inline3<Inline16<ComPtr<ID3D12GraphicsCommandList4>>> CommandLists;
+
+
+    private Inline16<QueuedCommandList> QueuedCommandLists;
+    private int QueuedCommandListCount;
+
+    public readonly ID3D12CommandQueue* GetQueue() => Queue.Get();
+    private D3D12ResourceManager* ResourceManager;
 
     [System(SystemStage.PreInit)]
-    public static void Init(in D3D12Device device, D3D12CommandQueue* commandQueue)
+    public static void Init(in D3D12Device device, D3D12CommandQueue* commandQueue, UnmanagedResourceRegistry registry)
     {
         using var _ = new MeasureTime<D3D12CommandQueue>("Init completed in {0} ms");
         commandQueue->Queue = device.CreateCommandQueue(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -56,21 +71,27 @@ internal unsafe partial struct D3D12CommandQueue
             allocators[i] = allocator;
             commandLists[i] = commandList;
         }
+
+        commandQueue->ResourceManager = registry.GetResourcePointer<D3D12ResourceManager>();
     }
 
-
-    [System(SystemStage.PostUpdate)]
+    [System(SystemStage.Last, SystemExecutionType.Inline)]
     public static void ExecuteAndReset(D3D12CommandQueue* commandQueue)
     {
-        // no dependencies, just execute all
-        commandQueue->Queue.Get()->ExecuteCommandLists(commandQueue->Next, (ID3D12CommandList**)commandQueue->CommandLists[commandQueue->BufferIndex].AsPointer());
+        var queue = commandQueue->Queue.Get();
+        for (var i = 0; i < commandQueue->QueuedCommandListCount; ++i)
+        {
+            var queuedItem = commandQueue->QueuedCommandLists.GetPointer(i);
+            queue->ExecuteCommandLists(queuedItem->Count, (ID3D12CommandList**)queuedItem->CommandLists.AsPointer());
+        }
 
         commandQueue->BufferIndex = (commandQueue->BufferIndex + 1) % BufferCount;
         commandQueue->Next = 0;
+        commandQueue->QueuedCommandListCount = 0;
     }
 
 
-    [System(SystemStage.PostShutdown)]
+    [System(SystemStage.EndOfLife)]
     public static void Shutdown(D3D12CommandQueue* commandQueue)
     {
         var allocators = (ComPtr<ID3D12CommandAllocator>*)commandQueue->Allocators.AsPointer();
@@ -89,15 +110,45 @@ internal unsafe partial struct D3D12CommandQueue
     public readonly HRESULT Signal(ID3D12Fence* fence, ulong value) => Queue.Get()->Signal(fence, value);
 
 
-    public readonly CommandList GetCommandList(ID3D12PipelineState* pipelineState = null)
+    public CommandList GetCommandList(Handle<PipelineState> handle)
     {
-        //NOTE(Jens): We use interlocked here to increase the Next variable, and we do a "hack" to avoid requesting this resource as a mutable resource.
-        var index = Interlocked.Increment(ref Unsafe.AsRef(in Next)) - 1;
+        ID3D12PipelineState* pipelineState = handle.IsValid
+            ? ResourceManager->Access(handle)->Resource
+            : null;
+
+        return GetCommandList(pipelineState);
+
+    }
+    public CommandList GetCommandList(ID3D12PipelineState* pipelineState = null)
+    {
+        var index = Interlocked.Increment(ref Next) - 1;
         var commandList = CommandLists[BufferIndex][index].Get();
         var allocator = Allocators[BufferIndex][index].Get();
-        
+
         allocator->Reset();
         commandList->Reset(allocator, pipelineState);
         return new(commandList);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void ExecuteCommandLists(ReadOnlySpan<CommandList> commandLists)
+    {
+        var index = Interlocked.Increment(ref Unsafe.AsRef(in QueuedCommandListCount)) - 1;
+
+        var queuedCommandList = QueuedCommandLists.GetPointer(index);
+        MemoryUtils.Copy(queuedCommandList->CommandLists.AsPointer(), commandLists);
+        queuedCommandList->Count = (uint)commandLists.Length;
+
+        ////TODO(Jens): Add some state tracking and validation that we've supplied correct command lists for the frame.
+        //fixed (CommandList* ptr = commandLists)
+        //{
+        //    Queue.Get()->ExecuteCommandLists((uint)commandLists.Length, (ID3D12CommandList**)ptr);
+        //}
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly void ExecuteCommandList(CommandList commandList)
+    {
+        Queue.Get()->ExecuteCommandLists(1, (ID3D12CommandList**)&commandList);
     }
 }

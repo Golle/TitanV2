@@ -1,6 +1,7 @@
 using Titan.Application;
 using Titan.Core.Memory;
 using Titan.ECS.Archetypes;
+using Titan.ECS.Systems;
 
 namespace Titan.ECS;
 
@@ -26,6 +27,10 @@ internal sealed class ECSModule : IModule
             .AddSystemsAndResource<ComponentSystem>()
             .AddSystemsAndResource<ArchetypeRegistry>()
             .AddSystemsAndResource<QueryRegistry>()
+            //TODO(Jens): Move these to some other place.
+            .AddSystems<Transform3DSystem>()
+            .AddSystemsAndResource<CameraSystem>()
+            
             
             ;
         return true;

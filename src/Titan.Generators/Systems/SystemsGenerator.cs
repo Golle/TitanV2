@@ -48,7 +48,7 @@ internal class SystemsGenerator : IIncrementalGenerator
             // Add the components sources and record their IDs
             ConstructComponents(ids, tuple.Components, productionContext);
 
-            Dictionary<INamedTypeSymbol, List<(string Name, int Stage, int ExecutionType)>> systems = new(tuple.Systems.Length, SymbolEqualityComparer.Default);
+            Dictionary<INamedTypeSymbol, List<(string Name, int Stage, int ExecutionType, int Order)>> systems = new(tuple.Systems.Length, SymbolEqualityComparer.Default);
 
             var builder = new FormattedBuilder(new StringBuilder());
             foreach (var system in tuple.Systems)
@@ -68,7 +68,7 @@ internal class SystemsGenerator : IIncrementalGenerator
                 {
                     systems[system.Type] = list = new();
                 }
-                list.Add((name, system.Stage, system.ExecutionType));
+                list.Add((name, system.Stage, system.ExecutionType, system.Order));
             }
 
             foreach (var system in systems)
@@ -95,7 +95,7 @@ internal class SystemsGenerator : IIncrementalGenerator
         }
     }
 
-    private static void WriteSystemDescriptors(ITypeSymbol type, IReadOnlyList<(string Name, int Stage, int ExecutionType)> systems, SourceProductionContext context)
+    private static void WriteSystemDescriptors(ITypeSymbol type, IReadOnlyList<(string Name, int Stage, int ExecutionType, int Order)> systems, SourceProductionContext context)
     {
         var builder = new FormattedBuilder(new StringBuilder());
         var containingNamespace = type.ContainingNamespace.ToDisplayString();
@@ -121,10 +121,11 @@ internal class SystemsGenerator : IIncrementalGenerator
 
             for (var i = 0; i < systems.Count; ++i)
             {
-                var (systemName, stage, executionType) = systems[i];
+                var (systemName, stage, executionType, order) = systems[i];
                 builder
                     .AppendLine($"descriptors[{i}].Stage = ({TitanTypes.SystemStage}){stage};")
                     .AppendLine($"descriptors[{i}].ExecutionType = ({TitanTypes.SystemExecutionType}){executionType};")
+                    .AppendLine($"descriptors[{i}].Order = {order};")
                     .AppendLine($"descriptors[{i}].Name = {TitanTypes.StringRef}.Create(\"{systemName}\");")
                     .AppendLine($"descriptors[{i}].Init = &{systemName}.Init;")
                     .AppendLine($"descriptors[{i}].Execute = &{systemName}.Execute;")

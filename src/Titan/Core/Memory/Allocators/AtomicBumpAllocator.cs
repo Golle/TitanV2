@@ -5,7 +5,7 @@ namespace Titan.Core.Memory.Allocators;
 
 public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 {
-    private volatile uint _offset;
+    private uint _offset;
     public static void* Alloc(void* allocator, uint size)
     {
         var bump = (AtomicBumpAllocator*)allocator;
@@ -23,9 +23,15 @@ public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAlloc
         memoryManager.Free(allocator);
     }
 
-    public void* Alloc(uint size)
+    public readonly void* Alloc(int size)
     {
-        var end = Interlocked.Add(ref _offset, size);
+        Debug.Assert(size >= 0);
+        return Alloc((uint)size);
+    }
+
+    public readonly void* Alloc(uint size)
+    {
+        var end = Interlocked.Add(ref Unsafe.AsRef(in _offset), size);
         var ptr = mem + end - size;
         Debug.Assert(end <= allocatorSize);
         return ptr;
@@ -38,7 +44,7 @@ public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAlloc
     /// <typeparam name="T">The type to allocate</typeparam>
     /// <param name="count">The count</param>
     /// <returns>The allocated array</returns>
-    public TitanArray<T> AllocateArray<T>(int count) where T : unmanaged
+    public readonly TitanArray<T> AllocateArray<T>(int count) where T : unmanaged
     {
         Debug.Assert(count >= 0);
         return AllocateArray<T>((uint)count);
@@ -51,14 +57,14 @@ public unsafe struct AtomicBumpAllocator(byte* mem, uint allocatorSize) : IAlloc
     /// <typeparam name="T">The type to allocate</typeparam>
     /// <param name="count">The count</param>
     /// <returns>The allocated array</returns>
-    public TitanArray<T> AllocateArray<T>(uint count) where T : unmanaged
+    public readonly TitanArray<T> AllocateArray<T>(uint count) where T : unmanaged
     {
         if (count == 0)
         {
             return TitanArray<T>.Empty;
         }
         var size = (uint)(sizeof(T) * count);
-        var end = Interlocked.Add(ref _offset, size);
+        var end = Interlocked.Add(ref Unsafe.AsRef(in _offset), size);
         Debug.Assert(end <= allocatorSize);
 
         var ptr = mem + end - size;

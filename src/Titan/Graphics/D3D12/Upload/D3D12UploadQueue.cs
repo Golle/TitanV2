@@ -12,27 +12,25 @@ namespace Titan.Graphics.D3D12.Upload;
 [UnmanagedResource]
 internal unsafe partial struct D3D12UploadQueue
 {
-    public Inline8<UploadFrame> UploadFrames;
-    public ComPtr<ID3D12CommandQueue> CommandQueue;
-    public ComPtr<ID3D12Fence> Fence;
-    public SpinLock FrameLock;
-    public SpinLock QueueLock;
+    private Inline8<UploadFrame> UploadFrames;
+    private ComPtr<ID3D12CommandQueue> CommandQueue;
+    private ComPtr<ID3D12Fence> Fence;
+    private SpinLock FrameLock;
+    private SpinLock QueueLock;
 
-    public ulong FenceValue;
-    public HANDLE FenceEvent;
-
-    //TODO(Jens): Rework this, it's not nice to force cast a ref readonly parameter to a pointer. It works for now, but we don't want to do that.
-    //TODO(Jens): The long term solution for the Upload queue is to create a circular buffer anyway, so we can do that instead if we find that better
-    public D3D12Device* Device;
+    private ulong FenceValue;
+    private HANDLE FenceEvent;
+    
+    private D3D12Device* Device;
 
     [System(SystemStage.PreInit)]
-    public static void Init(D3D12UploadQueue* queue, in D3D12Device device)
+    public static void Init(D3D12UploadQueue* queue, in D3D12Device device, UnmanagedResourceRegistry registry)
     {
         queue->CommandQueue = device.CreateCommandQueue(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_COPY);
         queue->Fence = device.CreateFence();
         queue->FenceEvent = Kernel32.CreateEventW(null, 0, 0, $"{nameof(D3D12UploadQueue)}.{nameof(FenceEvent)}");
         queue->FenceValue = 0;
-        queue->Device = MemoryUtils.AsPointer(device);
+        queue->Device = registry.GetResourcePointer<D3D12Device>();
 
         for (var i = 0; i < queue->UploadFrames.Size; ++i)
         {

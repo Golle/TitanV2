@@ -10,6 +10,7 @@ public unsafe struct SystemDescriptor
     public StringRef Name;
     public SystemStage Stage;
     public SystemExecutionType ExecutionType;
+    public int Order;
     public delegate*<ref SystemInitializer, void> Init;
     public delegate*<void*, void> Execute;
     public delegate*<CachedQuery*> GetQuery;

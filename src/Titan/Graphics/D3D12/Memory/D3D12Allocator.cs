@@ -16,12 +16,13 @@ internal unsafe partial struct D3D12Allocator
     public const uint BufferCount = GlobalConfiguration.MaxRenderFrames;
 
     private TitanArray<int> _sharedFreeList;
-    private Inline4<DescriptorHeap> _heaps;
+    private Inline4<D3D12DescriptorHeap> _heaps;
 
     private int _frameIndex;
 
     [UnscopedRef]
-    public ref readonly DescriptorHeap SRV => ref _heaps[(int)DescriptorHeapType.ShaderResourceView];
+    public ref readonly D3D12DescriptorHeap SRV => ref _heaps[(int)DescriptorHeapType.ShaderResourceView];
+
     [System(SystemStage.PreInit)]
     public static void Init(D3D12Allocator* allocator, in D3D12Device device, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
@@ -80,28 +81,29 @@ internal unsafe partial struct D3D12Allocator
         }
     }
 
-
-    public readonly DescriptorHandle Allocate(DescriptorHeapType type)
+    public readonly D3D12DescriptorHandle Allocate(DescriptorHeapType type)
     {
-        ref var heap = ref *(_heaps.AsPointer() + (int)type);
-        var index = heap.Count++;
+        //NOTE(Jens): There's a race condition with Alloc and Free. Can it ever happen?
+        var heap = _heaps.GetPointer((int)type);
+        var index = Interlocked.Increment(ref heap->Count) - 1;
         Debug.Assert(index >= 0);
-        var offset = (uint)(heap.FreeList[index] * heap.IncrementSize);
+        var offset = (uint)(heap->FreeList[index] * heap->IncrementSize);
 
-        var cpuStart = heap.CPUStart.ptr + offset;
-        var gpuStart = heap.ShaderVisible ? heap.GPUStart.ptr + offset : 0ul;
+        var cpuStart = heap->CPUStart.ptr + offset;
+        var gpuStart = heap->ShaderVisible ? heap->GPUStart.ptr + offset : 0ul;
 
         return new(type, cpuStart, gpuStart, index);
+
     }
 
-
-    public readonly void Free(in DescriptorHandle handle)
+    public readonly void Free(in D3D12DescriptorHandle handle)
     {
-        ref var heap = ref *(_heaps.AsPointer() + (int)handle.Type);
-        var index = --heap.Count;
-
-        heap.FreeList[index] = handle.Index;
+        //NOTE(Jens): There's a race condition with Alloc and Free. Can it ever happen?
+        var heap = _heaps.GetPointer((int)handle.Type);
+        var index = Interlocked.Decrement(ref heap->Count);
+        heap->FreeList[index] = handle.Index;
         //TODO(Jens): Add debug check for returning the same handle multiple times.
+
     }
 
     [System(SystemStage.PostShutdown)]
@@ -123,13 +125,5 @@ internal unsafe partial struct D3D12Allocator
     public static void Update(ref D3D12Allocator allocator)
     {
         allocator._frameIndex = (int)((allocator._frameIndex + 1) % BufferCount);
-
-        //for (var i = 0; i < (int)DescriptorHeapType.Count; ++i)
-        //{
-        //    //TODO(Jens): Implement reset of the temporary buffers (only SRV)
-        //    //allocator->DescriptorHeaps[i].EndFrame();
-        //}
     }
-
-
 }

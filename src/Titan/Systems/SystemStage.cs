@@ -8,6 +8,7 @@ public enum SystemStage
     Startup,
     /// <summary>
     /// PreInit is executed right after Startup, using the default executor.
+    /// <remarks>This stage should not be used to create any resource from other systems, use Init for that.</remarks>
     /// </summary>
     PreInit,
     /// <summary>

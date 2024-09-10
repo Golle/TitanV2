@@ -28,6 +28,7 @@ internal static class TitanTypes
 
     public const string Handle = $"{Core}.Handle";
     public const string TitanBuffer = $"{Core}.TitanBuffer";
+    public const string TitanList = $"{Core}.TitanList";
 
     public const string EventAttribute = $"{Events}.EventAttribute";
     public const string EventsGenerator = $"{Events}.EventId";
@@ -39,9 +40,11 @@ internal static class TitanTypes
     public const string AssetAttribute = $"{Assets}.AssetAttribute";
     public const string IAsset = $"{Assets}.IAsset";
     public const string IAssetLoader = $"{Assets}.IAssetLoader";
+    public const string AssetsManager = $"{Assets}.AssetsManager";
     public const string AssetType = $"{Assets}.AssetType";
     public const string AssetLoaderInitializer = $"{Assets}.AssetLoaderInitializer";
     public const string AssetDescriptor = $"{Assets}.AssetDescriptor";
+    public const string AssetDependency = $"{Assets}.AssetDependency";
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";

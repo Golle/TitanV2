@@ -202,8 +202,18 @@ internal unsafe ref struct ExecutionTreeBuilder
             return stageDiff;
         }
 
-        //TODO(Jens): Add priority  check, we currently don't support priority but we will eventually.
-        return 1;
+        //NOTE(Jens): Not really sure how this affects the systems. :) YOLO
+        if (x.Descriptor.Order == y.Descriptor.Order)
+        {
+            return 0;
+        }
+
+        if (x.Descriptor.Order < y.Descriptor.Order)
+        {
+            return 1;
+        }
+
+        return -1;
     }
 
     private struct SystemInstance

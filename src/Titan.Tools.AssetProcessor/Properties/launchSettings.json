@@ -6,7 +6,7 @@
     },
     "Index - Engine": {
       "commandName": "Project",
-      "commandLineArgs": "--path O:\\git\\TitanV2\\content --output O:\\git\\TitanV2\\assets\\titan.tbin --code O:\\git\\TitanV2\\src\\Titan\\ --name Titan.Assets.EngineRegistry"
+      "commandLineArgs": "--path O:\\git\\TitanV2\\content --output O:\\git\\TitanV2\\assets\\titan.tbin --code O:\\git\\TitanV2\\src\\Titan\\ --name Titan.Assets.EngineAssetsRegistry"
     }
   }
 }

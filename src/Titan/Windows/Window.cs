@@ -25,6 +25,9 @@ internal unsafe partial struct Window
     public bool Windowed;
     public bool Active;
 
+    public Size Size => new(Width, Height);
+    public SizeF SizeF => new(Width, Height);
+
     public void SetTitle(string title)
     {
         fixed (char* pTitle = Title)
@@ -42,6 +45,6 @@ internal unsafe partial struct Window
     public readonly Point GetRelativeCursorPosition()
         => Functions.GetRelativeCursorPosition(Handle);
 
-    public void Close() 
+    public void Close()
         => Functions.Close(Handle);
 }

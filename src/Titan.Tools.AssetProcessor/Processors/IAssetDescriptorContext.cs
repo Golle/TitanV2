@@ -20,11 +20,11 @@ internal interface IAssetDescriptorContext
     bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     void AddDiagnostics(DiagnosticsLevel level, string message);
     IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename);
-    
+
     Task Complete();
     ReadOnlyMemory<(AssetDescriptor Descriptor, AssetFileMetadata Metadata)> GetAssets();
     ReadOnlyMemory<byte> GetData();
     bool HasErrors { get; }
     IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics { get; }
-    
+    IEnumerable<T> GetMetadataByType<T>() where T : AssetFileMetadata;
 }

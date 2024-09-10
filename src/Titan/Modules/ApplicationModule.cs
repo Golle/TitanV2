@@ -1,7 +1,7 @@
 using Titan.Application;
 using Titan.Core.Logging;
-using Titan.Graphics.Rendering;
 using Titan.Input;
+using Titan.Rendering;
 using Titan.Windows;
 
 namespace Titan.Modules;

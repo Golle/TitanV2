@@ -4,8 +4,8 @@ using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Core.Strings;
-using Titan.Graphics.Resources;
 using Titan.Platform.Win32.DXGI;
+using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Metadata;
 
 namespace Titan.Tools.AssetProcessor.Export;
@@ -37,7 +37,6 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
 
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
-
 
     private static string CreateMeshDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
     {
@@ -98,7 +97,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 continue;
             }
             ref var desc = ref CollectionsMarshal.AsSpan(_assets)[i].Descriptor;
-            var dependenciesCount = meta.DependsOn.Length;
+            var dependenciesCount = meta.Dependencies.Count;
             desc.Dependencies = new((uint)depsIndex, (byte)dependenciesCount);
 
             AddDependencies(dependencies.Slice(depsIndex, dependenciesCount), _assets, meta);
@@ -123,7 +122,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
     public string Build()
     {
         var numberOfDependencies = _assets
-            .Sum(a => a.Metadata.DependsOn.Length);
+            .Sum(a => a.Metadata.Dependencies.Count);
         Span<uint> dependencies = stackalloc uint[numberOfDependencies];
 
         PrepareAssetDescriptors(dependencies);
@@ -148,8 +147,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         // The inline struct
         _builder
             .AppendLine($"public static {typeof(RegistryId).FullName} {AssetRegistryIdName} {{ get; }} = {typeof(RegistryId).FullName}.{nameof(RegistryId.GetNext)}();")
-            .AppendLine($"private static {AssetStructName} {AssetMemberName};")
-            .AppendLine($"private static {DependenciesStructName} {DependenciesMemberName};"); ;
+            .AppendLine($"private static readonly {AssetStructName} {AssetMemberName};")
+            .AppendLine($"private static readonly {DependenciesStructName} {DependenciesMemberName};");
 
 
         InsertGetFilePath();

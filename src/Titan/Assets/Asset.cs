@@ -6,7 +6,10 @@ internal unsafe struct Asset
 {
     public AssetState State;
     public AssetFile* File;
-    public AssetsContext* Context;
+    public AssetSystem* System;
+    public AssetRegistry* Registry;
+    public AssetDependency* Dependencies;
+    public byte NumberOfDependencies;
 
     public JobHandle AsyncJobHandle;
 
@@ -14,7 +17,6 @@ internal unsafe struct Asset
     public void* Resource;
     
     public AssetDescriptor* Descriptor;
-
-
-    public AssetLoaderDescriptor* GetLoader() => Context->Loaders.GetPointer((int)Descriptor->Type);
+    public ReadOnlySpan<AssetDependency> GetDependencies() => new(Dependencies, NumberOfDependencies);
+    public AssetLoaderDescriptor* GetLoader() => System->Loaders.GetPointer((int)Descriptor->Type);
 }

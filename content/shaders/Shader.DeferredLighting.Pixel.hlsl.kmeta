@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "89746169-03b7-486d-920d-6621b814064d",
+  "name": "ShaderDeferredLightingPixel",
+  "fileSize": 177,
+  "dependsOn": [],
+  "skip": false
+}

@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Titan.Graphics.Resources;
+using Titan.Rendering.Resources;
 
 namespace Titan.Assets.Types;
 

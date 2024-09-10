@@ -1,0 +1,11 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Vertex",
+  "shaderVersion": "Version_6_5",
+  "id": "125abbdb-65f4-4f72-bbcb-18eb91f312e6",
+  "name": "ShaderFullscreenVertex",
+  "fileSize": 0,
+  "dependsOn": [],
+  "skip": false
+}
