@@ -1,4 +1,5 @@
 using Titan.Application;
+using Titan.Audio;
 using Titan.Core.Logging;
 using Titan.Input;
 using Titan.Rendering;
@@ -17,6 +18,7 @@ public class ApplicationModule : IModule
                 .AddModule<WindowModule>()
                 .AddModule<RenderingModule>()
                 .AddModule<InputModule>()
+                .AddModule<AudioModule>()
                 ;
         }
 
