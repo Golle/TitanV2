@@ -7,7 +7,9 @@ internal sealed class XAudio2Module : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        builder.AddSystemsAndResource<XAudio2System>();
+        builder
+            .AddSystemsAndResource<XAudio2System>()
+            ;
 
         return true;
     }

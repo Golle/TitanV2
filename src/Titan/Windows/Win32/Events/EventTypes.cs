@@ -6,6 +6,9 @@ internal static class EventTypes
     public const int CharacterTyped = 10004;
 
 
+    public const int AudioDeviceArrival = 30001;
+    public const int AudioDeviceRemoveComplete = 30002;
+
     public const int Quit = 20001;
     public const int Close = 20002;
     
