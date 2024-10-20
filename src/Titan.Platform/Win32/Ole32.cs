@@ -15,4 +15,15 @@ public static unsafe partial class Ole32
         Guid* riid,
         void** ppv
     );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial void CoTaskMemFree(void* ptr);
+
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial HRESULT PropVariantClear(
+        PROPVARIANT* pvar
+    );
 }

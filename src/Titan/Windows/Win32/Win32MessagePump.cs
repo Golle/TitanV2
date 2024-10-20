@@ -1,10 +1,10 @@
 using Titan.Application.Events;
+using Titan.Audio.Events;
 using Titan.Core.Logging;
 using Titan.Events;
 using Titan.Input;
 using Titan.Systems;
 using Titan.Windows.Win32.Events;
-using AudioDeviceChangedEvent = Titan.Audio.Events.AudioDeviceChangedEvent;
 
 namespace Titan.Windows.Win32;
 internal unsafe partial struct Win32MessagePump

@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Platform.Win32.XAudio2;
 
-//NOTE(Jens): This is a mess, wrapping unmanaged vtable to callbacks on a struct. Maybe we can revisit this and see if it can be simplified.
-
 public unsafe interface IXAudio2VoiceCallbackFunctions
 {
     //NOTE(Jens): we have default implementations for all of these so they can just be ignored when not needed.
@@ -57,10 +55,10 @@ internal unsafe struct IXAudio2VoiceCallbackContext
         public static void OnVoiceError(void* context, void* pBufferContext, HRESULT error)
             => ((T*)context)->OnVoiceError(pBufferContext, error);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnVoicePocessingPassStart(uint bytesRequired)
         => _onVoicePocessingPassStart(_context, bytesRequired);
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnVoiceProcessingPassEnd()
@@ -85,33 +83,6 @@ internal unsafe struct IXAudio2VoiceCallbackContext
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnVoiceError(void* pBufferContext, HRESULT error)
         => _onVoiceError(_context, pBufferContext, error);
-}
-
-
-public unsafe struct IXAudio2VoiceCallback2
-{
-    private Vtbl* _vtbl;
-    private Vtbl _functions;
-
-
-
-    public void Init<T>(T* context) where T : unmanaged, IXAudio2VoiceCallbackFunctions2
-    {
-        var callback = (IXAudio2VoiceCallback2*)Unsafe.AsPointer(ref this);
-        _vtbl = &callback->_functions;
-        _functions.OnBufferEnd = &T.InternalOnBufferEnd;
-    }
-
-    public struct Vtbl
-    {
-        public delegate* unmanaged<T*, uint, void> OnVoiceProcessingPassStart;
-        public delegate* unmanaged<T*, void> OnVoiceProcessingPassEnd;
-        public delegate* unmanaged<T*, void> OnStreamEnd;
-        public delegate* unmanaged<T*, void*, void> OnBufferStart;
-        public delegate* unmanaged<T*, void*, void> OnBufferEnd;
-        public delegate* unmanaged<T*, void*, void> OnLoopEnd;
-        public delegate* unmanaged<T*, void*, HRESULT, void> OnVoiceError;
-    }
 }
 
 public unsafe struct IXAudio2VoiceCallback
@@ -182,16 +153,4 @@ public unsafe struct IXAudio2VoiceCallback
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static void InternalOnVoiceError(IXAudio2VoiceCallback* callback, void* pBufferContext, HRESULT error)
         => callback->_context.OnVoiceError(pBufferContext, error);
-}
-
-
-public unsafe interface IXAudio2VoiceCallbackFunctions2
-{
-    static abstract void InternalOnVoiceProcessingPassStart(IXAudio2VoiceCallback* callback, uint bytesRequired);
-    static abstract void InternalOnVoiceProcessingPassEnd(IXAudio2VoiceCallback* callback);
-    static abstract void InternalOnStreamEnd(IXAudio2VoiceCallback* callback);
-    static abstract void InternalOnBufferStart(IXAudio2VoiceCallback* callback, void* pBufferContext);
-    static abstract void InternalOnBufferEnd(IXAudio2VoiceCallback* callback, void* pBufferContext);
-    static abstract void InternalOnLoopEnd(IXAudio2VoiceCallback* callback, void* pBufferContext);
-    static abstract void InternalOnVoiceError(IXAudio2VoiceCallback* callback, void* pBufferContext, HRESULT error);
 }

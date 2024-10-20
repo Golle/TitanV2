@@ -10,7 +10,7 @@ internal unsafe class WicImageReader : IDisposable
     private ComPtr<IWICImagingFactory> _factory;
     public WicImageReader()
     {
-        var hr = Ole32.CoCreateInstance(WICCLSID.CLSID_WICImagingFactory2, null, CLSCTX.CLSCTX_INPROC_SERVER, IWICImagingFactory.Guid, (void**)_factory.GetAddressOf());
+        var hr = Ole32.CoCreateInstance(CLSID.CLSID_WICImagingFactory2, null, CLSCTX.CLSCTX_INPROC_SERVER, IWICImagingFactory.Guid, (void**)_factory.GetAddressOf());
         if (Win32Common.FAILED(hr))
         {
             throw new Exception($"Failed to create the {nameof(IWICImagingFactory)} instance with HRESULT {hr}");
