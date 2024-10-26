@@ -54,7 +54,8 @@ internal sealed class AudioModule : IModule
         {
             builder
                 .AddModule<CoreAudioModule>()
-                .AddModule<XAudio2Module>();
+                .AddModule<XAudio2Module>()
+                ;
         }
         else
         {

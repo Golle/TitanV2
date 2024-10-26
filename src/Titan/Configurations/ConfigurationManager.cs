@@ -17,6 +17,13 @@ public interface IConfigurationManager : IService
     /// <typeparam name="T">The configuration type</typeparam>
     /// <returns>The configuration</returns>
     T GetConfigOrDefault<T>() where T : IConfiguration, IDefault<T>;
+
+    /// <summary>
+    /// Updates the config, if it's a persistable config it will write it to disk when the game shuts down.
+    /// </summary>
+    /// <typeparam name="T">The configuration type</typeparam>
+    /// <param name="config">The patches configuration</param>
+    void UpdateConfig<T>(T config) where T : IConfiguration;
 }
 
 internal sealed class ConfigurationManager : IConfigurationManager
@@ -98,6 +105,8 @@ internal sealed class ConfigurationManager : IConfigurationManager
             Logger.Error<ConfigurationManager>($"Can't open the config file {descriptor.Filename}. Type = {configuration.GetType()}");
             return;
         }
+
+        //NOTE(Jens): We should probably write to a temp file and then copy it instead of writing directly to the file.
         _fileSystem.Truncate(fileHandle);
 
         using var stream = new MemoryStream();

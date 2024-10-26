@@ -12,4 +12,9 @@ public static unsafe partial class MSVCRT
     [LibraryImport(DllName)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial int memcmp(void* ptr1, void* ptr2, ulong count);
+
+    [LibraryImport(DllName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial int wcsncmp(char* str1, char* str2, nuint count);
+    
 }

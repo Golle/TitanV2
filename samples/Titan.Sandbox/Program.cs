@@ -3,6 +3,7 @@ using System.Numerics;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
+using Titan.Audio;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
@@ -33,6 +34,11 @@ App.Create(appConfig)
 #if DEBUG
         Debug = true
 #endif
+    })
+    .AddPersistedConfig(new AudioConfig
+    {
+        Format = AudioFormat.Default,
+        Channels = 64
     })
     .AddRegistry<SandboxRegistry>()
     .Build()

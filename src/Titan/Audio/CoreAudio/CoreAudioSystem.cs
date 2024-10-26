@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using Titan.Audio.Events;
-using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -14,37 +12,39 @@ using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Audio.CoreAudio;
 
-internal struct AudioDeviceInfo
+internal readonly struct AudioDeviceInfo(TitanArray<char> id, TitanArray<char> name)
 {
-    public TitanArray<char> Id;
-    public TitanArray<char> Name;
+    public ReadOnlySpan<char> Id => id.AsReadOnlySpan();
+    public ReadOnlySpan<char> Name => name.AsReadOnlySpan();
+    public unsafe char* GetIdAsPointer() => id.AsPointer();
 }
 
 [UnmanagedResource]
 internal unsafe partial struct CoreAudioSystem
 {
     private BumpAllocator Allocator;
-    private TitanArray<AudioDeviceInfo> AudioDevices;
+    private TitanList<AudioDeviceInfo> AudioDevices;
     private AudioDeviceInfo* DefaultDevice;
 
     public readonly ReadOnlySpan<AudioDeviceInfo> GetDevices() => AudioDevices.AsReadOnlySpan();
     public readonly AudioDeviceInfo* GetDefaultDevice() => DefaultDevice;
     public readonly AudioDeviceInfo* FindDeviceByID(ReadOnlySpan<char> id)
     {
-        fixed (char* ptr = id)
+        if (id.IsEmpty)
         {
-            var idArray = new TitanArray<char>(ptr, (uint)id.Length);
-            for (var i = 0; i < AudioDevices.Length; ++i)
-            {
-                var device = AudioDevices.GetPointer(i);
-                if (MemoryUtils.Equals(device->Id, idArray))
-                {
-                    return device;
-                }
-            }
-
             return null;
         }
+
+        for (var i = 0; i < AudioDevices.Count; ++i)
+        {
+            var device = AudioDevices.GetPointer(i);
+            if (device->Id.Equals(id, StringComparison.InvariantCulture))
+            {
+                return device;
+            }
+        }
+
+        return null;
     }
 
     [System(SystemStage.PreInit)]
@@ -67,9 +67,13 @@ internal unsafe partial struct CoreAudioSystem
         {
             return;
         }
-        audioSystem->RefreshDevices();
-    }
 
+        //NOTE(Jens): Workaround for HasEvents issue
+        foreach (ref readonly var _ in audioDeviceChanged)
+        {
+            audioSystem->RefreshDevices();
+        }
+    }
 
     [System(SystemStage.PostShutdown)]
     public static void PostShutdown(CoreAudioSystem* system, IMemoryManager memoryManager)
@@ -82,7 +86,8 @@ internal unsafe partial struct CoreAudioSystem
     private void RefreshDevices()
     {
         using var _ = new MeasureTime<CoreAudioSystem>("Completed Audio Device refresh in {0} ms");
-        AudioDevices = TitanArray<AudioDeviceInfo>.Empty;
+
+        AudioDevices = default;
         DefaultDevice = null;
         Allocator.Reset();
 
@@ -111,11 +116,11 @@ internal unsafe partial struct CoreAudioSystem
             return;
         }
 
-        AudioDevices = Allocator.AllocateArray<AudioDeviceInfo>(count);
+        AudioDevices = Allocator.AllocateList<AudioDeviceInfo>(count);
 
         for (var i = 0u; i < count; ++i)
         {
-            var deviceInfo = AudioDevices.GetPointer(i);
+            //var deviceInfo = AudioDevices.GetPointer(i);
             using ComPtr<IMMDevice> device = default;
             hr = devices.Get()->Item(i, device.GetAddressOf());
             if (FAILED(hr))
@@ -124,6 +129,7 @@ internal unsafe partial struct CoreAudioSystem
                 continue;
             }
 
+            // Read the ID
             char* deviceId;
             hr = device.Get()->GetId(&deviceId);
             if (FAILED(hr))
@@ -133,9 +139,12 @@ internal unsafe partial struct CoreAudioSystem
             }
 
             var deviceIdLength = MSVCRT.wcslen(deviceId);
-            deviceInfo->Id = Allocator.AllocateArray<char>(deviceIdLength);
-            MemoryUtils.Copy(deviceInfo->Id, deviceId, deviceIdLength);
+            var id = Allocator.AllocateArray<char>(deviceIdLength);
+            MemoryUtils.Copy(id, deviceId, deviceIdLength);
+            Ole32.CoTaskMemFree(deviceId);
 
+
+            // Read the name of the Device
             using ComPtr<IPropertyStore> properties = default;
             hr = device.Get()->OpenPropertyStore(StorageAccessMode.STGM_READ, properties.GetAddressOf());
             if (FAILED(hr))
@@ -160,12 +169,13 @@ internal unsafe partial struct CoreAudioSystem
                 continue;
             }
 
+            //NOTE(Jens): We add 1 to include the null terminator. We need it when we create XAudio mastering voice.
             var length = MSVCRT.wcslen((char*)friendlyName.p);
-            deviceInfo->Name = Allocator.AllocateArray<char>(length);
-            MemoryUtils.Copy(deviceInfo->Name, (char*)friendlyName.p, length);
-            
-            Ole32.CoTaskMemFree(deviceId);
+            var name = Allocator.AllocateArray<char>(length);
+            MemoryUtils.Copy(name, (char*)friendlyName.p, length);
             Ole32.PropVariantClear(&friendlyName);
+
+            AudioDevices.Add(new(id, name));
         }
 
         // Read and set the Default Device.
@@ -186,14 +196,15 @@ internal unsafe partial struct CoreAudioSystem
                 Logger.Error<CoreAudioSystem>("Failed to get the ID of the the Default Audio.");
                 return;
             }
-            var defaultDeviceId = new TitanArray<char>(defaultDeviceIdPtr, (uint)MSVCRT.wcslen(defaultDeviceIdPtr));
-
-            for (var i = 0; i < AudioDevices.Length; ++i)
+            //var defaultDeviceId = new TitanArray<char>(defaultDeviceIdPtr, (uint)MSVCRT.wcslen(defaultDeviceIdPtr) + 1);
+            var deviceId = new ReadOnlySpan<char>(defaultDeviceIdPtr, MSVCRT.wcslen(defaultDeviceIdPtr));
+            for (var i = 0; i < AudioDevices.Count; ++i)
             {
                 var deviceInfo = AudioDevices.GetPointer(i);
-                if (MemoryUtils.Equals(defaultDeviceId, deviceInfo->Id))
+
+                if (deviceInfo->Id.Equals(deviceId, StringComparison.InvariantCulture))
                 {
-                    Logger.Trace<CoreAudioSystem>("Found the default device.");
+                    Logger.Trace<CoreAudioSystem>($"Found the default device. Name={deviceInfo->Name}");
                     DefaultDevice = deviceInfo;
                 }
             }
