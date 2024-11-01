@@ -25,7 +25,7 @@ internal unsafe class OggReader2
 
         Logger.Trace<OggReader2>($"Parsing ogg file. Size = {file.Length} bytes");
 
-        if (!TryParseVorbisHeader(ref reader, out var vorbisHeader))
+        if (!TryParseVorbisHeader(ref reader, out var header))
         {
             Logger.Error<OggReader2>($"Failed to parse the {nameof(VorbisHeader)}");
             return;
@@ -37,7 +37,7 @@ internal unsafe class OggReader2
             return;
         }
 
-        if (!TryParseVorbisSetup(ref reader, ref allocator, vorbisHeader, out var vorbisSetup))
+        if (!TryParseVorbisSetup(ref reader, ref allocator, header, out var setup))
         {
 
             Logger.Error<OggReader2>("Failed to parse the VorbisSetup");
@@ -46,6 +46,34 @@ internal unsafe class OggReader2
 
         while (reader.TryReadPayload(out var payloadPage))
         {
+            var bitreader = new TitanBitReader(payloadPage);
+            if (bitreader.ReadBitAsBool())
+            {
+                Logger.Error<OggReader2>("Not an audio package.");
+                continue;
+            }
+
+            var modeBits = ilog((int)setup.ModeConfig.Length - 1);
+            var modeIndex = bitreader.ReadBits(modeBits);
+
+            ref readonly var conf = ref setup.ModeConfig[modeIndex];
+
+            // short and long blocksize, if true => long
+            var blockSize = conf.BlockFlag ? header.BlockSize1 : header.BlockSize0;
+
+            ref readonly var mapping = ref setup.Mappings[conf.Mapping];
+            for (var i = 0; i < header.Channels; ++i)
+            {
+                ref readonly var channel = ref mapping.Channels[i];
+                ref readonly var floorConfig = ref setup.FloorConfig[channel.Mux];
+                ref readonly var residueConfig = ref setup.ResidueConfig[channel.Mux];
+                throw new NotImplementedException("Did not finish this, took way to much time to build our own parser. Might revisit later.");
+            }
+
+
+
+            //Logger.Info<OggReader2>($"Leh mapping: {conf.Mapping}");
+
 
 
         }
@@ -186,7 +214,6 @@ internal unsafe class OggReader2
         }
 
         // Mapping
-
         var mappingCount = bitreader.ReadBits(6) + 1;
         setup.Mappings = allocator.AllocateArray<VorbisMapping>(mappingCount);
         for (var i = 0; i < mappingCount; ++i)
@@ -198,7 +225,7 @@ internal unsafe class OggReader2
             }
         }
 
-
+        // Modes
         var modes = bitreader.ReadBits(6) + 1;
         setup.ModeConfig = allocator.AllocateArray<VorbisModeConfig>(modes);
         for (var i = 0; i < modes; ++i)
@@ -210,7 +237,6 @@ internal unsafe class OggReader2
                 return false;
             }
         }
-
 
         return true;
     }
@@ -256,7 +282,14 @@ internal unsafe class OggReader2
         }
 
         mapping.Channels = allocator.AllocateArray<VorbisMappingChannel>(channels);
-        mapping.Submaps = (byte)(reader.ReadBitAsBool() ? reader.ReadBits(4) + 1 : 1);
+        if (reader.ReadBitAsBool())
+        {
+            mapping.Submaps = (byte)(reader.ReadBits(4) + 1);
+        }
+        else
+        {
+            mapping.Submaps = 1;
+        }
 
         if (reader.ReadBitAsBool())
         {
