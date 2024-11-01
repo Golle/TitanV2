@@ -1,3 +1,4 @@
+
 using System.Diagnostics;
 
 namespace Titan.Core;
@@ -17,6 +18,20 @@ public unsafe ref struct TitanBinaryReader(ReadOnlySpan<byte> buffer)
             return ref *data;
         }
     }
+
+    public ReadOnlySpan<byte> Read(uint length)
+        => Read((int)length);
+
+    public ReadOnlySpan<byte> Read(int length)
+    {
+        Debug.Assert(_offset + length <= _buffer.Length);
+        var span = _buffer.Slice(_offset, length);
+        _offset += length;
+        return span;
+    }
+
+    public void Advance(int bytes) => Read(bytes);
+    public ReadOnlySpan<byte> GetRemaining() => _buffer[_offset..];
 
     public static implicit operator TitanBinaryReader(ReadOnlySpan<byte> buffer) => new(buffer);
 }

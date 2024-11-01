@@ -1,4 +1,5 @@
 using Titan.Tools.AssetProcessor.Metadata.Types;
+using Titan.Tools.AssetProcessor.Processors.Audio;
 
 namespace Titan.Tools.AssetProcessor.Metadata;
 
@@ -18,6 +19,7 @@ internal class MetadataBuilder
             ".hlsl" => new ShaderMetadata(),
             ".ttf" => new FontMetadata(),
             ".shaderconf" => new ShaderInfoMetadata(),
+            ".ogg" or ".wav" or ".mp3" => new AudioMetadata(),
             _ => null
         };
         if (metadata == null)
