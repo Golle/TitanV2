@@ -303,7 +303,7 @@ internal unsafe partial struct AssetSystem
     {
         var loader = asset->GetLoader();
         Debug.Assert(loader != null);
-
+        Debug.Assert(loader->Context != null, $"The context of the loader is null. Did you forget to register the loader? Type = {asset->Descriptor->Type}");
         var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);
         asset->Resource = loader->Load(*asset->Descriptor, buffer, asset->GetDependencies());
 
