@@ -17,7 +17,7 @@ public ref struct TitanBinaryWriter(Span<byte> buffer)
     {
         throw new NotImplementedException("Yeah, not implemented yet :)");
     }
-
+    public void WriteShort(short value) => Write(value);
     public unsafe void Write<T>(in T value) where T : unmanaged
     {
         var size = sizeof(T);
