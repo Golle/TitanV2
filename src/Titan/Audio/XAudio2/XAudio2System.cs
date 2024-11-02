@@ -1,4 +1,3 @@
-using Titan.Application.Events;
 using Titan.Audio.CoreAudio;
 using Titan.Audio.Events;
 using Titan.Configurations;
@@ -19,7 +18,7 @@ internal unsafe partial struct XAudio2System
 {
     private ComPtr<IXAudio2> Audio;
     private IXAudio2MasteringVoice* MasteringVoice;
-    private TitanArray<AudioSink> AudioSinks;
+    internal TitanArray<AudioSink> AudioSinks;
 
     [System(SystemStage.Init)]
     public static void Init(XAudio2System* system, in CoreAudioSystem coreAudio, IMemoryManager memoryManager, IConfigurationManager configurationManager)
@@ -151,7 +150,7 @@ internal unsafe partial struct XAudio2System
         {
             var sink = system->AudioSinks.GetPointer(i);
             sink->Callbacks = IXAudio2VoiceCallback.Create(sink);
-            var voiceResult = system->Audio.Get()->CreateSourceVoice(&sink->SourceVoice, &voiceFormat, Flags: 0, MaxFrequencyRatio: 2f, &sink->Callbacks, pSendList: null, pEffectChain: null);
+            var voiceResult = system->Audio.Get()->CreateSourceVoice(&sink->SourceVoice, &voiceFormat, Flags: 0, MaxFrequencyRatio: format.MaxFrequencyRatio, &sink->Callbacks, pSendList: null, pEffectChain: null);
             if (FAILED(voiceResult))
             {
                 Logger.Error<XAudio2System>($"Failed to create {nameof(IXAudio2SourceVoice)} at index {i}. HRESULT = {voiceResult}");
@@ -168,7 +167,7 @@ internal unsafe partial struct XAudio2System
         system->Audio.Dispose();
     }
 
-    private struct AudioSink : IXAudio2VoiceCallbackFunctions
+    internal struct AudioSink : IXAudio2VoiceCallbackFunctions
     {
         public IXAudio2SourceVoice* SourceVoice;
         public IXAudio2VoiceCallback Callbacks;

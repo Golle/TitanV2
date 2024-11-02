@@ -1,15 +1,17 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Audio;
+using Titan.Audio.Resources;
+using Titan.Audio.XAudio2;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Input;
+using Titan.Platform.Win32.XAudio2;
 using Titan.Rendering;
 using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
@@ -35,10 +37,10 @@ App.Create(appConfig)
         Debug = true
 #endif
     })
-    .AddPersistedConfig(new AudioConfig
+    .AddPersistedConfig(AudioConfig.Default with
     {
-        Format = AudioFormat.Default,
-        Channels = 64
+        Channels = 64,
+        Format = AudioFormat.Default
     })
     .AddRegistry<SandboxRegistry>()
     .Build()
@@ -53,6 +55,7 @@ namespace Titan.Sandbox
             builder
                 //.AddSystems<TheGameLightSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
+                .AddSystems<TheAudioThing>()
                 ;
 
             return true;
@@ -107,7 +110,7 @@ namespace Titan.Sandbox
                 });
 
 
-                
+
                 {
                     var lightEntity = entityManager.CreateEntity();
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY * 10));
@@ -126,7 +129,7 @@ namespace Titan.Sandbox
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitZ * 10));
                     entityManager.AddComponent(lightEntity, new Light()
                     {
-                        Color = new ColorRGB(0.4f, 0.8f,1f),
+                        Color = new ColorRGB(0.4f, 0.8f, 1f),
                         Direction = -Vector3.UnitY,
                         Intensity = 100f,
                         Radius = 100f,
@@ -145,6 +148,38 @@ namespace Titan.Sandbox
         }
     }
 
+    internal partial struct TheAudioThing
+    {
+
+        private static AssetHandle<AudioAsset> _music;
+
+        private static bool _playing = false;
+        [System(SystemStage.Init)]
+        public static void Init(AssetsManager assetsManager)
+        {
+            _music = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.BackgroundMusic);
+        }
+
+        [System]
+        public static unsafe void Update(AssetsManager assetsManager, XAudio2System* system)
+        {
+            if (!_playing && assetsManager.IsLoaded(_music))
+            {
+                var audio = assetsManager.Get(_music).AudioData;
+                var buffer = new XAUDIO2_BUFFER
+                {
+                    AudioBytes = (uint)audio.Size,
+                    pAudioData = audio.AsPointer(),
+                    pContext = null, // we can use this if we need more data.
+                    LoopCount = true ? XAudio2Constants.XAUDIO2_LOOP_INFINITE : 0u
+                };
+                var hr = system->AudioSinks[0].SourceVoice->SubmitSourceBuffer(&buffer, null);
+                system->AudioSinks[0].SourceVoice->Start();
+                _playing = true;
+            }
+        }
+
+    }
     internal partial struct TheGameLightSystem
     {
         //[System]

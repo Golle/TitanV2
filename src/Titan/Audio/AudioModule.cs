@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization.Metadata;
 using Titan.Application;
 using Titan.Audio.CoreAudio;
+using Titan.Audio.Resources;
 using Titan.Audio.XAudio2;
+using Titan.Core.Memory;
 
 namespace Titan.Audio;
 
@@ -29,16 +31,22 @@ public record AudioFormat : IConfiguration, IDefault<AudioFormat>
 public record AudioConfig : IConfiguration, IDefault<AudioConfig>, IPersistable<AudioConfig>
 {
     public const uint DefaultChannels = 32u;
-    
+    public const uint DefaultMaxLoadedSounds = 512;
+    public static readonly uint DefaultMaxAudioBufferBytes = MemoryUtils.MegaBytes(256);
+
     /// <summary>
     /// The number of concurrent sounds, defualt <see cref="DefaultChannels"/>
     /// </summary>
     public uint Channels { get; init; }
+    public uint MaxAudioBufferBytes { get; init; }
+    public uint MaxLoadedSounds { get; init; }
     public required AudioFormat Format { get; init; }
     public AudioDevice? Device { get; init; }
     public static AudioConfig Default => new()
     {
         Channels = DefaultChannels,
+        MaxAudioBufferBytes = DefaultMaxAudioBufferBytes,
+        MaxLoadedSounds = DefaultMaxLoadedSounds,
         Format = AudioFormat.Default
     };
 
@@ -55,6 +63,7 @@ internal sealed class AudioModule : IModule
             builder
                 .AddModule<CoreAudioModule>()
                 .AddModule<XAudio2Module>()
+                .AddAssetLoader<AudioLoader>()
                 ;
         }
         else
