@@ -1,116 +1,57 @@
-using System.Runtime.InteropServices;
-using Titan.Core;
+using NVorbis;
+using System.Buffers;
 using Titan.Core.Logging;
+using Titan.Core;
 
 namespace Titan.Tools.AssetProcessor.Parsers.Ogg;
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal unsafe struct VorbisMetadataHeader1
+internal class OggReader
 {
-    public byte PacketType;
-    public fixed byte Vorbis[6];
-    public uint VendorLength;
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal unsafe struct VorbisHeader1
-{
-    public byte PacketType;
-    public fixed byte Vorbis[6];
-    public uint Version;
-    public byte Channels;
-    public uint SampleRate;
-    public uint BitRateMax;
-    public uint BitRateNominal;
-    public uint BitRateMinimum;
-    public byte BlocksizeInfo;
-    public byte FramingFlag;
-
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 27)]
-internal struct OggHeader
-{
-    public uint CapturePattern;
-    public byte Version;
-    public OggHeaderFlags HeaderType;
-    public ulong GranulePosition;
-    public uint BitstreamSerialNumber;
-    public uint PageSequenceNumber;
-    public uint Checksum;
-    public byte PageSegments;
-    //public byte SegmentTable;
-}
-
-internal static unsafe class OggReader
-{
-    public static void Read(ReadOnlySpan<byte> file)
+    private const uint SampleRate = 44100;
+    private const uint Channels = 2;
+    public static ReadOnlySpan<byte> Read(byte[] data)
     {
-        var reader = new TitanBinaryReader(file);
-        var packetCount = 0;
-        var page = 0;
-Start:
+        //NOTE(Jens): Due to the complexity of ogg - vorbis I've decided to take a shortcut and use a library to save some time. I will eventually implement my own decoder..
+        using var reader = new VorbisReader(new MemoryStream(data));
 
-        ref readonly var header = ref reader.Read<OggHeader>();
-
-        //var segmentTable = (byte*)Unsafe.AsPointer(ref header.SegmentTable);
-
-        var packetSize = 0;
-        for (var i = 0; i < header.PageSegments; ++i)
+        if (reader.SampleRate != SampleRate)
         {
-            var segmentSize = reader.Read<byte>();
-            packetSize += segmentSize;
+            Logger.Error<OggReader>($"Mismatch in sample rate. Resampling the Audio is not supported yet. Expected = {SampleRate} Audio File Sample Rate = {reader.SampleRate}");
+            return ReadOnlySpan<byte>.Empty;
+        }
 
-            // this is the end of this segment (could also be done after the loop)?
-            if (segmentSize < 255)
+        if (reader.Channels != Channels)
+        {
+            Logger.Error<OggReader>($"Mismatch in number of channels. Convertion is not supported yet. Expected = {Channels}. Audio File Channels = {reader.Channels}");
+            return ReadOnlySpan<byte>.Empty;
+        }
+        
+
+        var totalSamples = (int)(reader.TotalTime.TotalSeconds * reader.SampleRate * reader.Channels + 0.5);
+        var sampleBuffer = new byte[totalSamples * sizeof(short)];
+        var readBuffer = ArrayPool<float>.Shared.Rent(4096 * reader.Channels);
+        try
+        {
+            var writer = new TitanBinaryWriter(sampleBuffer.AsSpan());
+            
+
+            int samplesRead;
+            // sampling is very slow, not sure why, but it's probably a really bad implementation :| buffer size affects it a bit, but not huge change.
+            while ((samplesRead = reader.ReadSamples(readBuffer.AsSpan())) > 0)
             {
-                if (page == 0)
+                //NOTE(Jens): this is slow, can be done with SIMD
+                for (var i = 0; i < samplesRead; ++i)
                 {
-                    var s = sizeof(VorbisHeader1);
-
-                    // Vorbis header
-                    ref readonly var vorbisHeader = ref reader.Read<VorbisHeader1>();
-
-
+                    var clampedValue = Math.Clamp(readBuffer[i], -1f, 1f);
+                    var value = (short)(clampedValue * short.MaxValue);
+                    writer.WriteShort(value);
                 }
-                else if (page == 1)
-                {
-
-                    ref readonly var metadata = ref reader.Read<VorbisMetadataHeader1>();
-                    var vendorString = reader.Read(metadata.VendorLength);
-                    var userCommentCount = reader.Read<uint>();
-                    for (var j = 0; j < userCommentCount; ++j)
-                    {
-                        var length = reader.Read<uint>();
-                        var comment = reader.Read(length);
-                    }
-
-                    var framingFlag = reader.Read<byte>();
-                    // Vorbis Comment
-                    //var temp = reader.Read(packetSize);
-                }
-                else if (page == 2)
-                {
-                    // Setup header
-                    var temp = reader.Read(packetSize);
-
-                }
-                else
-                {
-                    var packet = reader.Read(packetSize);
-                }
-
-                packetSize = 0; // reset size of current packet
-                packetCount++;
             }
-        }
 
-        if (header.HeaderType != OggHeaderFlags.EndOfStream)
+            return writer.GetData();
+        }
+        finally
         {
-            page++;
-            goto Start;
+            ArrayPool<float>.Shared.Return(readBuffer);
         }
-        Logger.Error($"Woho! Packets = {packetCount}");
-
     }
 }

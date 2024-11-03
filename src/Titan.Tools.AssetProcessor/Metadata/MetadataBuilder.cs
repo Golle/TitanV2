@@ -8,7 +8,7 @@ internal class MetadataBuilder
     public AssetFileMetadata? CreateFromContent(string filename, Stream stream)
     {
         var fileSize = stream.Length;
-        var fileExtension = Path.GetExtension(filename);
+        var fileExtension = Path.GetExtension(filename).ToLowerInvariant();
 
         AssetFileMetadata? metadata = fileExtension switch
         {

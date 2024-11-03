@@ -5,7 +5,7 @@ using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 
-namespace Titan.Tools.AssetProcessor.Parsers.Ogg;
+namespace Titan.Tools.AssetProcessor.Parsers.OggCustom;
 
 internal unsafe class OggReader2
 {

@@ -23,6 +23,22 @@ internal abstract class AssetFileMetadata
     public Guid[] DependsOn { get; set; } = [];
     public bool Skip { get; set; }
 
+    /// <summary>
+    /// License is used for tracking resources that have a license attaches to it<br/>
+    /// <remarks>This field is not used by engine or the asset tool at the moment</remarks>
+    /// </summary>
+    public string? License { get; set; }
+    /// <summary>
+    /// Include the creator of the asset file.<br/>
+    /// <remarks>This field is not used by engine or the asset tool at the moment</remarks>
+    /// </summary>
+    public string? Creator { get; set; }
+    /// <summary>
+    /// Link to the asset file, if applicable.<br/>
+    /// <remarks>This field is not used by engine or the asset tool at the moment</remarks>
+    /// </summary>
+    public string? Link { get; set; }
+
     [JsonIgnore]
     public IReadOnlyList<AssetFileMetadata> Dependencies { get; set; } = [];
 
@@ -30,4 +46,7 @@ internal abstract class AssetFileMetadata
     public string ContentFileFullPath { get; set; } = string.Empty;
     [JsonIgnore]
     public string ContentFileRelativePath { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string FileExtension { get; set; } = string.Empty;
 }

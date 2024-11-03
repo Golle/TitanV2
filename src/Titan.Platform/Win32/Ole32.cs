@@ -26,4 +26,8 @@ public static unsafe partial class Ole32
     public static partial HRESULT PropVariantClear(
         PROPVARIANT* pvar
     );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial void CoInitializeEx(nint pvReserved, uint dwCoInit);
 }

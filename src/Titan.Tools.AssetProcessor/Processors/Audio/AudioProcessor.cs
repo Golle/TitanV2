@@ -5,6 +5,8 @@ using Titan.Assets.Types;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Tools.AssetProcessor.Metadata;
+using Titan.Tools.AssetProcessor.Parsers.Ogg;
+using Titan.Tools.AssetProcessor.Parsers.Wave;
 
 namespace Titan.Tools.AssetProcessor.Processors.Audio;
 
@@ -15,62 +17,57 @@ internal class AudioProcessor : AssetProcessor<AudioMetadata>
     //NOTE(Jens): This should be configured in some other way, and must be the same in the runtime of the engine. Global setting?
     private const uint SampleRate = 44100;
     private const uint Channels = 2;
+
     protected override async Task OnProcess(AudioMetadata metadata, IAssetDescriptorContext context)
     {
-        var extension = Path.GetExtension(metadata.ContentFileRelativePath);
-        if (extension is ".ogg")
+        var bytes = await File.ReadAllBytesAsync(metadata.ContentFileFullPath);
+
+        if (metadata.FileExtension is ".ogg")
         {
-            var timer = Stopwatch.StartNew();
-            //NOTE(Jens): Due to the complexity of ogg - vorbis I've decided to take a shortcut and use a library to save some time. I will eventually implement my own decoder..
-            var bytes = await File.ReadAllBytesAsync(metadata.ContentFileFullPath);
-            using var reader = new VorbisReader(new MemoryStream(bytes));
 
-            timer.Stop();
-            Logger.Trace<AudioProcessor>($"Finished reading Audio file. Elapsed = {timer.Elapsed.TotalMilliseconds} ms. File = {metadata.ContentFileRelativePath}");
-
-            var totalSamples = (int)(reader.TotalTime.TotalSeconds * reader.SampleRate * reader.Channels + 0.5);
-            var sampleBuffer = ArrayPool<byte>.Shared.Rent(totalSamples * sizeof(short));
-            var readBuffer = ArrayPool<float>.Shared.Rent(4096 * reader.Channels);
-            try
+            var data = OggReader.Read(bytes);
+            if (data.IsEmpty)
             {
-                timer.Restart();
-                var writer = new TitanBinaryWriter(sampleBuffer.AsSpan());
-                if (reader.SampleRate != SampleRate)
-                {
-                    Logger.Trace<AudioProcessor>($"Mismatch in sample rate. Resampling the Audio. Expected = {SampleRate} Audio File Sample Rate = {reader.SampleRate}");
-                    context.AddDiagnostics(DiagnosticsLevel.Error, "Resampling is not supported yet.");
-                }
-
-                int samplesRead;
-                // sampling is very slow, not sure why, but it's probably a really bad implementation :| buffer size affects its a bit, but not huge change.
-                while ((samplesRead = reader.ReadSamples(readBuffer.AsSpan())) > 0)
-                {
-                    //NOTE(Jens): this is slow, can be done with SIMD
-                    for (var i = 0; i < samplesRead; ++i)
-                    {
-                        var clampedValue = Math.Clamp(readBuffer[i], -1f, 1f);
-                        var value = (short)(clampedValue * short.MaxValue);
-                        writer.WriteShort(value);
-                    }
-                }
-
-                timer.Stop();
-                Logger.Trace<AudioProcessor>($"Finished sampling Audio data. Elapsed = {timer.Elapsed.TotalMilliseconds} ms. File = {metadata.ContentFileRelativePath}");
-                var audioDescriptor = new AudioDescriptor();
-                if (!context.TryAddAudio(audioDescriptor, writer.GetData(), metadata))
-                {
-                    context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the Audio to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
-                }
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Data was empty when reading the Ogg data. Check log for details. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+                return;
             }
-            finally
+
+            var audioDescriptor = new AudioDescriptor();
+            if (!context.TryAddAudio(audioDescriptor, data, metadata))
             {
-                ArrayPool<float>.Shared.Return(readBuffer);
-                ArrayPool<byte>.Shared.Return(sampleBuffer);
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the Audio to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+            }
+        }
+        else if (metadata.FileExtension is ".wav")
+        {
+            if (!WaveReader.TryRead(bytes, out var format, out var data))
+            {
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to parse the wave file. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+                return;
+            }
+            //NOTE(Jens): Add something about format, we need to verify and convert.
+
+            if (format.nChannels != Channels)
+            {
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Mismatch in number of channels. Channel change not implemented yet. Expected = {Channels} Audio File = {format.nChannels}. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+                return;
+            }
+
+            if (format.nSamplesPerSec != SampleRate)
+            {
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Mismatch in sample rate. Resampling not implemented yet. Expected = {SampleRate} Audio File = {format.wBitsPerSample}. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+                return;
+            }
+
+            var audioDescriptor = new AudioDescriptor();
+            if (!context.TryAddAudio(audioDescriptor, data, metadata))
+            {
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the Audio to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
             }
         }
         else
         {
-            context.AddDiagnostics(DiagnosticsLevel.Error, $"The audio file extension {extension} is not supported yet.");
+            context.AddDiagnostics(DiagnosticsLevel.Error, $"The audio file extension {metadata.FileExtension} is not supported yet.");
         }
     }
 }

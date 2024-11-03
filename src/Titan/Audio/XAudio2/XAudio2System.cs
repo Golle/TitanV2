@@ -171,5 +171,44 @@ internal unsafe partial struct XAudio2System
     {
         public IXAudio2SourceVoice* SourceVoice;
         public IXAudio2VoiceCallback Callbacks;
+
+
+        public void OnBufferStart(void* pBufferContext)
+        {
+            Logger.Error<AudioSink>(nameof(OnBufferStart));
+        }
+
+        public void OnBufferEnd(void* pBufferContext)
+        {
+            Logger.Error<AudioSink>(nameof(OnBufferEnd));
+        }
+
+        public void OnVoiceError(void* pBufferContext, HRESULT error)
+        {
+            Logger.Error<AudioSink>(nameof(OnVoiceError));
+        }
+
+        public void OnLoopEnd(void* pBufferContext)
+        {
+            Logger.Error<AudioSink>(nameof(OnLoopEnd));
+        }
+
+        public void OnStreamEnd()
+        {
+            Logger.Error<AudioSink>(nameof(OnStreamEnd));
+        }
     }
+
+
+    internal enum AudioPlaybackState
+    {
+        Available,
+        Acquired,
+        Playing,
+        Paused,
+        Error,
+        Completed,
+        NotCreated
+    }
+
 }

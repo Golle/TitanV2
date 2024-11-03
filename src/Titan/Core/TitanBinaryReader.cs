@@ -7,6 +7,8 @@ public unsafe ref struct TitanBinaryReader(ReadOnlySpan<byte> buffer)
 {
     private readonly ReadOnlySpan<byte> _buffer = buffer;
     private int _offset;
+    public bool HasData => _offset < _buffer.Length;
+
     public ref readonly T Read<T>() where T : unmanaged
     {
         var size = sizeof(T);

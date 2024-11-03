@@ -1,6 +1,6 @@
 using Titan.Core;
 
-namespace Titan.Tools.AssetProcessor.Parsers.Ogg;
+namespace Titan.Tools.AssetProcessor.Parsers.OggCustom;
 
 internal struct VorbisFloorConfig0
 {

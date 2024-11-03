@@ -1,7 +1,7 @@
 using Titan.Core;
 using Titan.Core.Logging;
 
-namespace Titan.Tools.AssetProcessor.Parsers.Ogg;
+namespace Titan.Tools.AssetProcessor.Parsers.OggCustom;
 
 internal ref struct OggPageReader(ReadOnlySpan<byte> data)
 {

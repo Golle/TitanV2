@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Titan.Tools.AssetProcessor.Parsers.Ogg;
+namespace Titan.Tools.AssetProcessor.Parsers.OggCustom;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct VorbisFloorConfig
