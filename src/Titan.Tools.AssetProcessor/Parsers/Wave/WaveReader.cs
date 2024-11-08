@@ -1,4 +1,3 @@
-using System.Text;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -6,7 +5,7 @@ using Titan.Platform.Win32.XAudio2;
 
 namespace Titan.Tools.AssetProcessor.Parsers.Wave;
 
-internal class WaveReader
+internal sealed class WaveReader
 {
     public static bool TryRead(ReadOnlySpan<byte> data, out WAVEFORMATEX format, out ReadOnlySpan<byte> pcmData)
     {
@@ -16,6 +15,11 @@ internal class WaveReader
         var reader = new TitanBinaryReader(data);
         var riff = reader.Read(4);
         var size = reader.Read<uint>();
+        if (size > data.Length)
+        {
+            Logger.Error<WaveReader>($"Not a valid wave file. The riff size is greater than the entire data stream. RIFF = {size} bytes. Data Length = {data.Length}");
+            return false;
+        }
         var wave = reader.Read(4);
         if (!riff.SequenceEqual("RIFF"u8))
         {

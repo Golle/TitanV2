@@ -33,7 +33,7 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
                 continue;
             }
 
-            //NOTE(Jens): Create the Metadata files if they don't exist
+            // Create the Metadata files if they don't exist
             Logger.Trace<ContentFiles>($"Found asset file. Path = {relativePath}");
             var metadataFile = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
             if (!File.Exists(metadataFile))

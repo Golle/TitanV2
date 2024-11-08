@@ -13,16 +13,30 @@ using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Audio.XAudio2;
 
+/*
+ * TODO
+ * A lot of things have not been implemented yet
+ * 1. Recover from lost devices
+ * 2. Stored state, for example when you have long running music clips or some other sound that you want to repeat
+ * 3. Failed sinks
+ * 4. Immediate play, without putting a message on the queue
+ * 5. Mono + Stero? currently only supports stereo, maybe we want some channels dedicated for UI/Mono audio.
+ *      Mono is half the size of Stereo
+ */
+
 [UnmanagedResource]
 internal unsafe partial struct XAudio2System
 {
     private ComPtr<IXAudio2> Audio;
     private IXAudio2MasteringVoice* MasteringVoice;
     internal TitanArray<AudioSink> AudioSinks;
+    private int NextIndex;
 
     [System(SystemStage.Init)]
     public static void Init(XAudio2System* system, in CoreAudioSystem coreAudio, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
+        system->NextIndex = 0;
+
         var config = configurationManager.GetConfigOrDefault<AudioConfig>();
 
         var createResult = XAudio2Common.XAudio2Create(system->Audio.GetAddressOf(), Flags: 0, XAudio2Processor: XAUDIO2_PROCESSOR.XAUDIO2_DEFAULT_PROCESSOR);
@@ -46,7 +60,7 @@ internal unsafe partial struct XAudio2System
     }
 
     [System(SystemStage.PreUpdate)]
-    public static void Update(XAudio2System* system, in CoreAudioSystem coreAudio, IConfigurationManager configurationManager, EventReader<AudioDeviceChangedEvent> changed)
+    public static void PreUpdate(XAudio2System* system, in CoreAudioSystem coreAudio, IConfigurationManager configurationManager, EventReader<AudioDeviceChangedEvent> changed)
     {
         if (!changed.HasEvents)
         {
@@ -66,6 +80,25 @@ internal unsafe partial struct XAudio2System
         }
     }
 
+    [System]
+    public static void Update(XAudio2System* system)
+    {
+        foreach (ref var sink in system->AudioSinks.AsSpan())
+        {
+            if (sink.State == AudioPlaybackState.Completed)
+            {
+                sink.State = AudioPlaybackState.Available;
+            }
+            else if (sink.State == AudioPlaybackState.Error)
+            {
+                //TODO(Jens): Do we need to recreate the voice?
+                Logger.Error<AudioSystem>($"An AudionSink had an error. HRESULT = {sink.LastError}");
+                sink.State = AudioPlaybackState.Available;
+            }
+        }
+    }
+
+
     private void ReleaseVoices()
     {
         foreach (ref var audioSink in AudioSinks.AsSpan())
@@ -81,6 +114,7 @@ internal unsafe partial struct XAudio2System
             MasteringVoice->DestroyVoice();
         }
     }
+
     private static bool InitAudioVoices(XAudio2System* system, in CoreAudioSystem coreAudio, IConfigurationManager configurationManager)
     {
         // make sure we've released everything.
@@ -150,6 +184,7 @@ internal unsafe partial struct XAudio2System
         {
             var sink = system->AudioSinks.GetPointer(i);
             sink->Callbacks = IXAudio2VoiceCallback.Create(sink);
+            sink->State = AudioPlaybackState.Available;
             var voiceResult = system->Audio.Get()->CreateSourceVoice(&sink->SourceVoice, &voiceFormat, Flags: 0, MaxFrequencyRatio: format.MaxFrequencyRatio, &sink->Callbacks, pSendList: null, pEffectChain: null);
             if (FAILED(voiceResult))
             {
@@ -169,46 +204,79 @@ internal unsafe partial struct XAudio2System
 
     internal struct AudioSink : IXAudio2VoiceCallbackFunctions
     {
+        public AudioPlaybackState State;
         public IXAudio2SourceVoice* SourceVoice;
         public IXAudio2VoiceCallback Callbacks;
 
+        public HRESULT LastError;
 
-        public void OnBufferStart(void* pBufferContext)
+        public void Play(TitanBuffer buffer, in PlaybackSettings settings)
         {
-            Logger.Error<AudioSink>(nameof(OnBufferStart));
+            State = AudioPlaybackState.Playing;
+            XAUDIO2_BUFFER xAudioBuffer = new()
+            {
+                AudioBytes = buffer.Size,
+                pAudioData = buffer.AsPointer(),
+                pContext = null,
+                LoopCount = settings.Loop ? XAudio2Constants.XAUDIO2_MAX_LOOP_COUNT : 0u
+            };
+            SourceVoice->SetFrequencyRatio(settings.Frequenzy);
+            SourceVoice->SetVolume(settings.Volume);
+            SourceVoice->SubmitSourceBuffer(&xAudioBuffer, null);
+            SourceVoice->Start();
         }
 
         public void OnBufferEnd(void* pBufferContext)
         {
-            Logger.Error<AudioSink>(nameof(OnBufferEnd));
+            State = AudioPlaybackState.Completed;
         }
 
         public void OnVoiceError(void* pBufferContext, HRESULT error)
         {
-            Logger.Error<AudioSink>(nameof(OnVoiceError));
-        }
-
-        public void OnLoopEnd(void* pBufferContext)
-        {
-            Logger.Error<AudioSink>(nameof(OnLoopEnd));
-        }
-
-        public void OnStreamEnd()
-        {
-            Logger.Error<AudioSink>(nameof(OnStreamEnd));
+            State = AudioPlaybackState.Error;
+            LastError = error;
         }
     }
 
+    public readonly bool Play(TitanBuffer buffer, in PlaybackSettings settings)
+    {
+        var index = GetAvailableSinkIndex();
+        if (index == -1)
+        {
+            Logger.Warning<XAudio2System>("Failed to get an available sink.");
+            return false;
+        }
+
+        var sink = AudioSinks.GetPointer(index);
+        sink->Play(buffer, settings);
+        return true;
+    }
+
+
+    private readonly int GetAvailableSinkIndex()
+    {
+        //NOTE(Jens): Not thread safe implementation. if we ever want to call this from multiple threads, this needs to change.
+        ref var nextIndex = ref *MemoryUtils.AsPointer(NextIndex);
+        var count = (int)AudioSinks.Length;
+        for (var i = 0; i < count; ++i)
+        {
+            nextIndex = (nextIndex + 1) % count;
+            if (AudioSinks[nextIndex].State == AudioPlaybackState.Available)
+            {
+                return nextIndex;
+            }
+        }
+        return -1;
+    }
 
     internal enum AudioPlaybackState
     {
         Available,
-        Acquired,
+        // Acquired, // use this if we need to make it thread safe
         Playing,
-        Paused,
+        Paused, // nyi
         Error,
         Completed,
-        NotCreated
+        NotCreated  // nyi
     }
-
 }

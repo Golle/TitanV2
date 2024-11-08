@@ -63,6 +63,7 @@ internal sealed class AudioModule : IModule
             builder
                 .AddModule<CoreAudioModule>()
                 .AddModule<XAudio2Module>()
+                .AddSystemsAndResource<AudioSystem>()
                 .AddAssetLoader<AudioLoader>()
                 ;
         }
@@ -74,4 +75,3 @@ internal sealed class AudioModule : IModule
         return true;
     }
 }
-

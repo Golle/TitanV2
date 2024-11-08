@@ -8,7 +8,7 @@ using Titan.Core.Memory.Allocators;
 namespace Titan.Audio.Resources;
 
 [Asset(AssetType.Audio)]
-internal partial struct AudioAsset
+public partial struct AudioAsset
 {
     public TitanBuffer AudioData;
 }

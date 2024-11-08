@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Assets;
+using Titan.Audio;
+using Titan.Audio.XAudio2;
 using Titan.Core;
 using Titan.ECS;
 using Titan.ECS.Archetypes;
@@ -64,6 +66,10 @@ public unsafe ref struct SystemInitializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AssetsManager CreateAssetsManager()
         => new(_unmanagedResources.GetResourcePointer<AssetSystem>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public AudioManager CreateAudioManager()
+        => new(_unmanagedResources.GetResourcePointer<AudioSystem>());
 
     public void AddReadOnlyComponent(in ComponentType type)
     {

@@ -9,6 +9,7 @@ internal class MetadataBuilder
     {
         var fileSize = stream.Length;
         var fileExtension = Path.GetExtension(filename).ToLowerInvariant();
+        var fileName = Path.GetFileNameWithoutExtension(filename);
 
         AssetFileMetadata? metadata = fileExtension switch
         {
@@ -27,6 +28,7 @@ internal class MetadataBuilder
             return null;
         }
         metadata.FileSize = fileSize;
+        metadata.Name = StringHelper.ToPropertyName(fileName);
         return metadata;
     }
 }

@@ -7,6 +7,7 @@ internal static class TitanTypes
 
     public const string Resources = "Titan.Resources";
     public const string Assets = "Titan.Assets";
+    public const string Audio = "Titan.Audio";
     public const string Systems = "Titan.Systems";
     public const string Events = "Titan.Events";
     public const string Configurations = "Titan.Configurations";
@@ -46,6 +47,8 @@ internal static class TitanTypes
     public const string AssetDescriptor = $"{Assets}.AssetDescriptor";
     public const string AssetDependency = $"{Assets}.AssetDependency";
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
+
+    public const string AudioManager = $"{Audio}.AudioManager";
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";
     public const string IComponent = $"{ECS}.IComponent";

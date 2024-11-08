@@ -5,6 +5,7 @@ using Titan.Assets;
 using Titan.Audio;
 using Titan.Audio.Resources;
 using Titan.Audio.XAudio2;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
@@ -151,31 +152,47 @@ namespace Titan.Sandbox
     internal partial struct TheAudioThing
     {
 
+        private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
         private static AssetHandle<AudioAsset> _music;
 
         private static bool _playing = false;
+
         [System(SystemStage.Init)]
         public static void Init(AssetsManager assetsManager)
         {
             _music = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.BackgroundMusic);
+            _uiEffects[0] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click1);
+            _uiEffects[1] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click2);
+            _uiEffects[2] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click3);
+            _uiEffects[3] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click4);
+            _uiEffects[4] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click5);
         }
 
         [System]
-        public static unsafe void Update(AssetsManager assetsManager, XAudio2System* system)
+        public static unsafe void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState)
         {
+            //audioManager.PlayOnce(_music, new PlaybackSettings());
             if (!_playing && assetsManager.IsLoaded(_music))
             {
-                var audio = assetsManager.Get(_music).AudioData;
-                var buffer = new XAUDIO2_BUFFER
-                {
-                    AudioBytes = (uint)audio.Size,
-                    pAudioData = audio.AsPointer(),
-                    pContext = null, // we can use this if we need more data.
-                    LoopCount = true ? XAudio2Constants.XAUDIO2_LOOP_INFINITE : 0u
-                };
-                var hr = system->AudioSinks[0].SourceVoice->SubmitSourceBuffer(&buffer, null);
-                system->AudioSinks[0].SourceVoice->Start();
+                audioManager.PlayOnce(_music, new(Loop: true));
                 _playing = true;
+            }
+
+
+            PlaySound(KeyCode.One, audioManager, inputState);
+            PlaySound(KeyCode.Two, audioManager, inputState);
+            PlaySound(KeyCode.Three, audioManager, inputState);
+            PlaySound(KeyCode.Four, audioManager, inputState);
+            PlaySound(KeyCode.Five, audioManager, inputState);
+            PlaySound(KeyCode.Six, audioManager, inputState);
+            PlaySound(KeyCode.Seven, audioManager, inputState);
+
+            static void PlaySound(KeyCode code, in AudioManager audioManager, in InputState inputState)
+            {
+                if (inputState.IsKeyPressed(code))
+                {
+                    audioManager.PlayOnce(_uiEffects[(int)code - 49]);
+                }
             }
         }
 
