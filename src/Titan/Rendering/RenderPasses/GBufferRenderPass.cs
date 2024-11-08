@@ -70,10 +70,6 @@ internal unsafe partial struct GBufferRenderPass
     [System(SystemStage.PreUpdate)]
     public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
     {
-        if (graph.IsReady)
-        {
-
-        }
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
             return;

@@ -14,7 +14,7 @@ internal static class StringHelper
         foreach (var character in name)
         {
             //NOTE(Jens): add more illegal characters when we need it. 
-            if (character is ' ' or '-' or '_')
+            if (character is ' ' or '-' or '_' or '.')
             {
                 makeUpper = true;
                 continue;

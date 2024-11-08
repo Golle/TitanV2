@@ -10,11 +10,6 @@ using Titan.Windows;
 
 namespace Titan.Rendering.RenderPasses;
 
-file struct BackbufferData
-{
-    public Color Color;
-}
-
 [UnmanagedResource]
 internal unsafe partial struct BackbufferRenderPass
 {
@@ -26,9 +21,9 @@ internal unsafe partial struct BackbufferRenderPass
     {
         renderPass->PassHandle = graph.CreatePass("BackbufferRenderPass", new()
         {
-            RootSignatureBuilder = static builder => builder.WithRootConstant<BackbufferData>(register: 1, space: 7),
+            RootSignatureBuilder = static builder => builder.WithRootConstant<uint>(register: 1, space: 7),
             BlendState = BlendStateType.AlphaBlend,
-            Inputs = [BuiltInRenderTargets.DeferredLighting],
+            Inputs = [BuiltInRenderTargets.DeferredLighting, BuiltInRenderTargets.UI],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,
             VertexShader = EngineAssetsRegistry.ShaderFullscreenVertex,
@@ -58,10 +53,7 @@ internal unsafe partial struct BackbufferRenderPass
             TopLeftY = 0
         };
         commandList.SetViewport(&viewPort);
-        commandList.SetGraphicsRootConstant(DataIndex, new BackbufferData
-        {
-            Color = Color.Green
-        });
+
 
         D3D12_RECT rect = new()
         {
@@ -71,7 +63,15 @@ internal unsafe partial struct BackbufferRenderPass
             Top = 0
         };
         commandList.SetScissorRect(&rect);
+
+        // draw World
+        commandList.SetGraphicsRootConstant(DataIndex, 0u);
         commandList.DrawInstanced(3, 1);
+
+        // draw UI
+        commandList.SetGraphicsRootConstant(DataIndex, 1u);
+        commandList.DrawInstanced(3, 1);
+
         graph.End(pass.PassHandle);
     }
 }

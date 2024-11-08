@@ -13,7 +13,12 @@ internal sealed class RenderingModule : IModule
         builder
             .AddModule<StorageModule>()
             .AddModule<ResourcesModule>()
-            .AddModule<DeferredRenderingModule>();
+
+            .AddSystemsAndResource<RenderGraph>()
+            .AddSystemsAndResource<RenderTargetCache>()
+
+            .AddModule<DeferredRenderingModule>()
+            ;
 
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {

@@ -63,7 +63,6 @@ internal unsafe partial struct AudioSystem
         {
             ref readonly var clip = ref system->Queue[i];
             ref readonly var audio = ref assetsManager.Get(clip.Asset);
-            Logger.Error<AudioSystem>($"Playing sound. Id = {clip.Asset.Index}");
             if (!audioSystem.Play(audio.AudioData, clip.Settings))
             {
                 Logger.Error<AudioSystem>($"Failed to play the sound. Id = {clip.Asset.Index}");

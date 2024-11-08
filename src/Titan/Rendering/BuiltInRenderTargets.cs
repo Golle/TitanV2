@@ -11,6 +11,7 @@ public static class BuiltInRenderTargets
     public static readonly RenderTargetConfig GBufferSpecular = new(StringRef.Create("GBuffer_Specular"), RenderTargetFormat.RGBA8, Color.Magenta);
     public static readonly RenderTargetConfig DeferredLighting = new(StringRef.Create("DeferredLighting"), RenderTargetFormat.RGBA8, Color.Black with { A = 0 });
     public static readonly RenderTargetConfig Backbuffer = new(StringRef.Create("Backbuffer"), RenderTargetFormat.BackBuffer, Color.Magenta);
+    public static readonly RenderTargetConfig UI = new(StringRef.Create("UI"), RenderTargetFormat.RGBA8, Color.Transparent);
 }
 
 public static class BuiltInDepthsBuffers
