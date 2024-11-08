@@ -63,6 +63,17 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
+    private static string CreateAudioDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var audio = ref assetDescriptor.Audio;
+        var content =
+            $@"{nameof(AssetDescriptor.Audio)} = new()
+            {{
+            }}";
+
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
+
     private static string CreateBaseDescriptor(in AssetDescriptor baseDescriptor, string content, AssetFileMetadata metadata)
     {
         //NOTE(Jens): Consider removing AssetPath, it can be useful in debug/tracing/logging but it will use some additional memory.
@@ -183,6 +194,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     AssetType.Texture => CreateTexture2DDescriptor(descriptor, metadata),
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
                     AssetType.Mesh => CreateMeshDescriptor(descriptor, metadata),
+                    AssetType.Audio => CreateAudioDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 

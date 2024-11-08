@@ -3,6 +3,7 @@ using Titan.Assets.Types;
 using Titan.Core.Logging;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;
+using Titan.Tools.AssetProcessor.Processors.Audio;
 
 namespace Titan.Tools.AssetProcessor.Processors;
 
@@ -50,6 +51,16 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
             Mesh = mesh
         };
 
+        return AddAsset(data, metadata, descriptor);
+    }
+
+    public bool TryAddAudio(in AudioDescriptor audio, ReadOnlySpan<byte> data, AudioMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.Audio,
+            Audio = audio
+        };
         return AddAsset(data, metadata, descriptor);
     }
 

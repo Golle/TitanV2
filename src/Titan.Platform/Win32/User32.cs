@@ -192,6 +192,13 @@ public static unsafe partial class User32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return:MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnregisterDeviceNotification(
+        HDEVNOTIFY Handle
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool UpdateWindow(HWND hwnd);
 

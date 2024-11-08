@@ -66,6 +66,21 @@ public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
         return array;
     }
 
+
+    public TitanList<T> AllocateList<T>(uint count) where T : unmanaged
+    {
+        if (count == 0)
+        {
+            return TitanList<T>.Empty;
+        }
+
+        var size = (uint)(sizeof(T) * count);
+        Debug.Assert(_offset + size <= allocatorSize);
+        var start = mem + _offset;
+        _offset += size;
+        return new TitanList<T>((T*)start, count);
+    }
+
     public void Reset(bool initialize = false)
     {
         _offset = 0;

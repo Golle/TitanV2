@@ -21,7 +21,6 @@ internal unsafe partial struct Win32MessageQueue
     public bool HasEvents() => _tail != _head;
     public void Push<T>(in T @event) where T : unmanaged, IWin32Event
     {
-
         Debug.Assert(sizeof(T) <= Win32Event.Win32EventMaxSize);
 
         if (_eventCount >= Win32MaxEventCount - 1)

@@ -1,4 +1,5 @@
 using Titan.Application.Events;
+using Titan.Audio.Events;
 using Titan.Core.Logging;
 using Titan.Events;
 using Titan.Input;
@@ -47,6 +48,12 @@ internal unsafe partial struct Win32MessagePump
                     break;
                 case EventTypes.Quit:
                     Logger.Trace<Win32WindowSystem>("Quit message received!");
+                    break;
+
+                case EventTypes.AudioDeviceArrival:
+                case EventTypes.AudioDeviceRemoveComplete:
+                    // Maybe we need a more granular approach later, but for now this will do.
+                    writer.Send(new AudioDeviceChangedEvent());
                     break;
                 default:
                     Logger.Warning<Win32WindowSystem>($"Win32 Message not handled. Id = {@event.Id}");

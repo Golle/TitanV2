@@ -89,7 +89,7 @@ public unsafe struct GeneralAllocator : IAllocator
         
         var node = GetFreeNode(totalSize);
         Debug.Assert(node != null);
-        AssertCircularMemmory();
+        AssertCircularMemory();
         var remainingSize = node->BlockSize - totalSize;
         // if the remaining size is greater than MinBlockSize, split the node into 2. 
         if (remainingSize > MinBlockSize)
@@ -119,7 +119,7 @@ public unsafe struct GeneralAllocator : IAllocator
             MemoryUtils.Init(data, size);
         }
         
-        AssertCircularMemmory();
+        AssertCircularMemory();
         return data;
     }
 
@@ -287,7 +287,7 @@ public unsafe struct GeneralAllocator : IAllocator
     public static implicit operator Allocator(in GeneralAllocator allocator) => allocator.AsAllocator();
 
     [Conditional("DEBUG")]
-    public void AssertCircularMemmory()
+    public void AssertCircularMemory()
     {
         //NOTE(Jens): We can disable this if it slows things down to much. 
         if (_allocations == null)

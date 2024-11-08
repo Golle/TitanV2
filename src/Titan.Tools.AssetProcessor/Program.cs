@@ -6,6 +6,7 @@ using Titan.Tools.AssetProcessor;
 using Titan.Tools.AssetProcessor.Export;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Processors;
+using Titan.Tools.AssetProcessor.Processors.Audio;
 using Titan.Tools.AssetProcessor.Processors.Fonts;
 using Titan.Tools.AssetProcessor.Processors.Models;
 using Titan.Tools.AssetProcessor.Processors.Shaders;
@@ -64,7 +65,8 @@ command.SetHandler(async (path, bin, code, name) =>
         .With<AsepriteProcessor>()
         .With<ShaderProcessor>()
         .With<ObjModelProcessor>()
-        .With<FontProcessor>();
+        .With<FontProcessor>()
+        .With<AudioProcessor>();
 
     var pipelineResult = await pipeline.Run(metadataFiles, context);
     if (!pipelineResult)

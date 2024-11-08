@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Titan.Platform.Win32;
 
 namespace Titan.Core.Memory;
 
@@ -30,6 +31,13 @@ public static unsafe class MemoryUtils
 
         //NOTE(Jens): Should we have a platform layer for this? is ZeroMemory/SecureZeroMemory faster on Windows?
         //https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa366877(v=vs.85)
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Copy<T>(Span<T> dst, T* src, int length) where T : unmanaged
+    {
+        Debug.Assert(length >= 0);
+        Copy(dst, src, (uint)length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -190,7 +198,19 @@ public static unsafe class MemoryUtils
         return alignedMemory < size ? alignedMemory + alignment : alignedMemory;
     }
 
+    public static bool Equals<T>(TitanArray<T> lhs, TitanArray<T> rhs) where T : unmanaged
+    {
+        Debug.Assert(GlobalConfiguration.Platform == Platforms.Windows, "The equals have only been implemented for Windows.");
+        if (lhs.Length != rhs.Length)
+        {
+            return false;
+        }
 
+        var size = (uint)sizeof(T);
+        var length = lhs.Length;
+        return MSVCRT.memcmp(lhs.AsPointer(), rhs.AsPointer(), length * size) == 0;
+    }
+    
     /// <summary>
     /// This should only be used where other allocators can't be used. 
     /// </summary>

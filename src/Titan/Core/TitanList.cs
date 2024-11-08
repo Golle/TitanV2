@@ -38,7 +38,24 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
 
     public readonly ReadOnlySpan<T> AsReadOnlySpan() => new(_elements.AsPointer(), (int)_next);
     public readonly Span<T> AsSpan() => new(_elements.AsPointer(), (int)_next);
-    public readonly T* AsPointer(uint index = 0) => _elements.AsPointer() + index;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly T* AsPointer() => _elements.AsPointer();
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly T* GetPointer(uint index)
+    {
+        Debug.Assert(index < _next);
+        return _elements.AsPointer() + index;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly T* GetPointer(int index)
+    {
+        Debug.Assert(index >= 0);
+        Debug.Assert(index < _next);
+        return _elements.AsPointer() + index;
+    }
 
     public static implicit operator TitanList<T>(Span<T> data) => new(MemoryUtils.AsPointer(data.GetPinnableReference()), (uint)data.Length);
 
@@ -47,4 +64,6 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
     public static implicit operator T*(in TitanList<T> list) => list.AsPointer();
 
     public void Clear() => _next = 0;
+
+    public static TitanList<T> Empty => default;
 }

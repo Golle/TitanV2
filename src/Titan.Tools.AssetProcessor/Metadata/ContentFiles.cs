@@ -33,7 +33,7 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
                 continue;
             }
 
-            //NOTE(Jens): Create the Metadata files if they don't exist
+            // Create the Metadata files if they don't exist
             Logger.Trace<ContentFiles>($"Found asset file. Path = {relativePath}");
             var metadataFile = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
             if (!File.Exists(metadataFile))
@@ -76,6 +76,7 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
             var directory = Path.GetDirectoryName(file)!;
             metadata.ContentFileFullPath = Path.Combine(directory, assetFilename);
             metadata.ContentFileRelativePath = Path.GetRelativePath(contentFolder, metadata.ContentFileFullPath);
+            metadata.FileExtension = Path.GetExtension(assetFilename).ToLowerInvariant();
             if (!metadatas.TryAdd(metadata.Id, metadata))
             {
                 throw new InvalidOperationException("Failed to add metadata. Probably duplicate key.");

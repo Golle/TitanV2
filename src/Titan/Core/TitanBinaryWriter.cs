@@ -17,11 +17,11 @@ public ref struct TitanBinaryWriter(Span<byte> buffer)
     {
         throw new NotImplementedException("Yeah, not implemented yet :)");
     }
-
+    public void WriteShort(short value) => Write(value);
     public unsafe void Write<T>(in T value) where T : unmanaged
     {
         var size = sizeof(T);
-        Debug.Assert(_length + size < _buffer.Length);
+        Debug.Assert(_length + size <= _buffer.Length);
         fixed (T* ptr = &value)
         fixed (byte* bufferPtr = _buffer)
         {

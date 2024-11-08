@@ -1,4 +1,5 @@
 using Titan.Tools.AssetProcessor.Metadata.Types;
+using Titan.Tools.AssetProcessor.Processors.Audio;
 
 namespace Titan.Tools.AssetProcessor.Metadata;
 
@@ -7,7 +8,8 @@ internal class MetadataBuilder
     public AssetFileMetadata? CreateFromContent(string filename, Stream stream)
     {
         var fileSize = stream.Length;
-        var fileExtension = Path.GetExtension(filename);
+        var fileExtension = Path.GetExtension(filename).ToLowerInvariant();
+        var fileName = Path.GetFileNameWithoutExtension(filename);
 
         AssetFileMetadata? metadata = fileExtension switch
         {
@@ -18,6 +20,7 @@ internal class MetadataBuilder
             ".hlsl" => new ShaderMetadata(),
             ".ttf" => new FontMetadata(),
             ".shaderconf" => new ShaderInfoMetadata(),
+            ".ogg" or ".wav" or ".mp3" => new AudioMetadata(),
             _ => null
         };
         if (metadata == null)
@@ -25,6 +28,7 @@ internal class MetadataBuilder
             return null;
         }
         metadata.FileSize = fileSize;
+        metadata.Name = StringHelper.ToPropertyName(fileName);
         return metadata;
     }
 }

@@ -124,6 +124,10 @@ internal static class Helpers
                 {
                     builder.Add(new SystemParameter(TitanTypes.EventWriter, ArgumentKind.EventWriter, ModifierType.Value));
                 }
+                else if (typeName is TitanTypes.AudioManager)
+                {
+                    builder.Add(new SystemParameter(TitanTypes.AudioManager, ArgumentKind.AudioManager, ModifierType.Value));
+                }
                 else if (typeName.StartsWith(TitanTypes.EventReader))
                 {
                     var eventType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();

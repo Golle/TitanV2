@@ -1,6 +1,7 @@
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
+using Titan.Platform.Win32.DBT;
 using Titan.Resources;
 using Titan.Windows.Win32;
 
@@ -22,6 +23,7 @@ internal unsafe partial struct Window
 
     public void* Queue;
     public NativeThreadHandle WindowThread;
+    public HDEVNOTIFY DeviceNotificationHandle;
     public bool Windowed;
     public bool Active;
 

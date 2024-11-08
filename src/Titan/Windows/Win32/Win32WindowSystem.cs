@@ -5,6 +5,7 @@ using Titan.Core.Logging;
 using Titan.Core.Threading;
 using Titan.Input;
 using Titan.Platform.Win32;
+using Titan.Platform.Win32.DBT;
 using Titan.Systems;
 using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
@@ -33,6 +34,7 @@ internal unsafe partial struct Win32WindowSystem
 
         window->WindowThread = threadManager.Create(&CreateAndStartWindow, window, true);
         //TODO(Jens): This should be handled in some nicer way. CreateEvent and SetEvent causes the debugger to deadlock though, so not sure what we can do.
+        //NOTE(Jens): Update, this is not true anymore, it was due to GC supress
         while (window->Handle == 0)
         {
             Thread.Sleep(1);
@@ -46,6 +48,11 @@ internal unsafe partial struct Win32WindowSystem
         {
             Logger.Trace<Win32WindowSystem>("No Window Handle set, can't destroy window.");
             return;
+        }
+
+        if (window->DeviceNotificationHandle.IsValid)
+        {
+            UnregisterDeviceNotification(window->DeviceNotificationHandle);
         }
 
         // Cast it into the fire!
@@ -185,10 +192,23 @@ internal unsafe partial struct Win32WindowSystem
     [UnmanagedCallersOnly]
     private static nint WindowProc(HWND hwnd, WindowMessage message, nuint wParam, nuint lParam)
     {
+        Window* window;
         if (message == WM_CREATE)
         {
             var create = (CREATESTRUCTW*)lParam;
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (nint)create->lpCreateParams);
+            window = (Window*)create->lpCreateParams;
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (nint)window);
+
+            DEV_BROADCAST_DEVICEINTERFACE_W filter = default;
+            filter.dbcc_size = (uint)sizeof(DEV_BROADCAST_DEVICEINTERFACE_W);
+            filter.dbcc_devicetype = (uint)DBT_DEVICE_TYPES.DBT_DEVTYP_DEVICEINTERFACE;
+            filter.dbcc_classguid = DEVICEINTERFACE_AUDIO.DEVINTERFACE_AUDIO_RENDER;
+
+            window->DeviceNotificationHandle = RegisterDeviceNotificationW(hwnd.Value, &filter, DEVICE_NOTIFY_FLAGS.DEVICE_NOTIFY_WINDOW_HANDLE);
+            if (!window->DeviceNotificationHandle.IsValid)
+            {
+                Logger.Error<Win32WindowSystem>("Failed to register the window for Audio Device notifications.");
+            }
         }
 
         var userData = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
@@ -197,7 +217,7 @@ internal unsafe partial struct Win32WindowSystem
             Logger.Trace<Win32WindowSystem>($"No message queue, message discarded. Message = {message} wparam = 0x{wParam:X8} lParam = 0x{lParam:X8}");
             return DefWindowProcW(hwnd, message, wParam, lParam);
         }
-        var window = (Window*)userData;
+        window = (Window*)userData;
         var queue = (Win32MessageQueue*)window->Queue;
 
         //NOTE(Jens): Do we want another layer here? that processes the windows messages
@@ -229,6 +249,25 @@ internal unsafe partial struct Win32WindowSystem
 
             case WM_CLOSE:
                 queue->Push(new Win32CloseEvent());
+                break;
+            case WM_DEVICECHANGE:
+                var devinterface = (DEV_BROADCAST_DEVICEINTERFACE_W*)lParam; // This is also the DEV_BROADCAST_HDR struct
+                if (devinterface == null || devinterface->dbcc_devicetype != (nint)DBT_DEVICE_TYPES.DBT_DEVTYP_DEVICEINTERFACE || devinterface->dbcc_classguid != DEVICEINTERFACE_AUDIO.DEVINTERFACE_AUDIO_RENDER)
+                {
+                    // nothing we care about at the moment
+                    break;
+                }
+
+                //NOTE(Jens): Add the device name for debugging?
+                switch ((DBT_DEVICE_TYPES)wParam)
+                {
+                    case DBT_DEVICE_TYPES.DBT_DEVICEARRIVAL:
+                        queue->Push(new AudioDeviceArrivalEvent());
+                        break;
+                    case DBT_DEVICE_TYPES.DBT_DEVICEREMOVECOMPLETE:
+                        queue->Push(new AudioDeviceRemoveCompleteEvent());
+                        break;
+                }
                 break;
         }
 

@@ -3,12 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Platform.Win32.XAudio2;
 
-//NOTE(Jens): This is a mess, wrapping unmanaged vtable to callbacks on a struct. Maybe we can revisit this and see if it can be simplified.
-
 public unsafe interface IXAudio2VoiceCallbackFunctions
 {
     //NOTE(Jens): we have default implementations for all of these so they can just be ignored when not needed.
-    void OnVoiceProcessingPassStart(uint bytesRequired){}
+    void OnVoiceProcessingPassStart(uint bytesRequired) { }
     void OnVoiceProcessingPassEnd() { }
     void OnStreamEnd() { }
     void OnBufferStart(void* pBufferContext) { }
@@ -57,10 +55,10 @@ internal unsafe struct IXAudio2VoiceCallbackContext
         public static void OnVoiceError(void* context, void* pBufferContext, HRESULT error)
             => ((T*)context)->OnVoiceError(pBufferContext, error);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnVoicePocessingPassStart(uint bytesRequired)
         => _onVoicePocessingPassStart(_context, bytesRequired);
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OnVoiceProcessingPassEnd()

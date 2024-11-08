@@ -54,6 +54,8 @@ public struct AssetDescriptor
     public ref MeshDescriptor Mesh => ref _descriptors.Mesh;
     [UnscopedRef]
     public ref ShaderDescriptor Shader => ref _descriptors.Shader;
+    [UnscopedRef]
+    public ref AudioDescriptor Audio => ref _descriptors.Audio;
 
     /// <summary>
     /// All supported built in Asset descriptors
@@ -67,5 +69,7 @@ public struct AssetDescriptor
         public MeshDescriptor Mesh;
         [FieldOffset(0)]
         public ShaderDescriptor Shader;
+        [FieldOffset(0)]
+        public AudioDescriptor Audio;
     }
 }
