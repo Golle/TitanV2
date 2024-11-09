@@ -9,6 +9,7 @@ using Titan.ECS.Archetypes;
 using Titan.Events;
 using Titan.Resources;
 using Titan.Services;
+using Titan.UI;
 
 namespace Titan.Systems;
 
@@ -70,6 +71,9 @@ public unsafe ref struct SystemInitializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AudioManager CreateAudioManager()
         => new(_unmanagedResources.GetResourcePointer<AudioSystem>());
+
+    public UIManager CreateUIManager()
+        => new(_unmanagedResources.GetResourcePointer<UISystem>());
 
     public void AddReadOnlyComponent(in ComponentType type)
     {

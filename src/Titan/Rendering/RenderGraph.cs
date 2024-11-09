@@ -20,6 +20,7 @@ using Titan.Platform.Win32.D3D12;
 using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Systems;
+using Titan.Windows;
 
 namespace Titan.Rendering;
 
@@ -28,6 +29,8 @@ internal struct FrameData
 {
     public Matrix4x4 ViewProjection;
     public Vector3 CameraPosition;
+    public uint WindowWidth;
+    public uint WindowHeight;
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
@@ -316,7 +319,7 @@ internal unsafe partial struct RenderGraph
 
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void ExeucuteCommandLists(in RenderGraph graph, in D3D12CommandQueue commandQueue, in CameraSystem cameraSystem)
+    public static void ExeucuteCommandLists(in RenderGraph graph, in D3D12CommandQueue commandQueue, in CameraSystem cameraSystem, in Window window)
     {
         if (!graph._isReady)
         {
@@ -327,7 +330,9 @@ internal unsafe partial struct RenderGraph
         graph._frameDataGPU.Write(new FrameData
         {
             ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
-            CameraPosition = cameraSystem.DefaultCamera.Position
+            CameraPosition = cameraSystem.DefaultCamera.Position,
+            WindowHeight =  (uint)window.Height,
+            WindowWidth = (uint)window.Width
         });
 
         Span<CommandList> commandListBuffer = stackalloc CommandList[10];

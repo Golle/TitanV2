@@ -13,6 +13,7 @@ internal static class TitanTypes
     public const string Configurations = "Titan.Configurations";
     public const string Core = "Titan.Core";
     public const string ECS = "Titan.ECS";
+    public const string UI = "Titan.UI";
 
     public const string UnmanagedResourceAttribute = $"{Resources}.UnmanagedResourceAttribute";
     public const string UnmanagedResourceGenerator = $"{Resources}.UnmanagedResourceId";
@@ -49,6 +50,7 @@ internal static class TitanTypes
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
     public const string AudioManager = $"{Audio}.AudioManager";
+    public const string UIManager = $"{UI}.UIManager";
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";
     public const string IComponent = $"{ECS}.IComponent";

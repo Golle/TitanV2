@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
@@ -19,6 +20,7 @@ using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Sandbox;
 using Titan.Systems;
+using Titan.UI;
 using Titan.Windows;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
@@ -168,16 +170,22 @@ namespace Titan.Sandbox
             _uiEffects[4] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click5);
         }
 
+        private static int _a;
         [System]
-        public static unsafe void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState)
+        public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+
+            var a = (_a += 1) % 200;
+            ui.Box(new(a, 100), new(100, 200), Color.Red);
+            ui.Box(new(300, a), new(a, 50), Color.Green with { A = 0.9f });
+            ui.Box(new(100, a*2), new(50, 10), Color.Blue);
+
             //audioManager.PlayOnce(_music, new PlaybackSettings());
-            if (!_playing && assetsManager.IsLoaded(_music))
+            if (!_playing && assetsManager.IsLoaded(_music) && inputState.IsKeyPressed(KeyCode.M))
             {
                 audioManager.PlayOnce(_music, new(Loop: true));
                 _playing = true;
             }
-
 
             PlaySound(KeyCode.One, audioManager, inputState);
             PlaySound(KeyCode.Two, audioManager, inputState);

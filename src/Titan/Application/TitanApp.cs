@@ -132,7 +132,7 @@ internal sealed class TitanApp : IApp, IRunnable
             if (timer.Elapsed.TotalSeconds > 1f)
             {
                 var fps = frameCount / timer.Elapsed.TotalSeconds;
-                //Logger.Info<TitanApp>($"FPS: {fps}");
+                Logger.Info<TitanApp>($"FPS: {fps}");
                 frameCount = 0;
                 timer.Restart();
             }

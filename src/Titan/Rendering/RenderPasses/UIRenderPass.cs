@@ -2,10 +2,12 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics;
+using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
+using Titan.UI;
 using Titan.Windows;
 
 namespace Titan.Rendering.RenderPasses;
@@ -14,6 +16,7 @@ namespace Titan.Rendering.RenderPasses;
 internal unsafe partial struct UIRenderPass
 {
     private Handle<RenderPass> PassHandle;
+    private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
 
     [System(SystemStage.Init)]
     public static void Init(UIRenderPass* renderPass, in RenderGraph graph)
@@ -30,6 +33,7 @@ internal unsafe partial struct UIRenderPass
             PixelShader = EngineAssetsRegistry.ShaderUIPixel,
             VertexShader = EngineAssetsRegistry.ShaderUIVertex,
             RootSignatureBuilder = builder => builder
+                .WithDecriptorRange(1, space: 0) // Renderable instances
         };
 
         renderPass->PassHandle = graph.CreatePass("UI", args);
@@ -37,13 +41,13 @@ internal unsafe partial struct UIRenderPass
 
 
     [System]
-    public static void Update(UIRenderPass* pass, in RenderGraph graph, in Window window)
+    public static void Update(in UIRenderPass pass, in RenderGraph graph, in Window window, in D3D12ResourceManager resourceManager, in UISystem system)
     {
-        if (!graph.Begin(pass->PassHandle, out var commandList))
+        if (!graph.Begin(pass.PassHandle, out var commandList))
         {
             return;
         }
-        
+
         D3D12_VIEWPORT viewPort = new()
         {
             Height = window.Height,
@@ -64,13 +68,32 @@ internal unsafe partial struct UIRenderPass
         commandList.SetScissorRect(&rect);
         commandList.SetViewport(&viewPort);
 
-        commandList.DrawInstanced(3, 1);
-
-        graph.End(pass->PassHandle);
+        var instancesIndex = resourceManager.Access(system.Instances)->SRV.GPU;
+        commandList.SetGraphicsRootDescriptorTable(PassDataIndex, instancesIndex);
     }
 
+    [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
+    public static void PostUpdate(in UIRenderPass pass, in UISystem ui, ref RenderGraph graph)
+    {
+        if (!graph.IsReady)
+        {
+            return;
+        }
 
-    private static void Clear(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList) 
+        //NOTE(Jens): We take RenderGraph as a mutable reference so it executes before the command lists are executed. 
+        //NOTE(Jens): Maybe we need to rethink the way this is executed. 
+        var commandList = graph.GetCommandList(pass.PassHandle);
+
+        if (ui.Count > 0)
+        {
+            //TODO(Jens): replace this with DrawIndexedInstanced and use an index buffer
+            commandList.DrawInstanced(6, ui.Count);
+        }
+
+        graph.End(pass.PassHandle);
+    }
+
+    private static void Clear(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
         => commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.UI.OptimizedClearColor);
 }
 

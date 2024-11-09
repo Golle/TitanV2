@@ -109,7 +109,7 @@ internal unsafe partial struct Win32WindowSystem
         }
 
         HWND parent = default;
-        WindowStylesEx windowStyleEx = 0;
+        WindowStylesEx windowStyleEx = WindowStylesEx.WS_EX_TOPMOST;
 
         var windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
         //if (!config.Resizable)

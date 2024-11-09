@@ -624,7 +624,7 @@ public unsafe partial struct D3D12ResourceManager
                 .Topology(args.Topology)
                 .Razterizer(D3D12_RASTERIZER_DESC.Default() with
                 {
-                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_BACK // TODO(Jens): Should be configurable
+                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE // TODO(Jens): Should be configurable
                 })
                 .RenderTargetFormat(new(formats.AsReadOnlySpan()))
                 .RootSignature(rootSignature->Resource)

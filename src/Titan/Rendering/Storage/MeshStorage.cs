@@ -227,10 +227,7 @@ internal unsafe partial struct MeshStorage
     [System(SystemStage.Shutdown)]
     public static void Shutdown(ref MeshStorage storage, in D3D12ResourceManager resourceManager)
     {
-
-
-
-
+        Logger.Warning<MeshStorage>("Can't release buffers due to being used.");
     }
 
     private TitanArray<SubmeshData> AllocSubmeshData(uint count)
