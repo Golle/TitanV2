@@ -1,11 +1,9 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Titan;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Audio;
 using Titan.Audio.Resources;
-using Titan.Audio.XAudio2;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
@@ -13,7 +11,6 @@ using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Input;
-using Titan.Platform.Win32.XAudio2;
 using Titan.Rendering;
 using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
@@ -156,6 +153,7 @@ namespace Titan.Sandbox
 
         private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
         private static AssetHandle<AudioAsset> _music;
+        private static AssetHandle<FontAsset> _font;
 
         private static bool _playing = false;
 
@@ -168,17 +166,35 @@ namespace Titan.Sandbox
             _uiEffects[2] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click3);
             _uiEffects[3] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click4);
             _uiEffects[4] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click5);
+
+            _font = assetsManager.Load<FontAsset>(EngineAssetsRegistry.CutiveMonoRegular);
         }
 
-        private static int _a;
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+            if (ui.Button(new(100, 200), new(200, 100), Color.Green))
+            {
+                Logger.Error("button 1 pressed");
+            }
 
-            var a = (_a += 1) % 200;
-            ui.Box(new(a, 100), new(100, 200), Color.Red);
-            ui.Box(new(300, a), new(a, 50), Color.Green with { A = 0.9f });
-            ui.Box(new(100, a*2), new(50, 10), Color.Blue);
+            if (ui.Button(new(350, 200), new(200, 100), Color.White with { A = 0.6f }))
+            {
+                Logger.Error("button 2 pressed");
+            }
+
+            if (ui.Button(new(600, 200), new(200, 100), Color.FromRGB(0xbd8c2a)))
+            {
+                Logger.Error("button 3 pressed");
+
+            }
+
+            if (assetsManager.IsLoaded(_font))
+            {
+                ref readonly var font = ref assetsManager.Get(_font);
+                ui.Text(new(200, 500), "ABC"u8, font);
+            }
+
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());
             if (!_playing && assetsManager.IsLoaded(_music) && inputState.IsKeyPressed(KeyCode.M))

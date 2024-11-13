@@ -14,21 +14,22 @@ static const float2 Positions[6] = {
 
 UIVertexOutput main(uint id : SV_VertexID, in uint InstanceIdx : SV_InstanceID)
 {
+    float2 windowSize = GetWindowSize();
  	float2 pos = Positions[id];
   	float2 uv = pos * 0.5f + 0.5f;
 
     UIElement ui = UIElements[InstanceIdx];
+    
+    float2 pivot = ui.Offset + (ui.Size * 0.5f);
+    float2 center = (pivot / windowSize) * 2.0f - 1.0f;
 
-    float2 elementCenterPixels = ui.Offset + (ui.Size * 0.5f);
-    float2 elementCenterNDC = (elementCenterPixels / float2(GetWindowWidth(), GetWindowHeight())) * 2.0f - 1.0f;
+    float2 elementHalfSize = (ui.Size / windowSize);
 
-    float2 elementHalfSizeNDC = (ui.Size / float2(GetWindowWidth(), GetWindowHeight()));
-
-    float2 finalPositionNDC = elementCenterNDC + elementHalfSizeNDC * pos;
+    float2 position = center + elementHalfSize * pos;
 
     // Output structure setup
     UIVertexOutput output;
-    output.Position = float4(finalPositionNDC, 0.0f, 1.0f);
+    output.Position = float4(position, 0.0f, 1.0f);
     output.Texture = uv;
     output.Color = ui.Color;
 

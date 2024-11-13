@@ -62,6 +62,21 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             }}";
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
+    private static string CreateFontDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var font = ref assetDescriptor.Font;
+        var content =
+            $@"{nameof(AssetDescriptor.Font)} = new()
+            {{
+                {nameof(FontDescriptor.DefaultGlyphIndex)} = {font.DefaultGlyphIndex},
+                {nameof(FontDescriptor.NumberOfGlyphs)} = {font.NumberOfGlyphs},
+                {nameof(FontDescriptor.BytesPerPixel)} = {font.BytesPerPixel},
+                {nameof(FontDescriptor.Width)} = {font.Width},
+                {nameof(FontDescriptor.Height)} = {font.Height}
+            }}";
+
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
 
     private static string CreateAudioDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
     {
@@ -195,6 +210,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
                     AssetType.Mesh => CreateMeshDescriptor(descriptor, metadata),
                     AssetType.Audio => CreateAudioDescriptor(descriptor, metadata),
+                    AssetType.Font => CreateFontDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 

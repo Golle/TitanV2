@@ -187,6 +187,8 @@ public static unsafe class MemoryUtils
         return alignedMemory;
     }
 
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint AlignToUpper(uint size, uint alignment)
         => (uint)AlignToUpper((nuint)size, alignment);

@@ -7,6 +7,7 @@ using Titan.Core;
 using Titan.ECS;
 using Titan.ECS.Archetypes;
 using Titan.Events;
+using Titan.Input;
 using Titan.Resources;
 using Titan.Services;
 using Titan.UI;
@@ -73,7 +74,11 @@ public unsafe ref struct SystemInitializer
         => new(_unmanagedResources.GetResourcePointer<AudioSystem>());
 
     public UIManager CreateUIManager()
-        => new(_unmanagedResources.GetResourcePointer<UISystem>());
+        => new(
+            _unmanagedResources.GetResourcePointer<UISystem>(),
+            _unmanagedResources.GetResourcePointer<InputState>(),
+            CreateAssetsManager()
+            );
 
     public void AddReadOnlyComponent(in ComponentType type)
     {

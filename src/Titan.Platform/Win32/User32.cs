@@ -68,6 +68,19 @@ public static unsafe partial class User32
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetWindowPos(
+        HWND hWnd,
+        HWND hWndInsertAfter,
+        int X,
+        int Y,
+        int cx,
+        int cy,
+        SetWindowPos uFlags
+    );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool AdjustWindowRect(
         RECT* lpRect,
         WindowStyles dwStyle,
@@ -151,12 +164,19 @@ public static unsafe partial class User32
         ShowWindowCommands nCmdShow
     );
 
+
+
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetCursorPos(
         POINT* lpPoint
     );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial short GetAsyncKeyState(int button);
+
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
@@ -192,7 +212,7 @@ public static unsafe partial class User32
 
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    [return:MarshalAs(UnmanagedType.Bool)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool UnregisterDeviceNotification(
         HDEVNOTIFY Handle
     );

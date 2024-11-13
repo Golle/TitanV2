@@ -22,4 +22,10 @@ public struct HWND
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString() => Value.ToString();
+
+    public static readonly HWND HWND_TOP = 0;
+    public static readonly HWND HWND_BOTTOM = 1;
+    public static readonly HWND HWND_TOPMOST = -1;
+    public static readonly HWND HWND_NOTOPMOST = -2;
+
 }

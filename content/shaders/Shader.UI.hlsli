@@ -1,6 +1,13 @@
 #ifndef _SHADER_UI
 #define _SHADER_UI
 
+struct Glyph
+{
+    float2 MinUV;
+    float2 MaxUV;
+    uint Advance;
+};
+
 struct UIElement 
 {
     float4 Color;
@@ -17,5 +24,6 @@ struct UIVertexOutput
 
 
 StructuredBuffer<UIElement> UIElements : register(t0, space0);
+StructuredBuffer<Glyph> Glyphs : register(t0, space1);
 
 #endif

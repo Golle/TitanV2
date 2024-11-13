@@ -33,4 +33,30 @@ public static class MathUtils
         matrix.M43 = position.Z;
 
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsWithin(in Vector2 position, in SizeF size, in Point point)
+    {
+        if (position.X > point.X)
+        {
+            return false;
+        }
+
+        if (position.Y > point.Y)
+        {
+            return false;
+        }
+
+        if (position.Y + size.Height < point.Y)
+        {
+            return false;
+        }
+
+        if (position.X + size.Width < point.X)
+        {
+            return false;
+        }
+        return true;
+
+    }
 }

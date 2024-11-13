@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Platform.Win32.GDI;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Titan.Platform.Win32;
 
@@ -209,5 +210,49 @@ public static unsafe partial class Gdi32
         char* lpString,
         int c,
         SIZE* psizl
+    );
+
+
+    [LibraryImport(DllName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetTextExtentExPointW(
+        HDC hdc,
+        char* lpszString,
+        int cchString,
+        int nMaxExtent,
+        int* lpnFit,
+        int* lpnDx,
+        SIZE* lpSize
+    );
+
+    [LibraryImport(DllName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int SetMapMode(
+        HDC hdc,
+        MappingMode iMode
+    );
+
+    [LibraryImport(DllName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetCharABCWidthsW(
+        HDC hdc,
+        uint wFirst,
+        uint wLast,
+        ABC* lpABC
+    );
+
+
+    [LibraryImport(DllName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int GetDIBits(
+        HDC hdc,
+        HBITMAP hbm,
+        uint start,
+        uint cLines,
+        void* lpvBits,
+        BITMAPINFO* lpbmi,
+        DibColorIdentifiers usage
     );
 }

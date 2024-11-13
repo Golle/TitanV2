@@ -33,7 +33,8 @@ internal unsafe partial struct UIRenderPass
             PixelShader = EngineAssetsRegistry.ShaderUIPixel,
             VertexShader = EngineAssetsRegistry.ShaderUIVertex,
             RootSignatureBuilder = builder => builder
-                .WithDecriptorRange(1, space: 0) // Renderable instances
+                .WithDecriptorRange(1, space: 0) // UI Elements 
+                .WithDecriptorRange(1, space: 1) // Glyphs 
         };
 
         renderPass->PassHandle = graph.CreatePass("UI", args);
@@ -68,8 +69,11 @@ internal unsafe partial struct UIRenderPass
         commandList.SetScissorRect(&rect);
         commandList.SetViewport(&viewPort);
 
-        var instancesIndex = resourceManager.Access(system.Instances)->SRV.GPU;
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex, instancesIndex);
+        //NOTE(Jens): We can cache these in the UI system.
+        var elementsIndex = resourceManager.Access(system.Instances)->SRV.GPU;
+        var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
+        commandList.SetGraphicsRootDescriptorTable(PassDataIndex, elementsIndex);
+        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, glyphsIndex);
     }
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]

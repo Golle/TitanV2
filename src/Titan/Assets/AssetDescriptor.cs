@@ -57,6 +57,9 @@ public struct AssetDescriptor
     [UnscopedRef]
     public ref AudioDescriptor Audio => ref _descriptors.Audio;
 
+    [UnscopedRef]
+    public ref FontDescriptor Font => ref _descriptors.Font;
+
     /// <summary>
     /// All supported built in Asset descriptors
     /// </summary>
@@ -71,5 +74,7 @@ public struct AssetDescriptor
         public ShaderDescriptor Shader;
         [FieldOffset(0)]
         public AudioDescriptor Audio;
+        [FieldOffset(0)]
+        public FontDescriptor Font;
     }
 }

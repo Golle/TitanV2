@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -7,10 +8,11 @@ using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Graphics.D3D12;
-using Titan.Platform.Win32;
+using Titan.Input;
 using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
+using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.UI;
 
@@ -20,40 +22,116 @@ internal struct UIElement
     public Color Color;
     public SizeF Size;
     public Vector2 Offset;
+    //public uint GlyphIndex;
+}
+
+internal struct UIState
+{
+    public int NextId;
+    public int ActiveId;
+    public int HighlightedId;
+}
+
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct Glyph
+{
+    //NOTE(Jens): We can use Half for 16 bit floats. Optimize later.
+    public Vector2 MinUV;
+    public Vector2 MaxUV;
+    public uint Advance;
+    private unsafe fixed uint Padding[3];
 }
 
 [UnmanagedResource]
 internal unsafe partial struct UISystem
 {
+    private const int InvalidId = -1;
+
     public Handle<Rendering.Buffer> Instances;
+    public Handle<Rendering.Buffer> GlyphInstances;
     public uint Count;
     private UIElement* ElementsGPU;
+
     private TitanArray<UIElement> ElementsCPU;
+    private UIState State;
+
+    private Glyph* GlyphsGPU;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetNextId()
+        => Interlocked.Increment(ref State.NextId);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsActive(int id)
+        => State.ActiveId == id;
+
+    /// <summary>
+    /// Set the ID to the active element
+    /// </summary>
+    /// <param name="id">The ID of the UI element</param>
+    /// <returns>True if this is the active one, false if some other UI element was already active.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool SetActive(int id)
+    {
+        if (IsActive(id))
+        {
+            return true;
+        }
+
+        return Interlocked.CompareExchange(ref State.ActiveId, id, InvalidId) == InvalidId;
+    }
+
+    public bool SetHighlighted(int id)
+    {
+        if (State.HighlightedId == id)
+        {
+            return true;
+        }
+        return Interlocked.CompareExchange(ref State.HighlightedId, id, InvalidId) == InvalidId;
+    }
 
     [System(SystemStage.Init)]
-    public static void Init(UISystem* stuff, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager)
+    public static void Init(UISystem* uiSystem, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<UIConfig>();
         var s = sizeof(UIElement) * config.MaxElements;
         // Allocate memory for CPU side
-        if (!memoryManager.TryAllocArray(out stuff->ElementsCPU, config.MaxElements))
+        if (!memoryManager.TryAllocArray(out uiSystem->ElementsCPU, config.MaxElements))
         {
             Logger.Error<UISystem>($"Failed to allocate memory for UIElements. Count = {config.MaxElements} Size = {sizeof(UIElement) * config.MaxElements}");
             return;
         }
 
         // Set up GPU resources
-        stuff->Instances = resourceManager.CreateBuffer(CreateBufferArgs.Create<UIElement>(1024, BufferType.Structured, cpuVisible: true, shaderVisible: true));
-        if (stuff->Instances.IsInvalid)
+        uiSystem->Instances = resourceManager.CreateBuffer(CreateBufferArgs.Create<UIElement>(1024, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+        if (uiSystem->Instances.IsInvalid)
         {
             Logger.Error<UISystem>("Failed to create a structured buffer for UI Elements.");
             return;
         }
 
-        var hr = resourceManager.Access(stuff->Instances)->Resource.Get()->Map(0, null, (void**)&stuff->ElementsGPU);
-        if (Win32Common.FAILED(hr))
+        //NOTE(Jens): Maybe this should be configurable? 
+        const uint glyphcount = 10 * 256;
+        uiSystem->GlyphInstances = resourceManager.CreateBuffer(CreateBufferArgs.Create<Glyph>(glyphcount, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+        if (uiSystem->GlyphInstances.IsInvalid)
         {
-            Logger.Error<UISystem>("Failed to Map the UI elemnets buffer.");
+            Logger.Error<UISystem>("Failed to create a structured buffer for Glyphs.");
+            return;
+        }
+
+        // map the resources
+        var hr = resourceManager.Access(uiSystem->Instances)->Resource.Get()->Map(0, null, (void**)&uiSystem->ElementsGPU);
+        if (FAILED(hr))
+        {
+            Logger.Error<UISystem>("Failed to Map the UI elements buffer.");
+            return;
+        }
+
+        hr = resourceManager.Access(uiSystem->GlyphInstances)->Resource.Get()->Map(0, null, (void**)&uiSystem->GlyphsGPU);
+        if (FAILED(hr))
+        {
+            Logger.Error<UISystem>("Failed to Map the Glyph instances buffer.");
             return;
         }
     }
@@ -62,13 +140,24 @@ internal unsafe partial struct UISystem
     public static void PreUpdate(ref UISystem system)
     {
         system.Count = 0;
+        system.State.NextId = 1;
+        system.State.HighlightedId = InvalidId;
+        //system.State.ActiveId = -1;
     }
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void Update(ref UISystem system)
+    public static void Update(ref UISystem system, in InputState inputState)
     {
+        if (inputState.IsButtonUp(MouseButton.Left))
+        {
+            system.State.ActiveId = InvalidId;
+        }
+        //else if (system.State.ActiveId == 0)
+        //{
+        //    system.State.ActiveId = InvalidId;
+        //}
+
         MemoryUtils.Copy(system.ElementsGPU, system.ElementsCPU.AsPointer(), (uint)sizeof(UIElement) * system.Count);
-        
     }
 
     [System(SystemStage.Shutdown)]
@@ -86,6 +175,26 @@ internal unsafe partial struct UISystem
     {
         var index = Interlocked.Increment(ref Count) - 1;
         ElementsCPU[index] = element;
+    }
+
+    internal void UploadFont(int index, in ReadOnlySpan<Glyph> glyphs)
+    {
+        Debug.Assert(index is >= 0 and < 10);
+        Debug.Assert(glyphs.Length == 256);
+        Logger.Trace<UISystem>($"Uploading glyphs at index = {index}");
+        MemoryUtils.Copy(GlyphsGPU + (index * 256), glyphs);
+    }
+
+    public void Add(ReadOnlySpan<UIElement> elements)
+    {
+        if (elements.Length == 0)
+        {
+            return;
+        }
+        var length = (uint)elements.Length;
+        var index = Interlocked.Add(ref Count, length) - length;
+        Debug.Assert(index + length < ElementsCPU.Length);
+        MemoryUtils.Copy(ElementsCPU.GetPointer(index), elements);
     }
 
 }

@@ -17,7 +17,9 @@ internal class UIModule : IModule
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
         builder
-            .AddSystemsAndResource<UISystem>();
+            .AddSystemsAndResource<UISystem>()
+            .AddAssetLoader<FontLoader>()
+            ;
 
         return true;
     }

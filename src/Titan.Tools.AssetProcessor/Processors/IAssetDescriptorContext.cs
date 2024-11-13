@@ -3,6 +3,7 @@ using Titan.Assets.Types;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.Tools.AssetProcessor.Processors.Audio;
+using Titan.UI.Text;
 
 namespace Titan.Tools.AssetProcessor.Processors;
 
@@ -29,4 +30,5 @@ internal interface IAssetDescriptorContext
     bool HasErrors { get; }
     IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics { get; }
     IEnumerable<T> GetMetadataByType<T>() where T : AssetFileMetadata;
+    bool TryAddFont(in FontDescriptor font, ReadOnlySpan<GlyphInfo> glyphInfo, ReadOnlySpan<byte> pixelData, FontMetadata metadata);
 }

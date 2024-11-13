@@ -1,9 +1,13 @@
+using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Core.Logging;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.Tools.AssetProcessor.Processors.Audio;
+using Titan.UI.Text;
 
 namespace Titan.Tools.AssetProcessor.Processors;
 
@@ -23,6 +27,30 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
 
     public IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics => _diagnostics;
     public IEnumerable<T> GetMetadataByType<T>() where T : AssetFileMetadata => metadataFiles.OfType<T>();
+    public unsafe bool TryAddFont(in FontDescriptor font, ReadOnlySpan<GlyphInfo> glyphInfo, ReadOnlySpan<byte> pixelData, FontMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.Font,
+            Font = font
+        };
+
+        var size = glyphInfo.Length * sizeof(GlyphInfo) + pixelData.Length;
+        var buffer = ArrayPool<byte>.Shared.Rent(size);
+
+        try
+        {
+            var stream = new MemoryStream(buffer);
+            stream.Write(MemoryMarshal.AsBytes(glyphInfo));
+            stream.Write(pixelData);
+            return AddAsset(buffer.AsSpan().Slice(0, size), metadata, descriptor);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
     public bool HasErrors => _diagnostics.Any(static d => d.Level == DiagnosticsLevel.Error);
     public bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
     {

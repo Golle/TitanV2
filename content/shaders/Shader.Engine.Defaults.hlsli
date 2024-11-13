@@ -52,6 +52,11 @@ uint GetWindowHeight()
     return FrameDataBuffer.WindowHeight;
 }
 
+float2 GetWindowSize()
+{
+    return float2(FrameDataBuffer.WindowWidth, FrameDataBuffer.WindowHeight);
+}
+
 struct FullScreenVertexOutput 
 {
     float4 Position : SV_POSITION;
