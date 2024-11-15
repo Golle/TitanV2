@@ -1,6 +1,5 @@
 using System.Numerics;
 using Titan.Assets;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Input;
 
@@ -28,7 +27,9 @@ public readonly unsafe struct UIManager
         {
             Color = color,
             Offset = position,
-            Size = size
+            Size = size,
+            UVMin = Vector2.Zero,
+            UVMax = Vector2.One
         });
     }
 
@@ -74,7 +75,9 @@ public readonly unsafe struct UIManager
         {
             Color = c,
             Offset = position,
-            Size = size
+            Size = size,
+            UVMin = Vector2.Zero,
+            UVMax = Vector2.One
         });
 
         return clicked;
@@ -93,10 +96,20 @@ public readonly unsafe struct UIManager
     {
         Span<UIElement> elements = stackalloc UIElement[text.Length];
 
+        var offset = position;
         for (var i = 0; i < text.Length; ++i)
         {
-            //font.GlyphInfo[i]
-            //elements[i].Size
+            ref readonly var glyph = ref font.Glyphs[text[i]];
+            elements[i] = new()
+            {
+                Color = Color.White,
+                Size = new(glyph.Width, glyph.Height),
+                Offset = offset,
+                UVMin = glyph.UVMin,
+                UVMax = glyph.UVMax,
+                TextureId = font.TextureId
+            };
+            offset.X += glyph.Advance;
         }
 
         _system->Add(elements);

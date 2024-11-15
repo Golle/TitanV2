@@ -3,6 +3,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
+using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
@@ -16,12 +17,22 @@ namespace Titan.Rendering.RenderPasses;
 internal unsafe partial struct UIRenderPass
 {
     private Handle<RenderPass> PassHandle;
+    private Handle<Buffer> IndexBuffer;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
 
     [System(SystemStage.Init)]
-    public static void Init(UIRenderPass* renderPass, in RenderGraph graph)
+    public static void Init(UIRenderPass* renderPass, in RenderGraph graph, in D3D12ResourceManager resourceManager)
     {
         Logger.Error<UIRenderPass>("init UI render pass");
+
+        TitanArray<ushort> indexBuffer = stackalloc ushort[6];
+        D3D12Helpers.InitSquareIndexBuffer(indexBuffer);
+        renderPass->IndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<ushort>(indexBuffer.Length, BufferType.Index, indexBuffer.AsBuffer()));
+        if (renderPass->IndexBuffer.IsInvalid)
+        {
+            Logger.Error<UIRenderPass>("Failed to create the IndexBuffer.");
+            return;
+        }
 
         var args = new CreateRenderPassArgs
         {
@@ -34,8 +45,8 @@ internal unsafe partial struct UIRenderPass
             VertexShader = EngineAssetsRegistry.ShaderUIVertex,
             RootSignatureBuilder = builder => builder
                 .WithDecriptorRange(1, space: 0) // UI Elements 
-                .WithDecriptorRange(1, space: 1) // Glyphs 
         };
+
 
         renderPass->PassHandle = graph.CreatePass("UI", args);
     }
@@ -71,9 +82,12 @@ internal unsafe partial struct UIRenderPass
 
         //NOTE(Jens): We can cache these in the UI system.
         var elementsIndex = resourceManager.Access(system.Instances)->SRV.GPU;
-        var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
+        //var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
+        var indexBuffer = resourceManager.Access(pass.IndexBuffer);
+
         commandList.SetGraphicsRootDescriptorTable(PassDataIndex, elementsIndex);
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, glyphsIndex);
+        //commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, glyphsIndex);
+        commandList.SetIndexBuffer(indexBuffer);
     }
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
@@ -90,8 +104,10 @@ internal unsafe partial struct UIRenderPass
 
         if (ui.Count > 0)
         {
+            //commandList.SetIndexBuffer();
             //TODO(Jens): replace this with DrawIndexedInstanced and use an index buffer
-            commandList.DrawInstanced(6, ui.Count);
+            commandList.DrawIndexedInstanced(6, ui.Count);
+            //commandList.Draw
         }
 
         graph.End(pass.PassHandle);

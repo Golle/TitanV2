@@ -22,6 +22,11 @@ internal struct UIElement
     public Color Color;
     public SizeF Size;
     public Vector2 Offset;
+    public Vector2 UVMin;
+    public Vector2 UVMax;
+    public int TextureId;
+
+    private unsafe fixed uint Padding[3];
     //public uint GlyphIndex;
 }
 
@@ -37,10 +42,11 @@ internal struct UIState
 internal struct Glyph
 {
     //NOTE(Jens): We can use Half for 16 bit floats. Optimize later.
-    public Vector2 MinUV;
-    public Vector2 MaxUV;
+    public Vector2 UVMin;
+    public Vector2 UVMax;
     public uint Advance;
-    private unsafe fixed uint Padding[3];
+    public ushort Width;
+    public ushort Height;
 }
 
 [UnmanagedResource]
@@ -111,14 +117,14 @@ internal unsafe partial struct UISystem
             return;
         }
 
-        //NOTE(Jens): Maybe this should be configurable? 
-        const uint glyphcount = 10 * 256;
-        uiSystem->GlyphInstances = resourceManager.CreateBuffer(CreateBufferArgs.Create<Glyph>(glyphcount, BufferType.Structured, cpuVisible: true, shaderVisible: true));
-        if (uiSystem->GlyphInstances.IsInvalid)
-        {
-            Logger.Error<UISystem>("Failed to create a structured buffer for Glyphs.");
-            return;
-        }
+        ////NOTE(Jens): Maybe this should be configurable? 
+        //const uint glyphcount = 10 * 256;
+        //uiSystem->GlyphInstances = resourceManager.CreateBuffer(CreateBufferArgs.Create<Glyph>(glyphcount, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+        //if (uiSystem->GlyphInstances.IsInvalid)
+        //{
+        //    Logger.Error<UISystem>("Failed to create a structured buffer for Glyphs.");
+        //    return;
+        //}
 
         // map the resources
         var hr = resourceManager.Access(uiSystem->Instances)->Resource.Get()->Map(0, null, (void**)&uiSystem->ElementsGPU);
@@ -128,12 +134,12 @@ internal unsafe partial struct UISystem
             return;
         }
 
-        hr = resourceManager.Access(uiSystem->GlyphInstances)->Resource.Get()->Map(0, null, (void**)&uiSystem->GlyphsGPU);
-        if (FAILED(hr))
-        {
-            Logger.Error<UISystem>("Failed to Map the Glyph instances buffer.");
-            return;
-        }
+        //hr = resourceManager.Access(uiSystem->GlyphInstances)->Resource.Get()->Map(0, null, (void**)&uiSystem->GlyphsGPU);
+        //if (FAILED(hr))
+        //{
+        //    Logger.Error<UISystem>("Failed to Map the Glyph instances buffer.");
+        //    return;
+        //}
     }
 
     [System(SystemStage.PreUpdate)]

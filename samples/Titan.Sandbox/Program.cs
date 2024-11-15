@@ -19,6 +19,7 @@ using Titan.Sandbox;
 using Titan.Systems;
 using Titan.UI;
 using Titan.Windows;
+using static System.Net.Mime.MediaTypeNames;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
@@ -154,6 +155,7 @@ namespace Titan.Sandbox
         private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
         private static AssetHandle<AudioAsset> _music;
         private static AssetHandle<FontAsset> _font;
+        private static AssetHandle<FontAsset> _font2;
 
         private static bool _playing = false;
 
@@ -168,11 +170,14 @@ namespace Titan.Sandbox
             _uiEffects[4] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click5);
 
             _font = assetsManager.Load<FontAsset>(EngineAssetsRegistry.CutiveMonoRegular);
+            _font2 = assetsManager.Load<FontAsset>(EngineAssetsRegistry.SyneMonoRegular);
         }
 
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+
+            
             if (ui.Button(new(100, 200), new(200, 100), Color.Green))
             {
                 Logger.Error("button 1 pressed");
@@ -181,20 +186,28 @@ namespace Titan.Sandbox
             if (ui.Button(new(350, 200), new(200, 100), Color.White with { A = 0.6f }))
             {
                 Logger.Error("button 2 pressed");
+                audioManager.PlayOnce(_music, new(Loop: true));
             }
 
             if (ui.Button(new(600, 200), new(200, 100), Color.FromRGB(0xbd8c2a)))
             {
                 Logger.Error("button 3 pressed");
+                audioManager.PlayOnce(_uiEffects[1]);
 
             }
 
-            if (assetsManager.IsLoaded(_font))
+            if (assetsManager.IsLoaded(_font) && assetsManager.IsLoaded(_font2))
             {
                 ref readonly var font = ref assetsManager.Get(_font);
-                ui.Text(new(200, 500), "ABC"u8, font);
-            }
+                ref readonly var font2 = ref assetsManager.Get(_font2);
+                ui.Text(new(200, 500), "The Big Red Tulip"u8, font);
+                ui.Text(new(200, 600), "The Quick Brown Fox"u8, font2);
+                
+                ui.Text(new(110, 220), "Click"u8, font);
 
+                int a = default;
+                
+            }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());
             if (!_playing && assetsManager.IsLoaded(_music) && inputState.IsKeyPressed(KeyCode.M))

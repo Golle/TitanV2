@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Titan.Core.Memory;
 
 namespace Titan.Core;
 
@@ -36,6 +37,7 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
 
     public static implicit operator ReadOnlySpan<T>(in TitanArray<T> arr) => arr.AsSpan();
     public static implicit operator Span<T>(in TitanArray<T> arr) => arr.AsSpan();
+    public static implicit operator TitanArray<T>(Span<T> data) => new(MemoryUtils.AsPointer(data.GetPinnableReference()), (uint)data.Length);
     /// <summary>
     /// Returns true for unitialized arrays and also empty arrays.
     /// <remarks>Length == 0 is Empty, no matter if the pointer is valid or not.</remarks>

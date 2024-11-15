@@ -1,7 +1,7 @@
 {
   "$type": "FontMetadata",
-  "characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzÅÄÖ0123456789,.;:-\u002B*/?!%\u0026()",
-  "typeface": null,
+  "characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzÅÄÖ0123456789,.;:-\u002B*/?!%\u0026() ",
+  "typeface": "Cutive Mono",
   "id": "366abc01-6217-41a4-8d62-ddbc00474c33",
   "name": "CutiveMonoRegular",
   "fileSize": 79596,

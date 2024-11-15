@@ -128,8 +128,8 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(Buffer* buffer) 
-        => SetIndexBuffer(* buffer);
+    public void SetIndexBuffer(Buffer* buffer)
+        => SetIndexBuffer(*buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIndexBuffer(in Buffer buffer)
@@ -137,7 +137,7 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         Debug.Assert(buffer.Type is BufferType.Index);
         var view = new D3D12_INDEX_BUFFER_VIEW
         {
-            Format = DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
+            Format = buffer.Stride == 2 ? DXGI_FORMAT.DXGI_FORMAT_R16_UINT : DXGI_FORMAT.DXGI_FORMAT_R32_UINT,
             BufferLocation = buffer.Resource.Get()->GetGPUVirtualAddress(),
             SizeInBytes = buffer.Size
         };

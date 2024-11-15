@@ -4,10 +4,20 @@
 
 float4 main(UIVertexOutput input) : SV_TARGET
 {
-    float4 color = input.Color;
-    return color;
-    // color.a = 1.0f;
-    // color.r = 1.0f;
-    // return color;
-    return float4(1.0,0.0,1.0,0.8);
+    if(input.TextureId == 0)
+    {
+        return input.Color;
+    }
+
+    // TODO: see if we can remove branching.
+    
+    Texture2D texture =  Textures[input.TextureId];
+    float alpha = texture.Sample(LinearSampler, input.Texture).r;
+    if(alpha == 0){
+        discard;
+    }
+
+    float4 final = float4(input.Color.rgb, input.Color.a * alpha);
+
+    return final;
 }

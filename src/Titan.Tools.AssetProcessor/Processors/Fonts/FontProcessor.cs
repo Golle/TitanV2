@@ -1,6 +1,10 @@
+using System;
+using System.IO.IsolatedStorage;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
+using Titan.Core.Logging;
 using Titan.Core.Memory;
+using Titan.Core.Strings;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.GDI;
 using Titan.Tools.AssetProcessor.Metadata.Types;
@@ -15,32 +19,49 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
 
     private unsafe void OnProcessInternal(FontMetadata metadata, IAssetDescriptorContext context)
     {
-        var typeface = metadata.Typeface ?? Path.GetFileNameWithoutExtension(metadata.ContentFileFullPath);
+        var fontSize = metadata.FontSize;
+        if (fontSize <= 0)
+        {
+            context.AddDiagnostics(DiagnosticsLevel.Error, $"Invalid font size. Expected greater value than 0, got {fontSize}. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+            return;
+        }
+
+        const int Padding = 2;
         var hdc = Gdi32.CreateCompatibleDC(default);
         var characterCount = metadata.Characters.Length;
         var characters = metadata.Characters.Order().ToArray();
 
-        var fontSize = 50;
-
-        fixed (char* pFile = metadata.ContentFileFullPath)
-        fixed (char* pTypeFace = typeface)
+        // Add the font to private resources
         {
-            Gdi32.AddFontResourceExW(pFile, FontResource.FR_PRIVATE, null);
+            var cFilePath = new CStringW256(metadata.ContentFileFullPath);
+            Gdi32.AddFontResourceExW(cFilePath, FontResource.FR_PRIVATE, null);
+        }
 
+        var typeface = metadata.Typeface;
+        if (string.IsNullOrWhiteSpace(typeface))
+        {
+            context.AddDiagnostics(DiagnosticsLevel.Error, $"No typeface has been set for the font. Default TypeFace is not supported yet. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+            Gdi32.EnumFontFamiliesW(hdc, null, &EnumerateFonts, null);
+            return;
+        }
+
+        // Create the font
+        {
+            var cTypeface = new CStringW128(typeface);
             var font = Gdi32.CreateFontW(fontSize, 00, 0, 0,
                 FontWeight.FW_NORMAL,
                 0, 0, 0,
                 Charset.DEFAULT_CHARSET,
                 InOutPrecision.OUT_DEFAULT_PRECIS,
                 ClipPrecision.CLIP_DEFAULT_PRECIS,
-                Quality.CLEARTYPE_QUALITY,
+                Quality.ANTIALIASED_QUALITY,
                 PitchAndFamily.DEFAULT_PITCH | PitchAndFamily.FF_DONTCARE,
-                pTypeFace
+                cTypeface
             );
             Gdi32.SelectObject(hdc, font);
         }
 
-        var padding = 4;
+
         SIZE textSize;
         fixed (char* ptr = characters)
         {
@@ -51,11 +72,11 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
             }
         }
 
-        var max = metadata.Characters.Max(c => (int)c);
-        var min = (char)metadata.Characters.Min(c => (int)c);
+        //var max = metadata.Characters.Max(c => (int)c);
+        //var min = (char)metadata.Characters.Min(c => (int)c);
 
         //NOTE(Jens): We align the size of the sprite with 256, this is a requirement for resources in D3D12.
-        var width = MemoryUtils.AlignToUpper((uint)(textSize.X + padding * (characterCount - 1)), 256u);
+        var width = MemoryUtils.AlignToUpper((uint)(textSize.X + Padding * (characterCount - 1)), 256u);
         var height = fontSize;
 
         BITMAPINFO info = default;
@@ -74,14 +95,12 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
             biYPelsPerMeter = 0
         };
 
-        void* bits;
-        var hBitmap = Gdi32.CreateDIBSection(hdc, &info, DibColorIdentifiers.DIB_RGB_COLORS, &bits, default, 0);
+        uint* bits;
+        var hBitmap = Gdi32.CreateDIBSection(hdc, &info, DibColorIdentifiers.DIB_RGB_COLORS, (void**)&bits, default, 0);
         Gdi32.SelectObject(hdc, hBitmap);
 
         Gdi32.SetBkMode(hdc, BkMode.TRANSPARENT);
-        //Gdi32.SetBkColor(hdc, COLORREF.FromRGB(0, 0, 0));   // Black background
-        Gdi32.SetTextColor(hdc, COLORREF.FromRGB(255, 255, 255)); // White text
-
+        Gdi32.SetTextColor(hdc, COLORREF.FromRGB(255, 255, 255));
 
         var defaultGlyphIndex = -1;
 
@@ -111,7 +130,14 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
             };
 
             // Move the offset for the next character
-            xOffset += charSize.X + padding;
+            xOffset += charSize.X + Padding;
+        }
+
+        // Use first channel for Alpha. We render the text with White, so any channel will work except Alpha.
+        var grayscaleImage = new byte[width * height];
+        for (var i = 0; i < grayscaleImage.Length; ++i)
+        {
+            grayscaleImage[i] = (byte)(bits[i] & 0xFF);
         }
 
         if (defaultGlyphIndex == -1)
@@ -120,31 +146,18 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
             defaultGlyphIndex = 0;
         }
 
-        var pixeldata = new ReadOnlySpan<byte>(bits, (int)info.bmiHeader.biSizeImage);
         var descriptor = new FontDescriptor
         {
             DefaultGlyphIndex = (ushort)defaultGlyphIndex,
             NumberOfGlyphs = checked((ushort)characterCount),
-            BytesPerPixel = 4,
+            BytesPerPixel = 1,
             Height = (ushort)height,
             Width = (ushort)width
         };
-        if (!context.TryAddFont(descriptor, glyphs, pixeldata, metadata))
+        if (!context.TryAddFont(descriptor, glyphs, grayscaleImage, metadata))
         {
             context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the Font to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
         }
-
-        //if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        //{
-        //    //NOTE(Jens): this is not needed, we only care about the raw bytes.
-        //    var woop = Image.FromHbitmap(hBitmap);
-        //    var filename = @$"c:\tmp\bitmap{metadata.Id.ToString()[..6]}-rolf.bmp";
-        //    if (File.Exists(filename))
-        //    {
-        //        File.Delete(filename);
-        //    }
-        //    woop.Save(filename);
-        //}
     }
 
 
@@ -152,7 +165,7 @@ internal sealed class FontProcessor : AssetProcessor<FontMetadata>
     private static unsafe int EnumerateFonts(LOGFONTW* font, TEXTMETRICW* metric, uint dword, void* param)
     {
         var str = new string(font->lfFaceName, 0, LOGFONTW.LF_FACESIZE);
-        Console.WriteLine($"Font: {str}");
+        Logger.Error<FontProcessor>($"Font: {str}");
         return 1;
     }
 }
