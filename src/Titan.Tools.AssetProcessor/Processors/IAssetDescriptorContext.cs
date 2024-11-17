@@ -18,6 +18,7 @@ internal enum DiagnosticsLevel
 internal interface IAssetDescriptorContext
 {
     bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
+    bool TryAddSprite(in SpriteDescriptor sprite, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
     bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddAudio(in AudioDescriptor audio, ReadOnlySpan<byte> data, AudioMetadata metadata);

@@ -1,12 +1,15 @@
 using Titan.Assets;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Graphics;
+using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
+using static Titan.Assets.EngineAssetsRegistry.Shaders;
 
 namespace Titan.Rendering.RenderPasses;
 
@@ -25,8 +28,8 @@ internal unsafe partial struct BackbufferRenderPass
             BlendState = BlendStateType.AlphaBlend,
             Inputs = [BuiltInRenderTargets.DeferredLighting, BuiltInRenderTargets.UI],
             Outputs = [BuiltInRenderTargets.Backbuffer],
-            PixelShader = EngineAssetsRegistry.ShaderFullscreenPixel,
-            VertexShader = EngineAssetsRegistry.ShaderFullscreenVertex,
+            PixelShader = ShaderFullscreenPixel,
+            VertexShader = ShaderFullscreenVertex,
             ClearFunction = &ClearBackbuffer
         });
     }
@@ -73,5 +76,13 @@ internal unsafe partial struct BackbufferRenderPass
         commandList.DrawInstanced(3, 1);
 
         graph.End(pass.PassHandle);
+    }
+
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(BackbufferRenderPass* pass, in RenderGraph graph, in DXGISwapchain _) //NOTE(Jens): Get a Swapchain reference to make sure everything has been flushed before releasing it. A hack.. Need a better system for doing this.
+    {
+        Logger.Warning<BackbufferRenderPass>("Shutdown has not been implemented");
+        graph.DestroyPass(pass->PassHandle);
+        pass->PassHandle = Handle<RenderPass>.Invalid;
     }
 }

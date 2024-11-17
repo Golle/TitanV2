@@ -516,7 +516,6 @@ internal unsafe partial struct RenderGraph
         pass = default;
     }
 
-
     [System(SystemStage.PostShutdown)]
     public static void Shutdown(ref RenderGraph graph, IMemoryManager memoryManager, in D3D12ResourceManager resourceManager)
     {

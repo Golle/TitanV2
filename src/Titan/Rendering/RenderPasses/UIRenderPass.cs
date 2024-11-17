@@ -41,8 +41,8 @@ internal unsafe partial struct UIRenderPass
             DepthBuffer = null,
             Inputs = [],
             Outputs = [BuiltInRenderTargets.UI],
-            PixelShader = EngineAssetsRegistry.ShaderUIPixel,
-            VertexShader = EngineAssetsRegistry.ShaderUIVertex,
+            PixelShader = EngineAssetsRegistry.Shaders.ShaderUIPixel,
+            VertexShader = EngineAssetsRegistry.Shaders.ShaderUIVertex,
             RootSignatureBuilder = builder => builder
                 .WithDecriptorRange(1, space: 0) // UI Elements 
         };
@@ -115,6 +115,14 @@ internal unsafe partial struct UIRenderPass
 
     private static void Clear(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
         => commandList.ClearRenderTargetView(renderTargets[0], BuiltInRenderTargets.UI.OptimizedClearColor);
+
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(UIRenderPass* pass, in RenderGraph graph, in DXGISwapchain _) //NOTE(Jens): Get a Swapchain reference to make sure everything has been flushed before releasing it. A hack.. Need a better system for doing this.
+    {
+        Logger.Warning<UIRenderPass>("Shutdown has not been implemented");
+        graph.DestroyPass(pass->PassHandle);
+        pass->PassHandle = Handle<RenderPass>.Invalid;
+    }
 }
 
 

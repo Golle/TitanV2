@@ -3,7 +3,6 @@ using System.Numerics;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
-using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.DXGI;
@@ -15,7 +14,6 @@ namespace Titan.UI;
 [Asset(AssetType.Font)]
 public partial struct FontAsset
 {
-    internal int Index;
     internal Inline256<Glyph> Glyphs;
     internal Handle<Texture> Sprite;
     internal int TextureId;
@@ -25,14 +23,25 @@ public partial struct FontAsset
 internal unsafe partial struct FontLoader
 {
     // Need some better way to handle this. But this is probably fine for now. 
-    private Inline10<FontAsset> _assets;
+    private PoolAllocator<FontAsset> _assets;
     private D3D12ResourceManager* _resourceManager;
     private int _next;
 
     public bool Init(in AssetLoaderInitializer init)
     {
         _resourceManager = init.GetResourcePointer<D3D12ResourceManager>();
+        var numberOfFonts = init.GetAssetCountByType(AssetType.Font);
+        if (numberOfFonts == 0)
+        {
+            Logger.Warning<FontLoader>("No fonts have been registered. FontLoading disabled.");
+            return true;
+        }
 
+        if (!init.MemoryManager.TryCreatePoolAllocator(out _assets, numberOfFonts))
+        {
+            Logger.Error<FontLoader>($"Failed to create the PoolAllocator. Count = {numberOfFonts}");
+            return false;
+        }
         return true;
     }
 
@@ -45,12 +54,12 @@ internal unsafe partial struct FontLoader
         var pixelSize = (uint)(font.BytesPerPixel * font.Width * font.Height);
         var pixels = buffer.Slice(glyphsSize, pixelSize);
 
-        //TODO(Jens): Implement a propery strategy for this.
-        var index = GetSlot();
-        Debug.Assert(index < _assets.Size);
-
-        var asset = _assets.GetPointer(index);
-        asset->Index = index;
+        var asset = _assets.SafeAlloc();
+        if (asset == null)
+        {
+            Logger.Error<FontLoader>("Failed to allocate a slot for the Font.");
+            return null;
+        }
 
         // set all slots to the default glyph
         var defaultGlyph = CreateGlyph(glyphs[font.DefaultGlyphIndex], font.Width, font.Height);
@@ -101,6 +110,7 @@ internal unsafe partial struct FontLoader
     {
         Debug.Assert(asset != null);
         _resourceManager->DestroyTexture(asset->Sprite);
+        _assets.SafeFree(asset);
     }
 
     public void Shutdown(in AssetLoaderInitializer init)
@@ -108,12 +118,5 @@ internal unsafe partial struct FontLoader
         // nyi
 
         Logger.Warning<FontLoader>("Shutdown - Not yet implemented.");
-    }
-
-    private int GetSlot()
-    {
-        var index = Interlocked.Increment(ref _next) - 1;
-        Debug.Assert(index < _assets.Size, "Out of slots.");
-        return index;
     }
 }

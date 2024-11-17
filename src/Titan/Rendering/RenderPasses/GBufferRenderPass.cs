@@ -14,6 +14,7 @@ using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
+using static Titan.Assets.EngineAssetsRegistry.Shaders;
 
 namespace Titan.Rendering.RenderPasses;
 
@@ -46,8 +47,8 @@ internal unsafe partial struct GBufferRenderPass
             Inputs = [],
             DepthBuffer = BuiltInDepthsBuffers.GbufferDepthBuffer,
             ClearFunction = &ClearFunction,
-            VertexShader = EngineAssetsRegistry.ShaderGBufferVertex,
-            PixelShader = EngineAssetsRegistry.ShaderGBufferPixel
+            VertexShader = ShaderGBufferVertex,
+            PixelShader = ShaderGBufferPixel
         };
 
         renderPass->PassHandle = renderGraph.CreatePass("GBuffer", passArgs);
@@ -158,7 +159,7 @@ internal unsafe partial struct GBufferRenderPass
     }
 
     [System(SystemStage.Shutdown)]
-    public static void Shutdown(GBufferRenderPass* pass, in RenderGraph graph)
+    public static void Shutdown(GBufferRenderPass* pass, in RenderGraph graph, in DXGISwapchain _) //NOTE(Jens): Get a Swapchain reference to make sure everything has been flushed before releasing it. A hack.. Need a better system for doing this.
     {
         Logger.Warning<GBufferRenderPass>("Shutdown has not been implemented");
         graph.DestroyPass(pass->PassHandle);

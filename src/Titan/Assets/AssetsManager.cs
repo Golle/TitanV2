@@ -95,7 +95,7 @@ public readonly unsafe struct AssetsManager
         Debug.Assert(descriptor.Dependencies.Count == 0, "Can't load assets immediately that have dependencies.");
         //TODO(Jens): Add check for current state
         //TODO(Jens): This requires a lock, since multiple threads can call this function (Init is async)
-        
+
         var asset = _assetSystem->Assets.GetPointer(descriptor.Id);
 
         //TODO(Jens): Rework this lock, but for now this will be good enough :) this will prevent any async loading from happening at startup, which is not what we want.
@@ -139,5 +139,5 @@ public readonly unsafe struct AssetsManager
         return new AssetHandle<T>(descriptor.Id);
     }
 
-    private static readonly object _lock = new();
+    private static readonly Lock _lock = new();
 }

@@ -27,6 +27,9 @@ internal unsafe partial struct AssetSystem
     public GeneralAllocator Allocator;
 
     public TitanBuffer LoadersData;
+
+    public readonly ReadOnlySpan<AssetRegistry> GetRegistries()
+        => Registers.AsReadOnlySpan()[..(int)NumberOfRegisters];
     public bool SetRegisterAndLoaders(IReadOnlyList<AssetRegistryDescriptor> assetRegistries, IReadOnlyList<AssetLoaderDescriptor> assetLoaders)
     {
         for (var i = 0; i < assetRegistries.Count; ++i)
@@ -112,7 +115,7 @@ internal unsafe partial struct AssetSystem
 
             loader.Context = context;
             context += loader.Size;
-            if (!loader.Init(new AssetLoaderInitializer(unmanagedResources, services)))
+            if (!loader.Init(new AssetLoaderInitializer(unmanagedResources, services, system->GetRegistries())))
             {
                 Logger.Error<AssetSystem>($"Failed to init the {loader.Name.GetString()} asset loader.");
             }
@@ -318,10 +321,9 @@ internal unsafe partial struct AssetSystem
     [System(SystemStage.EndOfLife)]
     public static void Shutdown(AssetSystem* system, IFileSystem fileSystem, UnmanagedResourceRegistry unmanagedResources, ServiceRegistry services, IMemoryManager memoryManager)
     {
-        var initializer = new AssetLoaderInitializer(unmanagedResources, services); //TODO(Jens): Rename this struct.
+        var initializer = new AssetLoaderInitializer(unmanagedResources, services, system->GetRegistries()); //TODO(Jens): Rename this struct.
         foreach (ref var loader in system->Loaders.AsSpan())
         {
-            
             if (loader.Context == null)
             {
                 continue;

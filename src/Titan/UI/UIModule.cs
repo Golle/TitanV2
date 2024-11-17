@@ -19,6 +19,7 @@ internal class UIModule : IModule
         builder
             .AddSystemsAndResource<UISystem>()
             .AddAssetLoader<FontLoader>()
+            .AddAssetLoader<SpriteLoader>()
             ;
 
         return true;

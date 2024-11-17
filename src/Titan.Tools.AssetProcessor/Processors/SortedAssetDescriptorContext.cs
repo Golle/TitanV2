@@ -62,6 +62,16 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         return AddAsset(data, metadata, descriptor);
     }
 
+    public bool TryAddSprite(in SpriteDescriptor sprite, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.Sprite,
+            Sprite = sprite
+        };
+        return AddAsset(data, metadata, descriptor);
+    }
+
     public bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata)
     {
         var descriptor = new AssetDescriptor

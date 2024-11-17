@@ -29,6 +29,14 @@ public ref struct TitanBinaryWriter(Span<byte> buffer)
         }
         _length += size;
     }
+    public void WriteBytes(ReadOnlySpan<byte> bytes)
+    {
+        var length = bytes.Length;
+        Debug.Assert(_length + length <= _buffer.Length);
+
+        bytes.CopyTo(_buffer[_length..]);
+        _length += length;
+    }
 
     public ReadOnlySpan<byte> GetData() => _buffer[.._length];
 

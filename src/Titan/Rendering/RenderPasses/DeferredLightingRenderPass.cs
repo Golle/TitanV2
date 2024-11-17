@@ -9,6 +9,8 @@ using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
+using Titan.Core.Logging;
+using static Titan.Assets.EngineAssetsRegistry.Shaders;
 
 namespace Titan.Rendering.RenderPasses;
 
@@ -37,8 +39,8 @@ internal unsafe partial struct DeferredLightingRenderPass
                 BuiltInRenderTargets.GBufferSpecular
             ],
 
-            PixelShader = EngineAssetsRegistry.ShaderDeferredLightingPixel,
-            VertexShader = EngineAssetsRegistry.ShaderDeferredLightingVertex,
+            PixelShader = ShaderDeferredLightingPixel,
+            VertexShader = ShaderDeferredLightingVertex,
             ClearFunction = &ClearFunction
         });
     }
@@ -91,13 +93,12 @@ internal unsafe partial struct DeferredLightingRenderPass
         var commandList = graph.GetCommandList(pass->PassHandle);
 
 
-        foreach (ref readonly var light in lights.Slice(1,1))
+        foreach (ref readonly var light in lights.Slice(1, 1))
         {
             var index = (int)light.LightIndex;
             commandList.SetGraphicsRootConstant(RootConstantLightIndex, index);
-            commandList.DrawInstanced(3,1);
+            commandList.DrawInstanced(3, 1);
         }
-
     }
 
     [System]
@@ -112,5 +113,14 @@ internal unsafe partial struct DeferredLightingRenderPass
         commandList.DrawInstanced(3, 1);
 
         graph.End(pass.PassHandle);
+    }
+
+
+    [System(SystemStage.Shutdown)]
+    public static void Shutdown(DeferredLightingRenderPass* pass, in RenderGraph graph, in DXGISwapchain _) //NOTE(Jens): Get a Swapchain reference to make sure everything has been flushed before releasing it. A hack.. Need a better system for doing this.
+    {
+        Logger.Warning<DeferredLightingRenderPass>("Shutdown has not been implemented");
+        graph.DestroyPass(pass->PassHandle);
+        pass->PassHandle = Handle<RenderPass>.Invalid;
     }
 }

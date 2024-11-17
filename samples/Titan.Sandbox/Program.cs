@@ -19,7 +19,7 @@ using Titan.Sandbox;
 using Titan.Systems;
 using Titan.UI;
 using Titan.Windows;
-using static System.Net.Mime.MediaTypeNames;
+using static Titan.Assets.EngineAssetsRegistry;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
@@ -151,6 +151,7 @@ namespace Titan.Sandbox
 
     internal partial struct TheAudioThing
     {
+        private static AssetHandle<SpriteAsset> _sprite;
 
         private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
         private static AssetHandle<AudioAsset> _music;
@@ -162,22 +163,22 @@ namespace Titan.Sandbox
         [System(SystemStage.Init)]
         public static void Init(AssetsManager assetsManager)
         {
-            _music = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.BackgroundMusic);
-            _uiEffects[0] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click1);
-            _uiEffects[1] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click2);
-            _uiEffects[2] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click3);
-            _uiEffects[3] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click4);
-            _uiEffects[4] = assetsManager.Load<AudioAsset>(EngineAssetsRegistry.Click5);
+            _music = assetsManager.Load<AudioAsset>(Audios.BackgroundMusic);
+            _uiEffects[0] = assetsManager.Load<AudioAsset>(Audios.Click1);
+            _uiEffects[1] = assetsManager.Load<AudioAsset>(Audios.Click2);
+            _uiEffects[2] = assetsManager.Load<AudioAsset>(Audios.Click3);
+            _uiEffects[3] = assetsManager.Load<AudioAsset>(Audios.Click4);
+            _uiEffects[4] = assetsManager.Load<AudioAsset>(Audios.Click5);
 
-            _font = assetsManager.Load<FontAsset>(EngineAssetsRegistry.CutiveMonoRegular);
-            _font2 = assetsManager.Load<FontAsset>(EngineAssetsRegistry.SyneMonoRegular);
+            _font = assetsManager.Load<FontAsset>(Fonts.CutiveMonoRegular);
+            _font2 = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular);
+
+            _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet);
         }
 
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
-
-            
             if (ui.Button(new(100, 200), new(200, 100), Color.Green))
             {
                 Logger.Error("button 1 pressed");
@@ -202,11 +203,11 @@ namespace Titan.Sandbox
                 ref readonly var font2 = ref assetsManager.Get(_font2);
                 ui.Text(new(200, 500), "The Big Red Tulip"u8, font);
                 ui.Text(new(200, 600), "The Quick Brown Fox"u8, font2);
-                
+
                 ui.Text(new(110, 220), "Click"u8, font);
 
                 int a = default;
-                
+
             }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());
