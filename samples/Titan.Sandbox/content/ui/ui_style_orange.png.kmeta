@@ -1,0 +1,35 @@
+{
+  "$type": "ImageMetadata",
+  "type": "SpriteSheet",
+  "sprites": [
+    {
+      "name": "Button",
+      "bottomLeft": [10,16],
+      "topRight": [32,5]
+    },
+    {
+      "name": "Checkbox1",
+      "bottomLeft": [55,24],
+      "topRight": [63,16]
+    },
+    {
+      "name": "Checkbox1_Down",
+      "bottomLeft": [82,20],
+      "topRight": [90,12]
+    },
+    {
+      "name": "Checkbox1_Checked",
+      "bottomLeft": [68,19],
+      "topRight": [76,11]
+    }
+  ],
+  "ninePatch": [],
+  "id": "e895564b-f7da-4d0e-804f-02d7b20834bf",
+  "name": "UiStyleOrange",
+  "fileSize": 500,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

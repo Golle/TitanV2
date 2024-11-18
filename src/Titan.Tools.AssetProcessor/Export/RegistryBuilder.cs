@@ -5,9 +5,9 @@ using Titan.Assets;
 using Titan.Assets.Types;
 using Titan.Core.Strings;
 using Titan.Platform.Win32.DXGI;
-using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Metadata;
+using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Export;
 internal class RegistryBuilder(string? @namespace, string name, string binaryFilename)
@@ -201,37 +201,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         InsertGetDescriptors();
         InsertGetDependencies();
 
-        // Descriptor references
-        {
-            var assetReferences = new (AssetType Type, string Reference)[_assets.Count];
-            {
-                for (var i = 0; i < _assets.Count; ++i)
-                {
-                    var (descriptor, metadata) = _assets[i];
-                    var propertyName = metadata.Name != null
-                        ? StringHelper.ToPropertyName(metadata.Name)
-                        : $"UnnamedAsset{i}";
-                    assetReferences[i] = (descriptor.Type, $"public static ref readonly {typeof(AssetDescriptor).FullName} {propertyName} => ref {AssetMemberName}[{i}];");
-                }
-            }
+        InsertGroupedAssets();
 
-            foreach (var groupedAssets in assetReferences.GroupBy(d => d.Type))
-            {
-                var groupName = GetAssetGroupName(groupedAssets.Key);
-                _builder
-                    .AppendLine($"public readonly struct {groupName}")
-                    .BeginScope();
-
-                foreach (var groupedAsset in groupedAssets)
-                {
-                    _builder
-                        .AppendLine(groupedAsset.Reference);
-                }
-                _builder
-                    .EndScope()
-                    .AppendLine();
-            }
-        }
         // Static constructor with all descriptors and dependencies
         {
             _builder
@@ -271,6 +242,67 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             .ToString();
     }
 
+    private void InsertGroupedAssets()
+    {
+        var assetReferences = new (int Index, AssetDescriptor Descriptor, AssetFileMetadata Metadata)[_assets.Count];
+
+        // Get the index for the assets
+        for (var i = 0; i < _assets.Count; ++i)
+        {
+            var (descriptor, metadata) = _assets[i];
+            assetReferences[i] = (i, descriptor, metadata);
+        }
+
+        // Group by type
+        foreach (var groupedAssets in assetReferences.GroupBy(d => d.Descriptor.Type))
+        {
+            var groupName = GetAssetGroupName(groupedAssets.Key);
+            _builder
+                .AppendLine($"public readonly struct {groupName}")
+                .BeginScope();
+
+            foreach (var asset in groupedAssets)
+            {
+                var (index, descriptor, metadata) = asset;
+
+                var propertyName = metadata.Name != null
+                    ? StringHelper.ToPropertyName(metadata.Name)
+                    : $"UnnamedAsset{asset.Index}";
+
+                if (descriptor.Type == AssetType.Sprite && metadata is ImageMetadata imageMetadata)
+                {
+                    _builder
+                        .AppendLine($"public static class {propertyName}")
+                        .BeginScope()
+                        .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} Asset => ref {AssetMemberName}[{index}];")
+                        .AppendLine()
+                        .AppendLine("public static class SpriteIndex")
+                        .BeginScope();
+                    for (var j = 0; j < imageMetadata.Sprites.Length; ++j)
+                    {
+                        var sprite = imageMetadata.Sprites[j];
+                        var spriteName = StringHelper.ToPropertyName(sprite.Name ?? $"UnamedSprite{j}");
+                        _builder
+                            .AppendLine($"public const byte {spriteName} = {j};");
+                    }
+
+                    _builder
+                        .EndScope()
+                        .EndScope();
+                }
+                else
+                {
+                    _builder
+                        .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} {propertyName} => ref {AssetMemberName}[{index}];");
+                }
+            }
+            _builder
+                .EndScope()
+                .AppendLine();
+        }
+    }
+
+
     private static string GetAssetGroupName(AssetType type) =>
         type switch
         {
@@ -292,12 +324,14 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             .AppendLine($"private {typeof(AssetDescriptor).FullName} _ref;")
             .EndScope();
 
+
     private void InsertDependenciesStruct(int numberOfDependencies) =>
         _builder.AppendLine($"[{typeof(InlineArrayAttribute).FullName}({Math.Max(1, numberOfDependencies)})]")// inline arrays must have atleast 1 element.
             .AppendLine($"private struct {DependenciesStructName}")
             .BeginScope()
             .AppendLine($"private {typeof(uint).FullName} _ref;")
             .EndScope();
+
     private void InsertGetDescriptors() =>
         _builder
             .AppendLine($"public static ReadOnlySpan<{typeof(AssetDescriptor).FullName}> {nameof(IAssetRegistry.GetAssetDescriptors)}()")

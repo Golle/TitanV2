@@ -9,22 +9,27 @@
   "sprites": [
     {
       "name": "Button1",
-      "position": [10, 20],
-      "size": [30, 40]
+      "bottomLeft": [0, 45],
+      "topRight": [189, 0]
     },
     {
       "name": "Button1_Hover",
-      "position": [10, 20],
-      "size": [30, 40]
+      "bottomLeft": [0, 93],
+      "topRight": [189, 46]
+    },
+    {
+      "name": "Button1_Clicked",
+      "bottomLeft": [10, 20],
+      "topRight": [30, 40]
     }
   ],
   "ninePatch": [
     {
-      "position": [
+      "bottomLeft": [
         10,
         20
       ],
-      "size": [
+      "topRight": [
         30,
         40
       ],

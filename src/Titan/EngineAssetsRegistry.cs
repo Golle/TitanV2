@@ -48,7 +48,17 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
     
     public readonly struct Sprites
     {
-        public static ref readonly Titan.Assets.AssetDescriptor RedSheet => ref _assets[11];
+        public static class RedSheet
+        {
+            public static ref readonly Titan.Assets.AssetDescriptor Asset => ref _assets[11];
+            
+            public static class SpriteIndex
+            {
+                public const byte Button1 = 0;
+                public const byte Button1Hover = 1;
+                public const byte Button1Clicked = 2;
+            }
+        }
     }
     
     public readonly struct Shaders
@@ -318,7 +328,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Sprite,
             File = 
             { 
-                Length = 524304,
+                Length = 524312,
                 Offset = 181003077,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\redsheet.png")
@@ -329,7 +339,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Sprite = new()
             {
-                NumberOfSprites = 2,
+                NumberOfSprites = 3,
                 Texture = new()
                 {
                     Width = 512,
@@ -347,8 +357,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 2648,
-                Offset = 181527381,
+                Length = 2896,
+                Offset = 181527389,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Pixel.hlsl")
 #else
@@ -368,8 +378,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 3240,
-                Offset = 181530029,
+                Length = 3368,
+                Offset = 181530285,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Vertex.hlsl")
 #else
@@ -390,7 +400,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3548,
-                Offset = 181533269,
+                Offset = 181533653,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Pixel.hlsl")
 #else
@@ -411,7 +421,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1784,
-                Offset = 181536817,
+                Offset = 181537201,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl")
 #else
@@ -432,7 +442,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2848,
-                Offset = 181538601,
+                Offset = 181538985,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl")
 #else
@@ -453,7 +463,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1784,
-                Offset = 181541449,
+                Offset = 181541833,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl")
 #else
@@ -474,7 +484,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3396,
-                Offset = 181543233,
+                Offset = 181543617,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl")
 #else
@@ -495,7 +505,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3764,
-                Offset = 181546629,
+                Offset = 181547013,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl")
 #else
@@ -516,7 +526,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2796,
-                Offset = 181550393,
+                Offset = 181550777,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl")
 #else
@@ -537,7 +547,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3084,
-                Offset = 181553189,
+                Offset = 181553573,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl")
 #else
@@ -558,7 +568,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 90139,
-                Offset = 181556273,
+                Offset = 181556657,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf")
 #else
@@ -583,7 +593,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 37616,
-                Offset = 181646412,
+                Offset = 181646796,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.obj")
 #else
@@ -607,7 +617,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 113920,
-                Offset = 181684028,
+                Offset = 181684412,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png")
 #else

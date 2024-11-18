@@ -9,7 +9,8 @@ struct UIElement
     float2 UVMin;
     float2 UVMax;
     int TextureId;
-    uint3 Padding;
+    int Type;
+    float2 Padding;
 };
 
 struct UIVertexOutput 
@@ -18,6 +19,7 @@ struct UIVertexOutput
     float2 Texture : TEXCOORD0;
     float4 Color : COLOR;
     int TextureId : TEXID;
+    int Type : TEXTYPE;
 };
 
 

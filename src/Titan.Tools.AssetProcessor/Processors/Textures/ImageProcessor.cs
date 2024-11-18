@@ -24,7 +24,7 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to process image. Id = {metadata.Id} Name = {metadata.Name} Path = {metadata.ContentFileRelativePath}");
             return;
         }
-        var flippedImage = FlipImage(image);
+
 
         var textureDescriptor = new Texture2DDescriptor
         {
@@ -39,6 +39,7 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
         // if it's a simple texture, no further processing required.
         if (metadata.Type == ImageType.Texture)
         {
+            var flippedImage = FlipImage(image);
             if (!context.TryAddTexture2D(textureDescriptor, flippedImage, metadata))
             {
                 context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the texture to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
@@ -58,24 +59,23 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             NumberOfSprites = (byte)metadata.Sprites.Length
         };
 
-
-
-        var totalSize = flippedImage.Length + metadata.Sprites.Length * Marshal.SizeOf<SpriteInfo>();
+        var totalSize = image.Data.Length + metadata.Sprites.Length * Marshal.SizeOf<SpriteInfo>();
         var buffer = ArrayPool<byte>.Shared.Rent(totalSize);
         try
         {
             var writer = new TitanBinaryWriter(buffer);
             foreach (var sprite in metadata.Sprites)
             {
+                //var size = sprite.BottomRight - sprite.TopLeft;
                 writer.Write(new SpriteInfo
                 {
-                    Width = (ushort)sprite.Size.Width,
-                    Height = (ushort)sprite.Size.Height,
-                    X = (ushort)sprite.Position.X,
-                    Y = (ushort)sprite.Position.Y
+                    MinX = (ushort)sprite.BottomLeft.X,
+                    MinY = (ushort)sprite.BottomLeft.Y,
+                    MaxX = (ushort)sprite.TopRight.X,
+                    MaxY = (ushort)sprite.TopRight.Y
                 });
             }
-            writer.WriteBytes(flippedImage);
+            writer.WriteBytes(image.Data);
             if (!context.TryAddSprite(spriteDescriptor, buffer.AsSpan()[..totalSize], metadata))
             {
                 context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the sprite to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");

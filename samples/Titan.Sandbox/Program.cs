@@ -106,11 +106,9 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<TransformRect>(_entity);
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Book),
-                    TextureAsset = assetsManager.Load<TextureAsset>(EngineAssetsRegistry.BookTexture),
+                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Meshes.Book),
+                    TextureAsset = assetsManager.Load<TextureAsset>(EngineAssetsRegistry.Textures.BookTexture),
                 });
-
-
 
                 {
                     var lightEntity = entityManager.CreateEntity();
@@ -151,6 +149,9 @@ namespace Titan.Sandbox
 
     internal partial struct TheAudioThing
     {
+        private static UICheckboxStyle _checkboxStyle;
+        private static Inline4<bool> _checkboxStates;
+        private static AssetHandle<SpriteAsset> _sprite2;
         private static AssetHandle<SpriteAsset> _sprite;
 
         private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
@@ -173,40 +174,79 @@ namespace Titan.Sandbox
             _font = assetsManager.Load<FontAsset>(Fonts.CutiveMonoRegular);
             _font2 = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular);
 
-            _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet);
+            _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet.Asset);
+
+            _checkboxStyle = new UICheckboxStyle
+            {
+                CheckboxAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
+                UncheckedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1,
+                CheckedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1Checked,
+                HoverIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1Down
+            };
         }
 
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
-            if (ui.Button(new(100, 200), new(200, 100), Color.Green))
-            {
-                Logger.Error("button 1 pressed");
-            }
+            //if (ui.Button(new(100, 200), new(200, 100), Color.Green))
+            //{
+            //    Logger.Error("button 1 pressed");
+            //}
 
-            if (ui.Button(new(350, 200), new(200, 100), Color.White with { A = 0.6f }))
-            {
-                Logger.Error("button 2 pressed");
-                audioManager.PlayOnce(_music, new(Loop: true));
-            }
+            //if (ui.Button(new(350, 200), new(200, 100), Color.White with { A = 0.6f }))
+            //{
+            //    Logger.Error("button 2 pressed");
+            //    audioManager.PlayOnce(_music, new(Loop: true));
+            //}
 
-            if (ui.Button(new(600, 200), new(200, 100), Color.FromRGB(0xbd8c2a)))
-            {
-                Logger.Error("button 3 pressed");
-                audioManager.PlayOnce(_uiEffects[1]);
+            //if (ui.Button(new(600, 200), new(200, 100), Color.FromRGB(0xbd8c2a)))
+            //{
+            //    Logger.Error("button 3 pressed");
+            //    audioManager.PlayOnce(_uiEffects[1]);
 
-            }
+            //}
 
-            if (assetsManager.IsLoaded(_font) && assetsManager.IsLoaded(_font2))
+            if (assetsManager.IsLoaded(_font) && assetsManager.IsLoaded(_font2) && assetsManager.IsLoaded(_sprite))
             {
                 ref readonly var font = ref assetsManager.Get(_font);
                 ref readonly var font2 = ref assetsManager.Get(_font2);
                 ui.Text(new(200, 500), "The Big Red Tulip"u8, font);
                 ui.Text(new(200, 600), "The Quick Brown Fox"u8, font2);
 
-                ui.Text(new(110, 220), "Click"u8, font);
+                //ui.Text(new(110, 220), "Click"u8, font);
 
-                int a = default;
+                var index = inputState.IsButtonDown(MouseButton.Left)
+                    ? Sprites.RedSheet.SpriteIndex.Button1
+                    : Sprites.RedSheet.SpriteIndex.Button1Hover;
+
+                //ui.Image(new(300, 400), _sprite, index);
+
+
+
+
+
+
+
+
+
+
+                int y = 350;
+                int x = 200;
+                ui.Checkbox(new(x, y), new(36, 36), ref _checkboxStates[0], _checkboxStyle);
+                ui.Checkbox(new(x + 50, y - 10), new(36, 36), ref _checkboxStates[1], _checkboxStyle);
+                ui.Checkbox(new(x + 100, y - 20), new(36, 36), ref _checkboxStates[2], _checkboxStyle);
+                ui.Checkbox(new(x + 150, y - 30), new(36, 36), ref _checkboxStates[3], _checkboxStyle);
+
+
+
+
+
+
+
+
+
+
+
 
             }
 

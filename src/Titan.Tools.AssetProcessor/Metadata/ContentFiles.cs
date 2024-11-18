@@ -98,7 +98,17 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
         static async Task<AssetFileMetadata?> ReadMetadata(string metadataFile)
         {
             await using var stream = File.Open(metadataFile, FileMode.Open, FileAccess.Read, FileShare.None);
-            return await JsonSerializer.DeserializeAsync(stream, AssetMetadataJsonContext.Default.AssetFileMetadata);
+            try
+            {
+                return await JsonSerializer.DeserializeAsync(stream, AssetMetadataJsonContext.Default.AssetFileMetadata);
+
+            }
+            catch (Exception e)
+            {
+                Logger.Error<ContentFiles>($"Failed to deserialize the content. Message = {e.Message}");
+                return null;
+            }
+            
         }
 
         static bool ResolveDependencies(AssetFileMetadata metadata, IDictionary<Guid, AssetFileMetadata> metadatas)

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
@@ -14,22 +15,24 @@ namespace Titan.UI;
 [StructLayout(LayoutKind.Sequential, Pack = 2)]
 public struct SpriteInfo
 {
-    public ushort X;
-    public ushort Y;
-    public ushort Width;
-    public ushort Height;
+    public ushort MinX;
+    public ushort MinY;
+    public ushort MaxX;
+    public ushort MaxY;
 }
 
 [Asset(AssetType.Sprite)]
 public partial struct SpriteAsset
 {
     public Handle<Texture> Texture;
-    private uint Padding;
+    public int TextureId;
+    public TitanArray<TextureCoordinate> Coordinates;
 }
 
 [AssetLoader<SpriteAsset>]
 internal unsafe partial struct SpriteLoader
 {
+    private static readonly Lock _lock = new();
     private D3D12ResourceManager* _resourceManager;
     private GeneralAllocator _allocator;
     private PoolAllocator<SpriteAsset> _assets;
@@ -65,11 +68,11 @@ internal unsafe partial struct SpriteLoader
     public SpriteAsset* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies)
     {
         Debug.Assert(descriptor.Type == AssetType.Sprite);
-        ref readonly var sprite = ref descriptor.Sprite;
-        ref readonly var texture = ref sprite.Texture;
+        ref readonly var spriteDescriptor = ref descriptor.Sprite;
+        ref readonly var texture = ref spriteDescriptor.Texture;
 
-        var sprites = buffer.SliceArray<SpriteInfo>(0, sprite.NumberOfSprites);
-        var imageData = buffer.Slice((uint)(sizeof(SpriteInfo) * sprite.NumberOfSprites));
+        var sprites = buffer.SliceArray<SpriteInfo>(0, spriteDescriptor.NumberOfSprites);
+        var imageData = buffer.Slice((uint)(sizeof(SpriteInfo) * spriteDescriptor.NumberOfSprites));
 
         var asset = _assets.SafeAlloc();
         if (asset == null)
@@ -89,11 +92,47 @@ internal unsafe partial struct SpriteLoader
 
         if (asset->Texture.IsInvalid)
         {
-            _assets.SafeFree(asset);
             Logger.Error<SpriteLoader>("Failed to create the Texture");
             return null;
         }
+        asset->TextureId = _resourceManager->Access(asset->Texture)->SRV.Index;
+        asset->Coordinates = SafeAllocArray(sprites.Length);
+        if (!asset->Coordinates.IsValid)
+        {
+            Logger.Error<SpriteLoader>("Failed to allocate memory for texture coordinates.");
+            return null;
+        }
+
+        var image = new Vector2(texture.Width, texture.Height);
+        for (var i = 0; i < sprites.Length; ++i)
+        {
+            ref readonly var sprite = ref sprites[i];
+            asset->Coordinates[i] = new()
+            {
+                UVMin = new Vector2(sprite.MinX, sprite.MinY + 1) / image,
+                UVMax = new Vector2(sprite.MaxX + 1, sprite.MaxY) / image
+            };
+        }
+
         return asset;
+    }
+
+    private TitanArray<TextureCoordinate> SafeAllocArray(uint length)
+    {
+        //NOTE(Jens): Replace with some other synchronization later. spinlock?
+        lock (_lock)
+        {
+            return _allocator.AllocArray<TextureCoordinate>(length);
+        }
+    }
+
+    private void SafeFreeArray(ref TitanArray<TextureCoordinate> array)
+    {
+        //NOTE(Jens): Replace with some other synchronization later.
+        lock (_lock)
+        {
+            _allocator.FreeArray(ref array);
+        }
     }
 
     public void Shutdown(in AssetLoaderInitializer init)

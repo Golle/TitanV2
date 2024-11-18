@@ -22,9 +22,9 @@ internal class SpriteMetadata
 {
     public string? Name { get; set; }
     [JsonConverter(typeof(SizeIntArrayJsonConverter))]
-    public required Size Position { get; set; }
+    public required Size BottomLeft { get; set; }
     [JsonConverter(typeof(SizeIntArrayJsonConverter))]
-    public required Size Size { get; set; }
+    public required Size TopRight { get; set; }
 }
 
 internal sealed class NinePatchSpriteMetadata : SpriteMetadata

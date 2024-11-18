@@ -12,6 +12,7 @@ using Titan.Input;
 using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
+using Titan.UI.Text;
 using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.UI;
@@ -22,12 +23,18 @@ internal struct UIElement
     public Color Color;
     public SizeF Size;
     public Vector2 Offset;
-    public Vector2 UVMin;
-    public Vector2 UVMax;
+    public TextureCoordinate TextureCoordinates;
     public int TextureId;
-
-    private unsafe fixed uint Padding[3];
+    public UIElementType Type;
+    private unsafe fixed uint Padding[2];
     //public uint GlyphIndex;
+}
+
+internal enum UIElementType
+{
+    None = 0,
+    Sprite = 1,
+    Text = 2
 }
 
 internal struct UIState
@@ -35,18 +42,6 @@ internal struct UIState
     public int NextId;
     public int ActiveId;
     public int HighlightedId;
-}
-
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct Glyph
-{
-    //NOTE(Jens): We can use Half for 16 bit floats. Optimize later.
-    public Vector2 UVMin;
-    public Vector2 UVMax;
-    public uint Advance;
-    public ushort Width;
-    public ushort Height;
 }
 
 [UnmanagedResource]
@@ -61,8 +56,6 @@ internal unsafe partial struct UISystem
 
     private TitanArray<UIElement> ElementsCPU;
     private UIState State;
-
-    private Glyph* GlyphsGPU;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetNextId()
@@ -181,14 +174,6 @@ internal unsafe partial struct UISystem
     {
         var index = Interlocked.Increment(ref Count) - 1;
         ElementsCPU[index] = element;
-    }
-
-    internal void UploadFont(int index, in ReadOnlySpan<Glyph> glyphs)
-    {
-        Debug.Assert(index is >= 0 and < 10);
-        Debug.Assert(glyphs.Length == 256);
-        Logger.Trace<UISystem>($"Uploading glyphs at index = {index}");
-        MemoryUtils.Copy(GlyphsGPU + (index * 256), glyphs);
     }
 
     public void Add(ReadOnlySpan<UIElement> elements)

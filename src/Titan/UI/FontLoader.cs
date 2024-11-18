@@ -101,8 +101,11 @@ internal unsafe partial struct FontLoader
                 Width = info.Width,
                 Height = info.Height,
                 Advance = info.Width, // change this when we support it.
-                UVMax = new Vector2(info.X + info.Width, info.Y + info.Height) / new Vector2(width, height),
-                UVMin = new Vector2(info.X, info.Y) / new Vector2(width, height)
+                Coords =
+                {
+                    UVMin = new Vector2(info.X, info.Y) / new Vector2(width, height),
+                    UVMax = new Vector2(info.X + info.Width, info.Y + info.Height) / new Vector2(width, height)
+                }
             };
     }
 
