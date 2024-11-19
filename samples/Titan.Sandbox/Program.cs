@@ -18,8 +18,11 @@ using Titan.Resources;
 using Titan.Sandbox;
 using Titan.Systems;
 using Titan.UI;
+using Titan.UI.Widgets;
 using Titan.Windows;
 using static Titan.Assets.EngineAssetsRegistry;
+using FontAsset = Titan.UI.Resources.FontAsset;
+using SpriteAsset = Titan.UI.Resources.SpriteAsset;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
@@ -149,8 +152,9 @@ namespace Titan.Sandbox
 
     internal partial struct TheAudioThing
     {
+        private static UITextBoxStyle _textboxStyle;
         private static UICheckboxStyle _checkboxStyle;
-        private static Inline4<bool> _checkboxStates;
+        private static Inline4<UICheckboxState> _checkboxStates;
         private static AssetHandle<SpriteAsset> _sprite2;
         private static AssetHandle<SpriteAsset> _sprite;
 
@@ -158,12 +162,17 @@ namespace Titan.Sandbox
         private static AssetHandle<AudioAsset> _music;
         private static AssetHandle<FontAsset> _font;
         private static AssetHandle<FontAsset> _font2;
+        private static Inline32<byte> _text;
 
+        public static Inline8<UIID> Ids;
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
         public static void Init(AssetsManager assetsManager)
         {
+            UICheckboxState.Create(_checkboxStates);
+
+
             _music = assetsManager.Load<AudioAsset>(Audios.BackgroundMusic);
             _uiEffects[0] = assetsManager.Load<AudioAsset>(Audios.Click1);
             _uiEffects[1] = assetsManager.Load<AudioAsset>(Audios.Click2);
@@ -182,6 +191,14 @@ namespace Titan.Sandbox
                 UncheckedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1,
                 CheckedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1Checked,
                 HoverIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Checkbox1Down
+            };
+
+            _textboxStyle = new()
+            {
+                DefaultIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1,
+                SelectedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1Selected,
+                FontAsset = assetsManager.Load<FontAsset>(Fonts.CutiveMonoRegular),
+                SpriteAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset)
             };
         }
 
@@ -220,34 +237,24 @@ namespace Titan.Sandbox
                     : Sprites.RedSheet.SpriteIndex.Button1Hover;
 
                 //ui.Image(new(300, 400), _sprite, index);
-
-
-
-
-
-
-
-
-
-
                 int y = 350;
                 int x = 200;
-                ui.Checkbox(new(x, y), new(36, 36), ref _checkboxStates[0], _checkboxStyle);
-                ui.Checkbox(new(x + 50, y - 10), new(36, 36), ref _checkboxStates[1], _checkboxStyle);
-                ui.Checkbox(new(x + 100, y - 20), new(36, 36), ref _checkboxStates[2], _checkboxStyle);
-                ui.Checkbox(new(x + 150, y - 30), new(36, 36), ref _checkboxStates[3], _checkboxStyle);
+                for (var i = 0; i < 4; ++i)
+                {
+                    ui.Checkbox(new(x + 50 * i, y - 10 * i), new(36, 36), ref _checkboxStates[i], _checkboxStyle);
+                }
 
+                var state = new UICheckboxState();
 
+                if (state)
+                {
+                    // do something
+                }
 
-
-
-
-
-
-
-
-
-
+                if (_checkboxStates[3])
+                {
+                    ui.TextBox(Ids[4], new Vector2(100, 50), new SizeF(49 * 4, 8 * 4), _text.AsSpan(), _textboxStyle);
+                }
             }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());
@@ -273,6 +280,7 @@ namespace Titan.Sandbox
                 }
             }
         }
+
 
     }
     internal partial struct TheGameLightSystem

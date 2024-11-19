@@ -21,6 +21,16 @@
       "name": "Checkbox1_Checked",
       "bottomLeft": [68,19],
       "topRight": [76,11]
+    },
+    {
+      "name" :"Input1",
+      "bottomLeft": [32,42],
+      "topRight": [81,32]
+    },
+    {
+      "name" :"Input1_Selected",
+      "bottomLeft": [32,58],
+      "topRight": [81,48]
     }
   ],
   "ninePatch": [],

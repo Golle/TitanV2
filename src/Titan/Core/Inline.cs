@@ -8,4 +8,6 @@ namespace Titan.Core;
 [InlineArray(8)] public partial struct Inline8<T>;
 [InlineArray(10)] public partial struct Inline10<T>;
 [InlineArray(16)] public partial struct Inline16<T>;
+[InlineArray(32)] public partial struct Inline32<T>;
+[InlineArray(64)] public partial struct Inline64<T>;
 [InlineArray(256)] public partial struct Inline256<T>;

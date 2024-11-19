@@ -58,10 +58,6 @@ internal unsafe partial struct UISystem
     private UIState State;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetNextId()
-        => Interlocked.Increment(ref State.NextId);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsActive(int id)
         => State.ActiveId == id;
 

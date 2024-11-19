@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core;
 using Titan.Tools.AssetProcessor.Metadata.Types;
-using Titan.UI;
+using Titan.UI.Resources;
 
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
 internal class ImageProcessor : AssetProcessor<ImageMetadata>

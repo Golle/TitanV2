@@ -9,7 +9,7 @@ using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Rendering;
 
-namespace Titan.UI;
+namespace Titan.UI.Resources;
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 2)]

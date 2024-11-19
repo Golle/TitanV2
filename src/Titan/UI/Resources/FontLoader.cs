@@ -9,7 +9,7 @@ using Titan.Platform.Win32.DXGI;
 using Titan.Rendering;
 using Titan.UI.Text;
 
-namespace Titan.UI;
+namespace Titan.UI.Resources;
 
 [Asset(AssetType.Font)]
 public partial struct FontAsset
