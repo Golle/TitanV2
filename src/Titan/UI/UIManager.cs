@@ -1,7 +1,9 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Core.Maths;
 using Titan.Input;
+using Titan.UI.Resources;
 using Titan.UI.Widgets;
 
 namespace Titan.UI;
@@ -89,16 +91,22 @@ public readonly unsafe struct UIManager
         return clicked;
     }
 
-    public void Text(in Vector2 position, ReadOnlySpan<byte> text, AssetHandle<Resources.FontAsset> fontHandle)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Text(in Vector2 position, ReadOnlySpan<byte> text, AssetHandle<FontAsset> fontHandle)
+        => Text(position, text, fontHandle, Color.White);
+
+    public void Text(in Vector2 position, ReadOnlySpan<byte> text, AssetHandle<FontAsset> fontHandle, in Color color)
     {
         if (!_assetsManager.IsLoaded(fontHandle))
         {
             return;
         }
-        Text(position, text, _assetsManager.Get(fontHandle));
+        Text(position, text, _assetsManager.Get(fontHandle), color);
     }
 
-    public void Text(in Vector2 position, ReadOnlySpan<byte> text, in Resources.FontAsset font)
+    public void Text(in Vector2 position, ReadOnlySpan<byte> text, in FontAsset font)
+        => Text(in position, text, font, Color.White);
+    public void Text(in Vector2 position, ReadOnlySpan<byte> text, in FontAsset font, in Color color)
     {
         Span<UIElement> elements = stackalloc UIElement[text.Length];
 
@@ -108,7 +116,7 @@ public readonly unsafe struct UIManager
             ref readonly var glyph = ref font.Glyphs[text[i]];
             elements[i] = new()
             {
-                Color = Color.White,
+                Color = color,
                 Size = new(glyph.Width, glyph.Height),
                 Offset = offset,
                 TextureCoordinates = glyph.Coords,
