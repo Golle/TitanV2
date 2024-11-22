@@ -154,6 +154,13 @@ namespace Titan.Sandbox
     {
         private static UITextBoxStyle _textboxStyle;
         private static UICheckboxStyle _checkboxStyle;
+
+        private static UISliderState _slider;
+        private static UISliderStyle _sliderStyle;
+
+        private static UIRadioState _radio;
+        private static UIRadioStyle _radioStyle;
+
         private static Inline4<UICheckboxState> _checkboxStates;
         private static AssetHandle<SpriteAsset> _sprite2;
         private static AssetHandle<SpriteAsset> _sprite;
@@ -165,13 +172,15 @@ namespace Titan.Sandbox
         private static Inline32<byte> _text;
 
         public static Inline8<UIID> Ids;
+        public static Inline3<UIID> RadioIds;
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
         public static void Init(AssetsManager assetsManager)
         {
-            UICheckboxState.Create(_checkboxStates);
+            UIID.Create(RadioIds);
 
+            UICheckboxState.Create(_checkboxStates);
 
             _music = assetsManager.Load<AudioAsset>(Audios.BackgroundMusic);
             _uiEffects[0] = assetsManager.Load<AudioAsset>(Audios.Click1);
@@ -202,6 +211,23 @@ namespace Titan.Sandbox
                 SpriteAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset)
             };
 
+            _sliderStyle = new()
+            {
+                AssetHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
+                SliderIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob,
+                SliderSelectedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1BlobBlack,
+                BackgroundIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1,
+                SliderSize = new(32, 32)
+            };
+
+            _radioStyle = new()
+            {
+                AssetHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
+                Radio = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1,
+                RadioSelected = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1Selected,
+                RadioHover = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1Hover
+            };
+
             _timer = Stopwatch.StartNew();
         }
 
@@ -225,7 +251,7 @@ namespace Titan.Sandbox
                 _timer.Restart();
             }
 
-            
+
 
             //if (ui.Button(new(100, 200), new(200, 100), Color.Green))
             //{
@@ -283,8 +309,25 @@ namespace Titan.Sandbox
                     ui.TextBox(Ids[4], new Vector2(100, 50), new SizeF(49 * 4, 8 * 4), _text.AsSpan(), _textboxStyle);
                 }
 
-                ui.Image(new (20, 120), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1);
-                ui.Image(new (20, 150), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob);
+                //ui.Image(new (20, 120), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1);
+                //ui.Image(new (20, 150), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob);
+
+
+                ui.Slider(new(20, 120), new(200, 36), ref _slider, _sliderStyle);
+
+
+                int min = 43;
+                int max = 120;
+                Inline32<byte> text = default;
+                var value = Math.Round(_slider.Value * (max - min)) + min;
+                value.TryFormat(text.AsSpan(), out var size);
+                ui.Text(new(240, 110), text.AsReadOnlySpan()[..size], font2, Color.Green);
+
+                for (var i = 0; i < 3; ++i)
+                {
+                    ui.Radio(RadioIds[i], i, new(500, 36 * i + 30), new (32,32), ref _radio, _radioStyle);
+                }
+
             }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());

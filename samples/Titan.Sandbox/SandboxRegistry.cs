@@ -45,6 +45,9 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 public const byte Slider1 = 6;
                 public const byte Slider1Blob = 7;
                 public const byte Slider1BlobBlack = 8;
+                public const byte Radio1 = 9;
+                public const byte Radio1Selected = 10;
+                public const byte Radio1Hover = 11;
             }
         }
     }
@@ -156,7 +159,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Sprite,
             File = 
             { 
-                Length = 65608,
+                Length = 65632,
                 Offset = 68046408,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.png")
@@ -167,7 +170,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Sprite = new()
             {
-                NumberOfSprites = 9,
+                NumberOfSprites = 12,
                 Texture = new()
                 {
                     Width = 128,

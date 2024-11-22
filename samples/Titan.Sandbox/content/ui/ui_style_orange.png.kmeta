@@ -43,9 +43,25 @@
       "topRight": [63,32]
     },
     {
+      
       "name" :"Slider1_BlobBlack",
       "bottomLeft": [64,47],
       "topRight": [79,32]
+    },
+    {
+      "name" :"Radio1",
+      "bottomLeft": [80,63],
+      "topRight": [95,48]
+    },
+    {
+      "name" :"Radio1_Selected",
+      "bottomLeft": [96,63],
+      "topRight": [111,48]
+    },
+    {
+      "name" :"Radio1_Hover",
+      "bottomLeft": [112,63],
+      "topRight": [127,48]
     }
   ],
   "ninePatch": [],

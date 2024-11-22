@@ -24,6 +24,108 @@ public readonly unsafe struct UIManager
         _assetsManager = assetsManager;
     }
 
+
+    public void Radio(in UIID id, int index, in Vector2 position, in SizeF size, ref UIRadioState state, in UIRadioStyle style)
+    {
+        if (!_assetsManager.IsLoaded(style.AssetHandle))
+        {
+            return;
+        }
+
+        ref readonly var sprite = ref _assetsManager.Get(style.AssetHandle);
+        var isOver = MathUtils.IsWithin(position, size, _inputState->MousePositionUI);
+        if (isOver)
+        {
+            if (_inputState->IsButtonDown(MouseButton.Left))
+            {
+                _system->SetActive(id);
+            }
+            else if (_inputState->IsButtonReleased(MouseButton.Left))
+            {
+                state.SelectedIndex = (byte)index;
+            }
+        }
+
+        var selected = state.SelectedIndex == index;
+        var uiElement = new UIElement
+        {
+            TextureCoordinates = sprite.Coordinates[selected ? style.RadioSelected : style.Radio],
+            Type = UIElementType.Sprite,
+            Size = size,
+            TextureId = sprite.TextureId,
+            Offset = position,
+            Color = Color.White
+        };
+
+        _system->Add(uiElement);
+
+        if (isOver)
+        {
+            _system->Add(uiElement with
+            {
+                TextureCoordinates = sprite.Coordinates[style.RadioHover]
+            });
+        }
+    }
+
+    public void Slider(in Vector2 position, in SizeF size, ref UISliderState state, in UISliderStyle style)
+    {
+        if (!_assetsManager.IsLoaded(style.AssetHandle))
+        {
+            return;
+        }
+
+        const int id = 10000;
+        ref readonly var sprite = ref _assetsManager.Get(style.AssetHandle);
+
+        var sliderPosY = position.Y + (size.Height - style.SliderSize.Height) / 2f;
+        var index = style.SliderIndex;
+        var isActive = _system->IsActive(id);
+        if (isActive)
+        {
+            var posX = _inputState->MousePositionUI.X;
+            var diffX = Math.Clamp(posX - position.X, 0, size.Width);
+            state.Value = diffX / size.Width;
+            index = style.SliderSelectedIndex;
+        }
+        var value = Math.Clamp(state.Value, 0f, 1f);
+        var sliderPosX = position.X + (size.Width * value) - style.SliderSize.Width / 2f;
+        var sliderPos = new Vector2(sliderPosX, sliderPosY);
+        if (!isActive)
+        {
+            var isOver = MathUtils.IsWithin(sliderPos, style.SliderSize, _inputState->MousePositionUI);
+            if (isOver && _inputState->IsButtonDown(MouseButton.Left))
+            {
+                _system->SetActive(id);
+            }
+        }
+
+        Span<UIElement> elements =
+        [
+            new()
+            {
+                Type = UIElementType.Sprite,
+                Size = size,
+                Color = Color.White,
+                TextureCoordinates = sprite.Coordinates[style.BackgroundIndex],
+                TextureId = sprite.TextureId,
+                Offset = position
+            },
+            new()
+            {
+                Type = UIElementType.Sprite,
+                TextureCoordinates = sprite.Coordinates[index],
+                Size = style.SliderSize,
+                TextureId = sprite.TextureId,
+                Offset = sliderPos,
+                Color = Color.White
+            }
+        ];
+
+        _system->Add(elements);
+    }
+
+
     public void Box(in Vector2 position, in SizeF size, in Color color)
     {
         _system->Add(new UIElement
