@@ -2,21 +2,19 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core;
+using Titan.Platform.Win32.DXGI;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.UI.Resources;
 
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
 internal class ImageProcessor : AssetProcessor<ImageMetadata>
 {
-    //NOTE(Jens): This will leak resources, figure out a better way to create the image reader.
-    private readonly WicImageReader _imageReader = new();
     protected override async Task OnProcess(ImageMetadata metadata, IAssetDescriptorContext context)
     {
         await Task.Yield();
         // this makes it fail when done on multiple threads, they kill eachother.
-        //using var imageReader = new WicImageReader();
 
-        var image = _imageReader.LoadImage(metadata.ContentFileFullPath);
+        var image = ImageLoader.LoadAndCompress(metadata.ContentFileFullPath, metadata.Compression, context.TempFolderPath);
 
         //NOTE(Jens): The images I've been testing with are upside down and flipped. 
         if (image == null)
@@ -24,7 +22,6 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to process image. Id = {metadata.Id} Name = {metadata.Name} Path = {metadata.ContentFileRelativePath}");
             return;
         }
-
 
         var textureDescriptor = new Texture2DDescriptor
         {
@@ -39,8 +36,7 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
         // if it's a simple texture, no further processing required.
         if (metadata.Type == ImageType.Texture)
         {
-            var flippedImage = FlipImage(image);
-            if (!context.TryAddTexture2D(textureDescriptor, flippedImage, metadata))
+            if (!context.TryAddTexture2D(textureDescriptor, image.Data, metadata))
             {
                 context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the texture to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
             }

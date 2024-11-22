@@ -8,6 +8,6 @@ namespace Titan.Tools.AssetProcessor.Metadata;
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-    Converters = [typeof(JsonStringEnumConverter<ImageType>)]
+    Converters = [typeof(JsonStringEnumConverter<ImageType>), typeof(JsonStringEnumConverter<CompressionType>)]
 )]
 internal partial class AssetMetadataJsonContext : JsonSerializerContext;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Titan;
 using Titan.Application;
@@ -18,11 +19,10 @@ using Titan.Resources;
 using Titan.Sandbox;
 using Titan.Systems;
 using Titan.UI;
+using Titan.UI.Resources;
 using Titan.UI.Widgets;
 using Titan.Windows;
 using static Titan.Assets.EngineAssetsRegistry;
-using FontAsset = Titan.UI.Resources.FontAsset;
-using SpriteAsset = Titan.UI.Resources.SpriteAsset;
 
 using var _ = Logger.Start<ConsoleLogger>(10_000);
 
@@ -109,8 +109,8 @@ namespace Titan.Sandbox
                 entityManager.AddComponent<TransformRect>(_entity);
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    Asset = assetsManager.Load<MeshAsset>(EngineAssetsRegistry.Meshes.Book),
-                    TextureAsset = assetsManager.Load<TextureAsset>(EngineAssetsRegistry.Textures.BookTexture),
+                    Asset = assetsManager.Load<MeshAsset>(Meshes.Book),
+                    TextureAsset = assetsManager.Load<TextureAsset>(Textures.BookTexture),
                 });
 
                 {
@@ -200,11 +200,32 @@ namespace Titan.Sandbox
                 FontAsset = assetsManager.Load<FontAsset>(Fonts.CutiveMonoRegular),
                 SpriteAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset)
             };
+
+            _timer = Stopwatch.StartNew();
         }
 
+
+        private static Inline64<byte> FpsCounter;
+        public static int frameCount;
+        public static int fpsSize;
+        private static Stopwatch _timer;
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+            frameCount++;
+
+            if (_timer.Elapsed.TotalSeconds > 1f)
+            {
+                var fps = frameCount / _timer.Elapsed.TotalSeconds;
+
+                fps.TryFormat(FpsCounter, out fpsSize);
+                //Logger.Info<TitanApp>($"FPS: {fps}");
+                frameCount = 0;
+                _timer.Restart();
+            }
+
+            
+
             //if (ui.Button(new(100, 200), new(200, 100), Color.Green))
             //{
             //    Logger.Error("button 1 pressed");
@@ -227,6 +248,11 @@ namespace Titan.Sandbox
             {
                 ref readonly var font = ref assetsManager.Get(_font);
                 ref readonly var font2 = ref assetsManager.Get(_font2);
+
+                if (fpsSize > 0)
+                {
+                    ui.Text(new(200, 700), FpsCounter.AsSpan().Slice(0, fpsSize), font);
+                }
                 ui.Text(new(200, 500), "The Big Red Tulip"u8, font);
                 ui.Text(new(200, 600), "The Quick Brown Fox"u8, font2);
 

@@ -122,7 +122,6 @@ internal unsafe partial struct D3D12UploadQueue
                 PlacedFootprint = footprint,
                 SubresourceIndex = 0
             };
-            frame->Allocator.Get()->Reset();
             commandList->CopyTextureRegion(&copyDst, 0, 0, 0, &copySrc, null);
         }
 

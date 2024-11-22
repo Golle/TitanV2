@@ -11,9 +11,16 @@ internal enum ImageType
     SpriteSheet
 }
 
+internal enum CompressionType
+{
+    None,
+    BC7
+}
+
 internal sealed class ImageMetadata : AssetFileMetadata
 {
     public ImageType Type { get; set; }
+    public CompressionType Compression { get; set; } = CompressionType.None;
     public SpriteMetadata[] Sprites { get; set; } = [];
     public NinePatchSpriteMetadata[] NinePatch { get; set; } = [];
 }

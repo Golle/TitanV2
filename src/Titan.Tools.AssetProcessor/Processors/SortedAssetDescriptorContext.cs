@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Assets.Types;
@@ -20,6 +19,7 @@ internal struct SortedAsset
 
 internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) : IAssetDescriptorContext
 {
+    public required string TempFolderPath { get; init; }
     private readonly List<SortedAsset> _assets = new();
     private readonly List<(DiagnosticsLevel Level, string Message)> _diagnostics = new();
     private (AssetDescriptor descriptor, AssetFileMetadata Metadata)[]? _finalizedAssets;
@@ -52,6 +52,8 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
     }
 
     public bool HasErrors => _diagnostics.Any(static d => d.Level == DiagnosticsLevel.Error);
+    
+
     public bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
     {
         var descriptor = new AssetDescriptor

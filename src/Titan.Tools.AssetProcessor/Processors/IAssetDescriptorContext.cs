@@ -17,6 +17,7 @@ internal enum DiagnosticsLevel
 
 internal interface IAssetDescriptorContext
 {
+    string TempFolderPath { get; }
     bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddSprite(in SpriteDescriptor sprite, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
