@@ -42,6 +42,9 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 public const byte Checkbox1Checked = 3;
                 public const byte Input1 = 4;
                 public const byte Input1Selected = 5;
+                public const byte Slider1 = 6;
+                public const byte Slider1Blob = 7;
+                public const byte Slider1BlobBlack = 8;
             }
         }
     }
@@ -153,7 +156,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Sprite,
             File = 
             { 
-                Length = 65584,
+                Length = 65608,
                 Offset = 68046408,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.png")
@@ -164,7 +167,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Sprite = new()
             {
-                NumberOfSprites = 6,
+                NumberOfSprites = 9,
                 Texture = new()
                 {
                     Width = 128,

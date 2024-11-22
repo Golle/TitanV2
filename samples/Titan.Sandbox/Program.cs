@@ -184,6 +184,7 @@ namespace Titan.Sandbox
             _font2 = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular);
 
             _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet.Asset);
+            _sprite2 = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset);
 
             _checkboxStyle = new UICheckboxStyle
             {
@@ -281,6 +282,9 @@ namespace Titan.Sandbox
                 {
                     ui.TextBox(Ids[4], new Vector2(100, 50), new SizeF(49 * 4, 8 * 4), _text.AsSpan(), _textboxStyle);
                 }
+
+                ui.Image(new (20, 120), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1);
+                ui.Image(new (20, 150), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob);
             }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());

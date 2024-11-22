@@ -24,13 +24,28 @@
     },
     {
       "name" :"Input1",
-      "bottomLeft": [32,42],
-      "topRight": [81,32]
+      "bottomLeft": [16,63],
+      "topRight": [63,53]
     },
     {
       "name" :"Input1_Selected",
-      "bottomLeft": [32,58],
-      "topRight": [81,48]
+      "bottomLeft": [16,79],
+      "topRight": [63,69]
+    },
+    {
+      "name" :"Slider1",
+      "bottomLeft": [16,47],
+      "topRight": [47,32]
+    },
+    {
+      "name" :"Slider1_Blob",
+      "bottomLeft": [48,47],
+      "topRight": [63,32]
+    },
+    {
+      "name" :"Slider1_BlobBlack",
+      "bottomLeft": [64,47],
+      "topRight": [79,32]
     }
   ],
   "ninePatch": [],
