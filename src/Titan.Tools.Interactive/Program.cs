@@ -18,6 +18,7 @@ if (config != null)
     Console.WriteLine($"\tContent = {config.Content}");
     Console.WriteLine($"\tOutput = {config.Output}");
     Console.WriteLine($"\tTemp = {config.Temp}");
+    Console.WriteLine($"\tExecutable = {config.Executable}");
 }
 else
 {
@@ -69,7 +70,7 @@ do
             PublishGame(titanPath, config, logging);
             break;
         case ConsoleKey.D4 or ConsoleKey.NumPad4:
-            RunSandbox(titanPath, logging);
+            RunGame(titanPath, config, logging);
             break;
 
         case ConsoleKey.D5 or ConsoleKey.NumPad5:
@@ -164,11 +165,12 @@ static bool PublishTools(string workingDirectory, bool logging)
     return true;
 }
 
-static bool RunSandbox(string workingDirectory, bool logging)
+static bool RunGame(string workingDirectory, TitanConfig config, bool logging)
 {
     var timer = Stopwatch.StartNew();
-    var result = RunProgram(Path.Combine("release", "sandbox", "Titan.Sandbox.exe"), string.Empty, workingDirectory, !logging);
-    Console.WriteLine($"Finished sandbox after {timer.Elapsed.TotalMilliseconds} ms. Exit Code = {result}");
+    //var result = RunProgram(Path.Combine("release", "sandbox", "Titan.Sandbox.exe"), string.Empty, workingDirectory, !logging);
+    var result = RunProgram(Path.Combine(config.Output, config.Executable), string.Empty, workingDirectory, !logging);
+    Console.WriteLine($"Finished game after {timer.Elapsed.TotalMilliseconds} ms. Exit Code = {result}");
     return true;
 }
 
@@ -238,6 +240,7 @@ namespace Titan.Tools.Interactive
         public string Assets { get; init; } = string.Empty;
         public string Output { get; init; } = string.Empty;
         public string Temp { get; init; } = string.Empty;
+        public string Executable { get; init; } = string.Empty;
         public string? Name { get; init; } = null;
         public string Binary { get; init; } = string.Empty;
         public string CodePath { get; init; } = string.Empty;
