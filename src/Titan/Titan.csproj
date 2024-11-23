@@ -15,4 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Titan.Generators\Titan.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="UI\Sprites\" />
+  </ItemGroup>
 </Project>

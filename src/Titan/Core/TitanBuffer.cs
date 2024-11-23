@@ -14,6 +14,14 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
     public ReadOnlySpan<byte> AsReadOnlySpan() => _buffer.AsSpan();
     public Span<byte> AsSpan() => _buffer.AsSpan();
 
+    /// <summary>
+    /// Slice the buffer with an offset, returning the remaining bytes as a new buffer.
+    /// </summary>
+    /// <param name="offset">Offset in the buffer</param>
+    /// <returns>A buffer with the new size (same memory)</returns>
+    public TitanBuffer Slice(uint offset) 
+        => Slice(offset, _buffer.Length - offset);
+
     public TitanBuffer Slice(uint offset, uint size)
     {
         if (size == 0)

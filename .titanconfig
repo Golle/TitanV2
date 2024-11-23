@@ -3,7 +3,9 @@
     "Content": "samples/Titan.Sandbox/content",
     "Assets": "samples/Titan.Sandbox/assets",
     "Output": "release/sandbox",
+    "Temp" : "release/tmp",
     "Binary": "sandbox.tbin",
+    "Executable" : "Titan.Sandbox.exe",
     "CodePath": "",
     "AssetRegistryName": "Titan.Sandbox.SandboxRegistry"
 }

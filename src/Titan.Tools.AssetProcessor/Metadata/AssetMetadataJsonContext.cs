@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Metadata;
 
@@ -6,6 +7,7 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 [JsonSourceGenerationOptions(
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    DefaultIgnoreCondition = JsonIgnoreCondition.Never
+    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+    Converters = [typeof(JsonStringEnumConverter<ImageType>), typeof(JsonStringEnumConverter<CompressionType>)]
 )]
 internal partial class AssetMetadataJsonContext : JsonSerializerContext;

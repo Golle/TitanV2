@@ -1,0 +1,42 @@
+{
+  "$type": "ImageMetadata",
+  "id": "66789867-89e4-46f8-a8a9-96d8a8d15ea9",
+  "name": "RedSheet",
+  "fileSize": 10557,
+  "dependsOn": [],
+  "skip": false,
+  "type": "SpriteSheet",
+  "sprites": [
+    {
+      "name": "Button1",
+      "bottomLeft": [0, 45],
+      "topRight": [189, 0]
+    },
+    {
+      "name": "Button1_Hover",
+      "bottomLeft": [0, 93],
+      "topRight": [189, 46]
+    },
+    {
+      "name": "Button1_Clicked",
+      "bottomLeft": [10, 20],
+      "topRight": [30, 40]
+    }
+  ],
+  "ninePatch": [
+    {
+      "bottomLeft": [
+        10,
+        20
+      ],
+      "topRight": [
+        30,
+        40
+      ],
+      "left": 10,
+      "right": 12,
+      "top": 14,
+      "bottom": 16
+    }
+  ]
+}

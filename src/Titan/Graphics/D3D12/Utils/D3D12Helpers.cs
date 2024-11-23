@@ -160,15 +160,11 @@ internal static class D3D12Helpers
     public static void InitSquareIndexBuffer(Span<ushort> indices)
     {
         Debug.Assert(indices.Length == 6, "Index buffer only supports a size of 6 elements.");
-        indices[0] = 0;
-        indices[1] = 1;
-        indices[2] = 2;
-        indices[3] = 3;
-        indices[4] = 0;
-        indices[5] = 2;
+        IndexBufferSquare6.CopyTo(indices);
     }
 
-    public static ReadOnlySpan<ushort> IndexBufferSquare6 => new ushort[] { 0, 1, 2, 3, 0, 2 };
+    //public static ReadOnlySpan<ushort> IndexBufferSquare6 => [0, 1, 2, 3, 0, 2];
+    public static ReadOnlySpan<ushort> IndexBufferSquare6 => [0, 1, 2, 0, 2, 3];
 
 
     public static unsafe D3D12_RESOURCE_BARRIER Transition(ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after) =>

@@ -17,6 +17,8 @@ if (config != null)
     Console.WriteLine($"\tProject = {config.Project}");
     Console.WriteLine($"\tContent = {config.Content}");
     Console.WriteLine($"\tOutput = {config.Output}");
+    Console.WriteLine($"\tTemp = {config.Temp}");
+    Console.WriteLine($"\tExecutable = {config.Executable}");
 }
 else
 {
@@ -68,7 +70,7 @@ do
             PublishGame(titanPath, config, logging);
             break;
         case ConsoleKey.D4 or ConsoleKey.NumPad4:
-            RunSandbox(titanPath, logging);
+            RunGame(titanPath, config, logging);
             break;
 
         case ConsoleKey.D5 or ConsoleKey.NumPad5:
@@ -100,10 +102,11 @@ static bool ProcessEngineAssets(string titanDirectory, TitanConfig config, bool 
     Console.WriteLine("Processing engine assets");
     var content = Path.Combine(titanDirectory, "content");
     var binary = Path.Combine(titanDirectory, "assets", "titan.tbin");
+    var temp = Path.Combine(titanDirectory, config.Temp);
     Console.WriteLine($"\tInput = {content}");
     Console.WriteLine($"\tOutput = {binary}");
 
-    var arguments = $"--path {content} --output {binary} --code ./src/Titan/ --name Titan.Assets.EngineAssetsRegistry";
+    var arguments = $"--path {content} --output {binary} --code ./src/Titan/ --name Titan.Assets.EngineAssetsRegistry --tmp {temp}";
     var result = RunProgram(assetProcessorPath, arguments, titanDirectory, redirectOutput: !logging);
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
@@ -120,8 +123,7 @@ static bool ProcessGameAssets(string titanDirectory, TitanConfig config, bool lo
     Console.WriteLine($"\tInput = {config.Content}");
     Console.WriteLine($"\tOutput = {binary}");
 
-
-    var arguments = $"--path {config.Content} --output {binary} --code {config.CodePath} --name {config.AssetRegistryName}";
+    var arguments = $"--path {config.Content} --output {binary} --code {config.CodePath} --name {config.AssetRegistryName} --tmp {config.Temp}";
     var result = RunProgram(assetProcessorPath, arguments, titanDirectory, redirectOutput: !logging);
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
@@ -163,11 +165,12 @@ static bool PublishTools(string workingDirectory, bool logging)
     return true;
 }
 
-static bool RunSandbox(string workingDirectory, bool logging)
+static bool RunGame(string workingDirectory, TitanConfig config, bool logging)
 {
     var timer = Stopwatch.StartNew();
-    var result = RunProgram(Path.Combine("release", "sandbox", "Titan.Sandbox.exe"), string.Empty, workingDirectory, !logging);
-    Console.WriteLine($"Finished sandbox after {timer.Elapsed.TotalMilliseconds} ms. Exit Code = {result}");
+    //var result = RunProgram(Path.Combine("release", "sandbox", "Titan.Sandbox.exe"), string.Empty, workingDirectory, !logging);
+    var result = RunProgram(Path.Combine(config.Output, config.Executable), string.Empty, workingDirectory, !logging);
+    Console.WriteLine($"Finished game after {timer.Elapsed.TotalMilliseconds} ms. Exit Code = {result}");
     return true;
 }
 
@@ -236,6 +239,8 @@ namespace Titan.Tools.Interactive
         public string Content { get; init; } = string.Empty;
         public string Assets { get; init; } = string.Empty;
         public string Output { get; init; } = string.Empty;
+        public string Temp { get; init; } = string.Empty;
+        public string Executable { get; init; } = string.Empty;
         public string? Name { get; init; } = null;
         public string Binary { get; init; } = string.Empty;
         public string CodePath { get; init; } = string.Empty;

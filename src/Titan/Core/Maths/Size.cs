@@ -4,12 +4,17 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Core.Maths;
 
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[StructLayout(LayoutKind.Explicit, Pack = 4)]
 public struct Size(int width = 0, int height = 0)
 {
+    [FieldOffset(0)]
     public int Width = width;
+    [FieldOffset(4)]
     public int Height = height;
-
+    [FieldOffset(0)]
+    public int X;
+    [FieldOffset(4)]
+    public int Y;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Size operator +(in Size lh, in Size rh) => new(lh.Width + rh.Width, lh.Height + rh.Height);

@@ -1,0 +1,14 @@
+{
+  "$type": "FontMetadata",
+  "characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.;:-\u002B*/?!%\u0026() ",
+  "defaultGlyph": "?",
+  "typeface": "Syne Mono",
+  "id": "6f5d1588-99a8-4e65-be58-a6571b5e31cf",
+  "name": "SyneMonoRegular",
+  "fileSize": 70064,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

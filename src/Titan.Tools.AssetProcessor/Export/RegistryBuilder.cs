@@ -7,6 +7,7 @@ using Titan.Core.Strings;
 using Titan.Platform.Win32.DXGI;
 using Titan.Rendering.Resources;
 using Titan.Tools.AssetProcessor.Metadata;
+using Titan.Tools.AssetProcessor.Metadata.Types;
 
 namespace Titan.Tools.AssetProcessor.Export;
 internal class RegistryBuilder(string? @namespace, string name, string binaryFilename)
@@ -34,10 +35,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 {nameof(Texture2DDescriptor.BitsPerPixel)} = {texture.BitsPerPixel},
                 {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat}
             }}";
-
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
-
     private static string CreateMeshDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
     {
         ref readonly var mesh = ref assetDescriptor.Mesh;
@@ -60,6 +59,41 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             {{
                 {nameof(ShaderDescriptor.Type)} = {typeof(ShaderType).FullName}.{shader.Type}
             }}";
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
+    private static string CreateFontDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var font = ref assetDescriptor.Font;
+        var content =
+            $@"{nameof(AssetDescriptor.Font)} = new()
+            {{
+                {nameof(FontDescriptor.DefaultGlyphIndex)} = {font.DefaultGlyphIndex},
+                {nameof(FontDescriptor.NumberOfGlyphs)} = {font.NumberOfGlyphs},
+                {nameof(FontDescriptor.BytesPerPixel)} = {font.BytesPerPixel},
+                {nameof(FontDescriptor.Width)} = {font.Width},
+                {nameof(FontDescriptor.Height)} = {font.Height}
+            }}";
+
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
+    private static string CreateSpriteDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var sprite = ref assetDescriptor.Sprite;
+        ref readonly var texture = ref sprite.Texture;
+        var content =
+            $@"{nameof(AssetDescriptor.Sprite)} = new()
+            {{
+                {nameof(SpriteDescriptor.NumberOfSprites)} = {sprite.NumberOfSprites},
+                {nameof(SpriteDescriptor.Texture)} = new()
+                {{
+                    {nameof(Texture2DDescriptor.Width)} = {texture.Width},
+                    {nameof(Texture2DDescriptor.Height)} = {texture.Height},
+                    {nameof(Texture2DDescriptor.Stride)} = {texture.Stride},
+                    {nameof(Texture2DDescriptor.BitsPerPixel)} = {texture.BitsPerPixel},
+                    {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat}
+                }}
+            }}";
+
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
@@ -134,6 +168,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
     {
         var numberOfDependencies = _assets
             .Sum(a => a.Metadata.Dependencies.Count);
+
+
         Span<uint> dependencies = stackalloc uint[numberOfDependencies];
 
         PrepareAssetDescriptors(dependencies);
@@ -152,8 +188,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
 
         _builder
             .AppendLine($"public readonly struct {name} : {typeof(IAssetRegistry).FullName}")
-            .AppendLine("{")
-            .BeginIndentation();
+            .BeginScope();
 
         // The inline struct
         _builder
@@ -166,25 +201,13 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         InsertGetDescriptors();
         InsertGetDependencies();
 
-        // Descriptor references
-        {
-            for (var i = 0; i < _assets.Count; ++i)
-            {
-                var (_, metadata) = _assets[i];
-                var propertyName = metadata.Name != null
-                    ? StringHelper.ToPropertyName(metadata.Name)
-                    : $"UnnamedAsset{i}";
-                _builder
-                    .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} {propertyName} => ref {AssetMemberName}[{i}];");
-            }
-        }
+        InsertGroupedAssets();
 
         // Static constructor with all descriptors and dependencies
         {
             _builder
                 .AppendLine($"static {name}()")
-                .AppendLine("{")
-                .BeginIndentation();
+                .BeginScope();
 
             for (var i = 0; i < _assets.Count; ++i)
             {
@@ -195,6 +218,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     AssetType.Shader => CreateShaderDescriptor(descriptor, metadata),
                     AssetType.Mesh => CreateMeshDescriptor(descriptor, metadata),
                     AssetType.Audio => CreateAudioDescriptor(descriptor, metadata),
+                    AssetType.Font => CreateFontDescriptor(descriptor, metadata),
+                    AssetType.Sprite => CreateSpriteDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 
@@ -207,38 +232,106 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             }
 
             _builder
-                .EndIndentation()
-                .AppendLine("}");
+                .EndScope();
         }
-
-
 
         InsertAssetStruct();
         InsertDependenciesStruct(numberOfDependencies);
         return _builder
-            .EndIndentation()
-            .AppendLine("}")
+            .EndScope()
             .ToString();
     }
+
+    private void InsertGroupedAssets()
+    {
+        var assetReferences = new (int Index, AssetDescriptor Descriptor, AssetFileMetadata Metadata)[_assets.Count];
+
+        // Get the index for the assets
+        for (var i = 0; i < _assets.Count; ++i)
+        {
+            var (descriptor, metadata) = _assets[i];
+            assetReferences[i] = (i, descriptor, metadata);
+        }
+
+        // Group by type
+        foreach (var groupedAssets in assetReferences.GroupBy(d => d.Descriptor.Type))
+        {
+            var groupName = GetAssetGroupName(groupedAssets.Key);
+            _builder
+                .AppendLine($"public readonly struct {groupName}")
+                .BeginScope();
+
+            foreach (var asset in groupedAssets)
+            {
+                var (index, descriptor, metadata) = asset;
+
+                var propertyName = metadata.Name != null
+                    ? StringHelper.ToPropertyName(metadata.Name)
+                    : $"UnnamedAsset{asset.Index}";
+
+                if (descriptor.Type == AssetType.Sprite && metadata is ImageMetadata imageMetadata)
+                {
+                    _builder
+                        .AppendLine($"public static class {propertyName}")
+                        .BeginScope()
+                        .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} Asset => ref {AssetMemberName}[{index}];")
+                        .AppendLine()
+                        .AppendLine("public static class SpriteIndex")
+                        .BeginScope();
+                    for (var j = 0; j < imageMetadata.Sprites.Length; ++j)
+                    {
+                        var sprite = imageMetadata.Sprites[j];
+                        var spriteName = StringHelper.ToPropertyName(sprite.Name ?? $"UnamedSprite{j}");
+                        _builder
+                            .AppendLine($"public const byte {spriteName} = {j};");
+                    }
+
+                    _builder
+                        .EndScope()
+                        .EndScope();
+                }
+                else
+                {
+                    _builder
+                        .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} {propertyName} => ref {AssetMemberName}[{index}];");
+                }
+            }
+            _builder
+                .EndScope()
+                .AppendLine();
+        }
+    }
+
+
+    private static string GetAssetGroupName(AssetType type) =>
+        type switch
+        {
+            AssetType.Sprite => "Sprites",
+            AssetType.Audio => "Audios",
+            AssetType.Font => "Fonts",
+            AssetType.Material => "Materials",
+            AssetType.Mesh => "Meshes",
+            AssetType.Shader => "Shaders",
+            AssetType.Texture => "Textures",
+            _ => type.ToString()
+        };
 
     private void InsertAssetStruct() =>
         _builder
             .AppendLine($"[{typeof(InlineArrayAttribute).FullName}({Math.Max(1, _assets.Count)})]") // inline arrays must have atleast 1 element.
             .AppendLine($"private struct {AssetStructName}")
-            .AppendLine("{")
-            .BeginIndentation()
+            .BeginScope()
             .AppendLine($"private {typeof(AssetDescriptor).FullName} _ref;")
-            .EndIndentation()
-            .AppendLine("}");
+            .EndScope();
+
 
     private void InsertDependenciesStruct(int numberOfDependencies) =>
         _builder.AppendLine($"[{typeof(InlineArrayAttribute).FullName}({Math.Max(1, numberOfDependencies)})]")// inline arrays must have atleast 1 element.
             .AppendLine($"private struct {DependenciesStructName}")
-            .AppendLine("{")
-            .BeginIndentation()
+            .BeginScope()
             .AppendLine($"private {typeof(uint).FullName} _ref;")
-            .EndIndentation()
-            .AppendLine("}");
+            .EndScope();
+
     private void InsertGetDescriptors() =>
         _builder
             .AppendLine($"public static ReadOnlySpan<{typeof(AssetDescriptor).FullName}> {nameof(IAssetRegistry.GetAssetDescriptors)}()")
@@ -256,10 +349,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
     private void InsertGetFilePath() =>
         _builder
             .AppendLine($"public static ReadOnlySpan<char> {nameof(IAssetRegistry.GetFilePath)}()")
-            .AppendLine("{")
-            .BeginIndentation()
+            .BeginScope()
             .AppendLine($"ReadOnlySpan<char> path = \"{binaryFilename}\";")
             .AppendLine("return path;")
-            .EndIndentation()
-            .AppendLine("}");
+            .EndScope();
 }

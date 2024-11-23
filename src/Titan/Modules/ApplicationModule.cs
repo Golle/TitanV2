@@ -3,6 +3,7 @@ using Titan.Audio;
 using Titan.Core.Logging;
 using Titan.Input;
 using Titan.Rendering;
+using Titan.UI;
 using Titan.Windows;
 
 namespace Titan.Modules;
@@ -17,6 +18,7 @@ public class ApplicationModule : IModule
             builder
                 .AddModule<WindowModule>()
                 .AddModule<RenderingModule>()
+                .AddModule<UIModule>()
                 .AddModule<InputModule>()
                 .AddModule<AudioModule>()
                 ;

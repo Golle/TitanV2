@@ -74,6 +74,18 @@ internal unsafe partial struct Win32WindowSystem
         *window = default;
     }
 
+#if !RELEASE
+    [System]
+#endif
+    public static void Update(in Window window, in InputState inputState)
+    {
+        if (inputState.IsKeyReleased(KeyCode.F9))
+        {
+            Logger.Trace<Win32WindowSystem>("Toggle Top Most");
+            window.ToggleTopMost();
+        }
+    }
+
     [UnmanagedCallersOnly]
     private static int CreateAndStartWindow(void* context)
     {
@@ -109,7 +121,7 @@ internal unsafe partial struct Win32WindowSystem
         }
 
         HWND parent = default;
-        WindowStylesEx windowStyleEx = 0;
+        WindowStylesEx windowStyleEx = 0;//WindowStylesEx.WS_EX_TOPMOST;
 
         var windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
         //if (!config.Resizable)

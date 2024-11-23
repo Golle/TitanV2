@@ -16,10 +16,42 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
         => _assets;
     public static ReadOnlySpan<System.UInt32> GetDependencies(in Titan.Assets.AssetDescriptor descriptor)
         => ((ReadOnlySpan<System.UInt32>)_dependencies).Slice((int)descriptor.Dependencies.Index, (int)descriptor.Dependencies.Count);
-    public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset0 => ref _assets[0];
-    public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset1 => ref _assets[1];
-    public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset2 => ref _assets[2];
-    public static ref readonly Titan.Assets.AssetDescriptor TileLowRed => ref _assets[3];
+    public readonly struct Textures
+    {
+        public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset0 => ref _assets[0];
+        public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset2 => ref _assets[2];
+    }
+    
+    public readonly struct Meshes
+    {
+        public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset1 => ref _assets[1];
+        public static ref readonly Titan.Assets.AssetDescriptor TileLowRed => ref _assets[3];
+    }
+    
+    public readonly struct Sprites
+    {
+        public static class UiStyleOrange
+        {
+            public static ref readonly Titan.Assets.AssetDescriptor Asset => ref _assets[4];
+            
+            public static class SpriteIndex
+            {
+                public const byte Button = 0;
+                public const byte Checkbox1 = 1;
+                public const byte Checkbox1Down = 2;
+                public const byte Checkbox1Checked = 3;
+                public const byte Input1 = 4;
+                public const byte Input1Selected = 5;
+                public const byte Slider1 = 6;
+                public const byte Slider1Blob = 7;
+                public const byte Slider1BlobBlack = 8;
+                public const byte Radio1 = 9;
+                public const byte Radio1Selected = 10;
+                public const byte Radio1Hover = 11;
+            }
+        }
+    }
+    
     static SandboxRegistry()
     {
         _assets[0] = new Titan.Assets.AssetDescriptor
@@ -120,8 +152,37 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 MaterialCount = -1,
             }
         };
+        _assets[4] = new Titan.Assets.AssetDescriptor
+        {
+            Id = Titan.Assets.AssetId.GetNext(),
+            RegistryId = Id,
+            Type = Titan.Assets.AssetType.Sprite,
+            File = 
+            { 
+                Length = 65632,
+                Offset = 68046408,
+#if !RELEASE
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.png")
+#else
+            AssetPath = Titan.Core.Strings.StringRef.Empty
+#endif
+            },
+            Dependencies = new(0, 0),
+            Sprite = new()
+            {
+                NumberOfSprites = 12,
+                Texture = new()
+                {
+                    Width = 128,
+                    Height = 128,
+                    Stride = 512,
+                    BitsPerPixel = 32,
+                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                }
+            }
+        };
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(4)]
+    [System.Runtime.CompilerServices.InlineArrayAttribute(5)]
     private struct __ASSETS__
     {
         private Titan.Assets.AssetDescriptor _ref;

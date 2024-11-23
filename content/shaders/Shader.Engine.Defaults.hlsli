@@ -22,7 +22,9 @@ struct FrameData
 {
     float4x4 ViewProjection;
     float3 CameraPosition;
-    float1 _padding;
+    uint WindowWidth;
+    uint WindowHeight;
+    float3 _padding;
 };
 
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);
@@ -38,6 +40,21 @@ Texture2D GetInputTexture(uint index)
 float3 GetCameraPosition()
 {
     return FrameDataBuffer.CameraPosition;
+}
+
+uint GetWindowWidth()
+{
+    return FrameDataBuffer.WindowWidth;
+}
+
+uint GetWindowHeight()
+{
+    return FrameDataBuffer.WindowHeight;
+}
+
+float2 GetWindowSize()
+{
+    return float2(FrameDataBuffer.WindowWidth, FrameDataBuffer.WindowHeight);
 }
 
 struct FullScreenVertexOutput 

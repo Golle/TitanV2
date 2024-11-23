@@ -4,7 +4,7 @@ using Titan.Systems;
 
 namespace Titan;
 
-internal static class AppBuilderExtensions
+public static class AppBuilderExtensions
 {
     /// <summary>
     /// Helper function for structs that have systems and is also a resource. 

@@ -13,6 +13,20 @@ internal class FormattedBuilder
         return this;
     }
 
+    public FormattedBuilder BeginScope()
+    {
+        AppendLine("{");
+        BeginIndentation();
+        return this;
+    }
+
+    public FormattedBuilder EndScope()
+    {
+        EndIndentation();
+        AppendLine("}");
+        return this;
+    }
+
     public FormattedBuilder BeginIndentation(int count = 1)
     {
         _indentation += (count * 4);
@@ -29,6 +43,6 @@ internal class FormattedBuilder
         return this;
     }
 
-    public override string ToString() 
+    public override string ToString()
         => _builder.ToString();
 }

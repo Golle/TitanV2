@@ -15,6 +15,7 @@ internal class TitanBinaryExporter(string outputFile) : IExporter
 
         {
             await using var file = File.OpenWrite(outputFile);
+            file.SetLength(data.Length);
             await file.WriteAsync(data);
             await file.FlushAsync();
         }

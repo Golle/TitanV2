@@ -1,0 +1,14 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Vertex",
+  "shaderVersion": "Version_6_5",
+  "id": "22bf951e-fcc8-4317-8bc7-4d9c9c523320",
+  "name": "Shader.UI.Vertex",
+  "fileSize": 333,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

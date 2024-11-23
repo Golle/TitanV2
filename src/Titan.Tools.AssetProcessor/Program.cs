@@ -27,17 +27,19 @@ var pathOption = new Option<string>("--path", "The path to the content folder to
 var outputOption = new Option<string>("--output", "The output path and name for the packed bin file") { IsRequired = true };
 var codeOutputOption = new Option<string>("--code", "The output folder for the C# code generated.") { IsRequired = true };
 var nameOption = new Option<string>("--name", "The full name of the type created as the registry(ex MyGameProject.Assets.Registry1)") { IsRequired = true };
+var tmpOption = new Option<string>("--tmp", "The temp folder for temporary assets during processing.") { IsRequired = true };
 
 var command = new RootCommand
 {
     pathOption,
     outputOption,
     codeOutputOption,
-    nameOption
+    nameOption,
+    tmpOption
 };
 
 var returnCode = 0;
-command.SetHandler(async (path, bin, code, name) =>
+command.SetHandler(async (path, bin, code, name, tmp) =>
 {
     var contentFileReader = new ContentFiles(path, new MetadataBuilder());
 
@@ -59,7 +61,14 @@ command.SetHandler(async (path, bin, code, name) =>
         return;
     }
 
-    var context = new SortedAssetDescriptorContext(metadataFiles);
+    if (!Directory.Exists(tmp))
+    {
+        Directory.CreateDirectory(tmp);
+    }
+    var context = new SortedAssetDescriptorContext(metadataFiles)
+    {
+        TempFolderPath = tmp
+    };
     var pipeline = new AssetPipeline()
         .With<ImageProcessor>()
         .With<AsepriteProcessor>()
@@ -108,7 +117,7 @@ command.SetHandler(async (path, bin, code, name) =>
     timer.Stop();
     Logger.Info<Program>($"Completed in {timer.Elapsed.TotalMilliseconds} ms");
 
-}, pathOption, outputOption, codeOutputOption, nameOption);
+}, pathOption, outputOption, codeOutputOption, nameOption, tmpOption);
 
 var res = await command.InvokeAsync(args);
 return returnCode != 0 ? returnCode : res;
