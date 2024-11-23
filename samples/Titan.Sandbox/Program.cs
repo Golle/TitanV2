@@ -161,6 +161,9 @@ namespace Titan.Sandbox
         private static UIRadioState _radio;
         private static UIRadioStyle _radioStyle;
 
+        private static UISelectBoxState _selectBox;
+        private static UISelectBoxStyle _selectBoxStyle;
+
         private static Inline4<UICheckboxState> _checkboxStates;
         private static AssetHandle<SpriteAsset> _sprite2;
         private static AssetHandle<SpriteAsset> _sprite;
@@ -173,6 +176,7 @@ namespace Titan.Sandbox
 
         public static Inline8<UIID> Ids;
         public static Inline3<UIID> RadioIds;
+        public static UIID SelectBoxID = UIID.Create();
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
@@ -226,6 +230,13 @@ namespace Titan.Sandbox
                 Radio = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1,
                 RadioSelected = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1Selected,
                 RadioHover = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Radio1Hover
+            };
+            _selectBoxStyle = new()
+            {
+                SpriteHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
+                FontHandle = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular),
+                BackgroundIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1,
+                HoverIndex= SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1Selected,
             };
 
             _timer = Stopwatch.StartNew();
@@ -325,8 +336,10 @@ namespace Titan.Sandbox
 
                 for (var i = 0; i < 3; ++i)
                 {
-                    ui.Radio(RadioIds[i], i, new(500, 36 * i + 30), new (32,32), ref _radio, _radioStyle);
+                    ui.Radio(RadioIds[i], i, new(500, 36 * i + 30), new(32, 32), ref _radio, _radioStyle);
                 }
+
+                ui.SelectBox(SelectBoxID, new(600, 200), new SizeF(144, 33), ["My first", "My second", "My third"], ref _selectBox, _selectBoxStyle);
 
             }
 

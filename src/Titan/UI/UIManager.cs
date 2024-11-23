@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using Titan.Assets;
 using Titan.Core.Maths;
 using Titan.Input;
@@ -24,6 +26,78 @@ public readonly unsafe struct UIManager
         _assetsManager = assetsManager;
     }
 
+
+    public void SelectBox(in UIID id, in Vector2 position, in SizeF size, ReadOnlySpan<string> items, ref UISelectBoxState state, in UISelectBoxStyle style)
+    {
+        if (!_assetsManager.IsLoaded(style.SpriteHandle) || !_assetsManager.IsLoaded(style.FontHandle))
+        {
+            return;
+        }
+
+        ref readonly var sprite = ref _assetsManager.Get(style.SpriteHandle);
+        ref readonly var font = ref _assetsManager.Get(style.FontHandle);
+        var backgroundElement = new UIElement
+        {
+            TextureId = sprite.TextureId,
+            TextureCoordinates = sprite.Coordinates[style.BackgroundIndex],
+            Type = UIElementType.Sprite,
+            Size = size,
+            Offset = position,
+            Color = Color.White
+        };
+
+        var isOver = MathUtils.IsWithin(position, size, _inputState->MousePositionUI);
+
+        if (isOver && _inputState->IsButtonDown(MouseButton.Left))
+        {
+            _system->SetActive(id);
+        }
+
+        if (_system->IsActive(id))
+        {
+            var totalLength = 0;
+            foreach (var item in items)
+            {
+                totalLength += item.Length;
+            }
+
+            //NOTE(Jens): this will not work when tehre are to many items. use a Bump Allocator or call system->ADd multiple times.
+            Span<UIElement> elements = stackalloc UIElement[totalLength + items.Length];
+            var offset = position with { Y = position.Y - 6 };
+
+            var index = 0;
+            for (var i = 0; i < items.Length; ++i)
+            {
+                var item = items[i];
+                var isHighligthed = MathUtils.IsWithin(offset, size, _inputState->MousePositionUI);
+                elements[index++] = backgroundElement with { Offset = offset, TextureCoordinates = sprite.Coordinates[isHighligthed ? style.HoverIndex : style.BackgroundIndex] };
+
+                var textPosition = offset with { X = offset.X + 7 };
+                InitTextW(elements[index..], textPosition, item, font, Color.White, 0.6f);
+                index += item.Length;
+                offset.Y -= (size.Height - 2);
+
+                if (isHighligthed && _inputState->IsButtonReleased(MouseButton.Left))
+                {
+                    state.SelectedIndex = (byte)i;
+                }
+            }
+
+            _system->Add(elements.Slice(0, index));
+
+        }
+        else
+        {
+            var item = items[state.SelectedIndex];
+            Span<UIElement> elements = stackalloc UIElement[item.Length + 1];
+
+            elements[0] = backgroundElement;
+            var textPosition = new Vector2(position.X + 7, position.Y);
+            InitTextW(elements[1..], textPosition, item, font, Color.White, 0.6f);
+            _system->Add(elements);
+        }
+
+    }
 
     public void Radio(in UIID id, int index, in Vector2 position, in SizeF size, ref UIRadioState state, in UIRadioStyle style)
     {
@@ -211,7 +285,13 @@ public readonly unsafe struct UIManager
     public void Text(in Vector2 position, ReadOnlySpan<byte> text, in FontAsset font, in Color color)
     {
         Span<UIElement> elements = stackalloc UIElement[text.Length];
+        InitText(elements, in position, text, in font, in color);
+        _system->Add(elements);
+    }
 
+    private static void InitText(Span<UIElement> elements, in Vector2 position, ReadOnlySpan<byte> text, in FontAsset font, in Color color, float multiplier = 1.0f)
+    {
+        Debug.Assert(elements.Length >= text.Length);
         var offset = position;
         for (var i = 0; i < text.Length; ++i)
         {
@@ -219,17 +299,37 @@ public readonly unsafe struct UIManager
             elements[i] = new()
             {
                 Color = color,
-                Size = new(glyph.Width, glyph.Height),
+                Size = new SizeF(glyph.Width, glyph.Height) * multiplier,
                 Offset = offset,
                 TextureCoordinates = glyph.Coords,
                 TextureId = font.TextureId,
                 Type = UIElementType.Text
             };
-            offset.X += glyph.Advance;
+            offset.X += glyph.Advance * multiplier;
         }
-
-        _system->Add(elements);
     }
+
+    private static void InitTextW(Span<UIElement> elements, in Vector2 position, ReadOnlySpan<char> text, in FontAsset font, in Color color, float multiplier = 1.0f)
+    {
+        //NOTE(Jens): temp solution to support string. rework later
+        Debug.Assert(elements.Length >= text.Length);
+        var offset = position;
+        for (var i = 0; i < text.Length; ++i)
+        {
+            ref readonly var glyph = ref font.Glyphs[(byte)text[i]];
+            elements[i] = new()
+            {
+                Color = color,
+                Size = new SizeF(glyph.Width, glyph.Height) * multiplier,
+                Offset = offset,
+                TextureCoordinates = glyph.Coords,
+                TextureId = font.TextureId,
+                Type = UIElementType.Text
+            };
+            offset.X += glyph.Advance * multiplier;
+        }
+    }
+
 
     public void Image(in Vector2 position, in AssetHandle<Resources.SpriteAsset> handle, uint index = 0)
     {
@@ -341,26 +441,12 @@ public readonly unsafe struct UIManager
 
         if (count > 0)
         {
-            Span<UIElement> uiElements = new UIElement[count + 1];
+            Span<UIElement> uiElements = stackalloc UIElement[count + 1];
             uiElements[0] = background;
 
             ref readonly var font = ref _assetsManager.Get(style.FontAsset);
             var offset = new Vector2(position.X + 10, position.Y + 4);
-            for (var i = 0; i < count; ++i)
-            {
-                ref readonly var glyph = ref font.Glyphs[text[i]];
-                uiElements[i + 1] = new()
-                {
-                    Color = Color.White,
-                    Size = new(glyph.Width / 2f, glyph.Height / 2f),
-                    Offset = offset,
-                    TextureCoordinates = glyph.Coords,
-                    TextureId = font.TextureId,
-                    Type = UIElementType.Text
-                };
-                offset.X += glyph.Advance / 2f;
-            }
-
+            InitText(uiElements[1..], offset, text[..count], font, Color.White, 0.5f);
             _system->Add(uiElements);
         }
         else
