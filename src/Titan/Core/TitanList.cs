@@ -41,7 +41,7 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly T* AsPointer() => _elements.AsPointer();
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly T* GetPointer(uint index)
     {
@@ -62,6 +62,18 @@ public unsafe struct TitanList<T>(T* ptr, uint length)
     public static implicit operator ReadOnlySpan<T>(in TitanList<T> list) => list.AsReadOnlySpan();
     public static implicit operator Span<T>(in TitanList<T> list) => list.AsSpan();
     public static implicit operator T*(in TitanList<T> list) => list.AsPointer();
+
+    public ref T this[int index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref *GetPointer(index);
+    }
+
+    public ref T this[uint index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref *GetPointer(index);
+    }
 
     public void Clear() => _next = 0;
 

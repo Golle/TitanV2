@@ -12,7 +12,6 @@ using Titan.Input;
 using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
-using Titan.UI.Text;
 using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.UI;
@@ -26,7 +25,8 @@ internal struct UIElement
     public TextureCoordinate TextureCoordinates;
     public int TextureId;
     public UIElementType Type;
-    private unsafe fixed uint Padding[2];
+    public float Repeat;
+    private uint Padding;
     //public uint GlyphIndex;
 }
 
@@ -34,7 +34,8 @@ internal enum UIElementType
 {
     None = 0,
     Sprite = 1,
-    Text = 2
+    Text = 2,
+    SpriteRepeat = 3
 }
 
 internal struct UIState

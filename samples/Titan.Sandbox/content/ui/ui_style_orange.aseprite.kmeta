@@ -1,10 +1,87 @@
 {
-  "$type": "AsepriteMetadata",
-  "id": "4a7a8add-4a58-4d61-afec-1d2d9c4ed61f",
+  "$type": "ImageMetadata",
+  "type": "Texture",
+  "compression": "None",
+  "type": "SpriteSheet",
+  "sprites": [
+    {
+      "name": "Button",
+      "bottomLeft": [10,16],
+      "topRight": [32,5]
+    },
+    {
+      "name": "Checkbox1",
+      "bottomLeft": [55,24],
+      "topRight": [63,16]
+    },
+    {
+      "name": "Checkbox1_Down",
+      "bottomLeft": [82,20],
+      "topRight": [90,12]
+    },
+    {
+      "name": "Checkbox1_Checked",
+      "bottomLeft": [68,19],
+      "topRight": [76,11]
+    },
+    {
+      "name" :"Input1",
+      "bottomLeft": [16,63],
+      "topRight": [63,53]
+    },
+    {
+      "name" :"Input1_Selected",
+      "bottomLeft": [16,79],
+      "topRight": [63,69]
+    },
+    {
+      "name" :"Slider1",
+      "bottomLeft": [16,47],
+      "topRight": [47,32]
+    },
+    {
+      "name" :"Slider1_Blob",
+      "bottomLeft": [48,47],
+      "topRight": [63,32]
+    },
+    {
+      
+      "name" :"Slider1_BlobBlack",
+      "bottomLeft": [64,47],
+      "topRight": [79,32]
+    },
+    {
+      "name" :"Radio1",
+      "bottomLeft": [80,63],
+      "topRight": [95,48]
+    },
+    {
+      "name" :"Radio1_Selected",
+      "bottomLeft": [96,63],
+      "topRight": [111,48]
+    },
+    {
+      "name" :"Radio1_Hover",
+      "bottomLeft": [112,63],
+      "topRight": [127,48]
+    },
+    {
+      "name" : "Progress1",
+      "bottomLeft": [16,111],
+      "topRight": [61,104]
+    },
+    {
+      "name" : "Progress1_Bar",
+      "bottomLeft": [16,95],
+      "topRight": [21,88]
+    }
+  ],
+  "ninePatch": [],
+  "id": "885b9555-e6cd-4d3e-bd56-5888d522811c",
   "name": "UiStyleOrange",
-  "fileSize": 689,
+  "fileSize": 1472,
   "dependsOn": [],
-  "skip": true,
+  "skip": false,
   "license": null,
   "creator": null,
   "link": null

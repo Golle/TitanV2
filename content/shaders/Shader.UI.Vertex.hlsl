@@ -40,9 +40,7 @@ UIVertexOutput main(uint id : SV_VertexID, in uint InstanceIdx : SV_InstanceID)
     UIVertexOutput output;
     output.Position = float4(position, 0.0f, 1.0f);
     output.Texture = uv;
-    output.Color = ui.Color;
-    output.TextureId = ui.TextureId;
-    output.Type = ui.Type;
+    output.InstanceId = InstanceIdx;
 
     return output;
 }

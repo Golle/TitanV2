@@ -23,6 +23,9 @@ internal sealed class ImageMetadata : AssetFileMetadata
     public CompressionType Compression { get; set; } = CompressionType.None;
     public SpriteMetadata[] Sprites { get; set; } = [];
     public NinePatchSpriteMetadata[] NinePatch { get; set; } = [];
+
+    [JsonIgnore]
+    public bool IsAseprite => FileExtension == ".aseprite";
 }
 
 internal class SpriteMetadata

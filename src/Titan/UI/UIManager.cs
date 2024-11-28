@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using Titan.Assets;
 using Titan.Core.Maths;
 using Titan.Input;
@@ -26,6 +25,51 @@ public readonly unsafe struct UIManager
         _assetsManager = assetsManager;
     }
 
+    public void ProgressBar(in Vector2 position, in SizeF size, ref UIProgressBarState state, in UIProgressBarStyle style)
+    {
+        if (!_assetsManager.IsLoaded(style.AssetHandle))
+        {
+            return;
+        }
+
+        ref readonly var sprite = ref _assetsManager.Get(style.AssetHandle);
+        if (state.Value > 0.0f)
+        {
+            ref readonly var background = ref sprite.Coordinates[style.BackgroundIndex];
+            var multiple = size.Width / (background.UVMax.X - background.UVMin.X);
+
+            ref readonly var textureCoordinates = ref sprite.Coordinates[style.BarIndex];
+            var barWidth = (textureCoordinates.UVMax.X - textureCoordinates.UVMin.X) * multiple;
+
+
+            var sizeF = size with { Width = size.Width * state.Value };
+            var repeat = sizeF.Width / barWidth;
+
+            var barElement = new UIElement
+            {
+                TextureId = sprite.TextureId,
+                TextureCoordinates = textureCoordinates,
+                Type = UIElementType.SpriteRepeat,
+                Size = sizeF,
+                Offset = position,
+                Repeat = repeat,
+                Color = Color.White
+            };
+
+            _system->Add(barElement);
+        }
+
+        //NOTE(Jens): Render the progress bar first, and background on top to avoid calculating margins.
+        _system->Add(new UIElement
+        {
+            TextureId = sprite.TextureId,
+            TextureCoordinates = sprite.Coordinates[style.BackgroundIndex],
+            Type = UIElementType.Sprite,
+            Size = size,
+            Offset = position,
+            Color = Color.White
+        });
+    }
 
     public void SelectBox(in UIID id, in Vector2 position, in SizeF size, ReadOnlySpan<string> items, ref UISelectBoxState state, in UISelectBoxStyle style)
     {

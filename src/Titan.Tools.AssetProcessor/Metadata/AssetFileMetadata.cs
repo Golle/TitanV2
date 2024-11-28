@@ -12,7 +12,6 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 [JsonDerivedType(typeof(ShaderInfoMetadata), nameof(ShaderInfoMetadata))]
 [JsonDerivedType(typeof(ObjModelMetadata), nameof(ObjModelMetadata))]
 [JsonDerivedType(typeof(MtlMetadata), nameof(MtlMetadata))]
-[JsonDerivedType(typeof(AsepriteMetadata), nameof(AsepriteMetadata))]
 [JsonDerivedType(typeof(FontMetadata), nameof(FontMetadata))]
 [JsonDerivedType(typeof(AudioMetadata), nameof(AudioMetadata))]
 internal abstract class AssetFileMetadata

@@ -10,16 +10,16 @@ struct UIElement
     float2 UVMax;
     int TextureId;
     int Type;
-    float2 Padding;
+    float Repeat;
+    float1 Padding;
 };
 
 struct UIVertexOutput 
 {
     float4 Position : SV_POSITION;
     float2 Texture : TEXCOORD0;
-    float4 Color : COLOR;
     int TextureId : TEXID;
-    int Type : TEXTYPE;
+    uint InstanceId : UI_ELEMENT_ID;
 };
 
 

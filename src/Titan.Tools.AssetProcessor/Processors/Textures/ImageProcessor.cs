@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core;
-using Titan.Platform.Win32.DXGI;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.UI.Resources;
 
@@ -14,7 +13,16 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
         await Task.Yield();
         // this makes it fail when done on multiple threads, they kill eachother.
 
-        var image = ImageLoader.LoadAndCompress(metadata.ContentFileFullPath, metadata.Compression, context.TempFolderPath);
+        if (metadata.IsAseprite && metadata.Compression != CompressionType.None)
+        {
+            context.AddDiagnostics(DiagnosticsLevel.Error, "Compression is currently not supported for Aseprite images.");
+            return;
+        }
+
+        var image = metadata.IsAseprite
+            ? AsepriteReader.Read(await File.ReadAllBytesAsync(metadata.ContentFileFullPath))
+            : ImageLoader.LoadAndCompress(metadata.ContentFileFullPath, metadata.Compression, context.TempFolderPath);
+
 
         //NOTE(Jens): The images I've been testing with are upside down and flipped. 
         if (image == null)

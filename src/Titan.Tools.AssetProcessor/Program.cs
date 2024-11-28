@@ -71,7 +71,6 @@ command.SetHandler(async (path, bin, code, name, tmp) =>
     };
     var pipeline = new AssetPipeline()
         .With<ImageProcessor>()
-        .With<AsepriteProcessor>()
         .With<ShaderProcessor>()
         .With<ObjModelProcessor>()
         .With<FontProcessor>()

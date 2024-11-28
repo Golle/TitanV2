@@ -13,10 +13,9 @@ internal class MetadataBuilder
 
         AssetFileMetadata? metadata = fileExtension switch
         {
-            ".png" or ".jpg" => new ImageMetadata(),
+            ".png" or ".jpg" or ".aseprite" => new ImageMetadata(),
             ".obj" => new ObjModelMetadata(),
             ".mtl" => new MtlMetadata(),
-            ".aseprite" => new AsepriteMetadata(),
             ".hlsl" => new ShaderMetadata(),
             ".ttf" => new FontMetadata(),
             ".shaderconf" => new ShaderInfoMetadata(),

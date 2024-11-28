@@ -34,7 +34,7 @@ var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 
 App.Create(appConfig)
     .AddModule<GameModule>()
-    .AddPersistedConfig(new WindowConfig(1024, 768, true, true))
+    .AddPersistedConfig(new WindowConfig(1920, 1080, true, true))
     .AddPersistedConfig(new RenderingConfig
     {
 #if DEBUG
@@ -164,6 +164,9 @@ namespace Titan.Sandbox
         private static UISelectBoxState _selectBox;
         private static UISelectBoxStyle _selectBoxStyle;
 
+        private static UIProgressBarState _progressBar;
+        private static UIProgressBarStyle _progressBarStyle;
+
         private static Inline4<UICheckboxState> _checkboxStates;
         private static AssetHandle<SpriteAsset> _sprite2;
         private static AssetHandle<SpriteAsset> _sprite;
@@ -199,6 +202,7 @@ namespace Titan.Sandbox
             _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet.Asset);
             _sprite2 = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset);
 
+            assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange1.Asset);
             _checkboxStyle = new UICheckboxStyle
             {
                 CheckboxAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
@@ -236,7 +240,14 @@ namespace Titan.Sandbox
                 SpriteHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
                 FontHandle = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular),
                 BackgroundIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1,
-                HoverIndex= SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1Selected,
+                HoverIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Input1Selected,
+            };
+
+            _progressBarStyle = new()
+            {
+                AssetHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
+                BackgroundIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Progress1,
+                BarIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Progress1Bar
             };
 
             _timer = Stopwatch.StartNew();
@@ -341,6 +352,8 @@ namespace Titan.Sandbox
 
                 ui.SelectBox(SelectBoxID, new(600, 200), new SizeF(144, 33), ["My first", "My second", "My third"], ref _selectBox, _selectBoxStyle);
 
+                _progressBar.Value = _slider.Value;
+                ui.ProgressBar(new Vector2(600, 400), new SizeF(46, 8) * 5.0f, ref _progressBar, _progressBarStyle);
             }
 
             //audioManager.PlayOnce(_music, new PlaybackSettings());

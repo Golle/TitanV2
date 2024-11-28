@@ -48,6 +48,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 public const byte Radio1 = 9;
                 public const byte Radio1Selected = 10;
                 public const byte Radio1Hover = 11;
+                public const byte Progress1 = 12;
+                public const byte Progress1Bar = 13;
             }
         }
     }
@@ -159,10 +161,10 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Sprite,
             File = 
             { 
-                Length = 65632,
+                Length = 65648,
                 Offset = 68046408,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.png")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite")
 #else
             AssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
@@ -170,14 +172,14 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Dependencies = new(0, 0),
             Sprite = new()
             {
-                NumberOfSprites = 12,
+                NumberOfSprites = 14,
                 Texture = new()
                 {
                     Width = 128,
                     Height = 128,
                     Stride = 512,
                     BitsPerPixel = 32,
-                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
                 }
             }
         };

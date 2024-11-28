@@ -1,7 +1,10 @@
 using System.Numerics;
+using Titan.Assets;
 using Titan.Input;
 using Titan.Resources;
 using Titan.Systems;
+using Titan.UI;
+using Titan.UI.Widgets;
 using Titan.Windows;
 
 namespace Titan.ECS.Systems;
@@ -28,7 +31,8 @@ public struct Camera
     {
         return new Camera
         {
-            Target = Vector3.Zero,
+            Position = Vector3.Zero,
+            Target = Vector3.UnitZ,
             Up = Vector3.UnitY,
             Forward = Vector3.UnitZ,
             Right = Vector3.UnitX,
@@ -45,14 +49,14 @@ public struct Camera
 internal partial struct CameraSystem
 {
     public Camera DefaultCamera;
-
-
+    
     [System(SystemStage.Init)]
     public static void Startup(ref CameraSystem system, in Window window)
     {
         ref var camera = ref system.DefaultCamera;
         camera = Camera.Create();
-        camera.Position = Vector3.UnitZ * -10 + Vector3.UnitY * 10;
+        //camera.Position = Vector3.UnitZ * -10 + Vector3.UnitY * 10;
+        camera.Position = Vector3.Zero;
         camera.AspectRatio = window.Width / (float)window.Height;
         camera.ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.Fov, camera.AspectRatio, camera.NearPlane, camera.FarPlane);
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
@@ -61,7 +65,7 @@ internal partial struct CameraSystem
     }
 
     [System]
-    public static void Update(ref CameraSystem system, in InputState inputState)
+    public static void Update(ref CameraSystem system, in InputState inputState, UIManager uiManager)
     {
         ref var camera = ref system.DefaultCamera;
         //camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
@@ -78,12 +82,12 @@ internal partial struct CameraSystem
 
         if (inputState.IsKeyDown(KeyCode.Left) || inputState.IsKeyDown(KeyCode.A))
         {
-            camera.Position -= camera.Right * 0.1f;
+            camera.Position += camera.Right * 0.1f;
         }
 
         if (inputState.IsKeyDown(KeyCode.Right) || inputState.IsKeyDown(KeyCode.D))
         {
-            camera.Position += camera.Right * 0.1f;
+            camera.Position -= camera.Right * 0.1f;
         }
 
         if (inputState.IsKeyDown(KeyCode.V))
@@ -95,6 +99,9 @@ internal partial struct CameraSystem
         {
             camera.Position -= camera.Up * 0.1f;
         }
+
+
+        camera.Target = camera.Position + camera.Forward;
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
         camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
         camera.ViewProjectionMatrix = Matrix4x4.Transpose(camera.ViewProjectionMatrix);
