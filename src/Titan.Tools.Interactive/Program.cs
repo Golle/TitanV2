@@ -43,7 +43,7 @@ engineWatcher.Filter = gameWatcher.Filter = "*.*";
 engineWatcher.NotifyFilter = gameWatcher.NotifyFilter = NotifyFilters.LastWrite;
 engineWatcher.IncludeSubdirectories = gameWatcher.IncludeSubdirectories = true;
 
-engineWatcher.Changed += (sender, eventArgs) =>
+engineWatcher.Changed += (_, eventArgs) =>
 {
     var path = eventArgs.FullPath;
     var lastWriteTime = File.GetLastWriteTime(path);
@@ -52,11 +52,13 @@ engineWatcher.Changed += (sender, eventArgs) =>
         // we ignore duplicate events, or if the file wasn't changed.
         return;
     }
+    ProcessEngineAsset(titanPath, path, config);
+
+    lastFileChanges[path] = lastWriteTime;
 };
 
-gameWatcher.Changed += (sender, eventArgs) =>
+gameWatcher.Changed += (_, eventArgs) =>
 {
-    Console.WriteLine("Start");
     var path = eventArgs.FullPath;
     var lastWriteTime = File.GetLastWriteTime(path);
     if (lastFileChanges.TryGetValue(path, out var time) && time >= lastWriteTime)
@@ -65,9 +67,8 @@ gameWatcher.Changed += (sender, eventArgs) =>
         return;
     }
     ProcessGameAsset(titanPath, path, config);
-    
+
     lastFileChanges[path] = lastWriteTime;
-    Console.WriteLine("Done");
 };
 
 engineWatcher.EnableRaisingEvents = gameWatcher.EnableRaisingEvents = true;
@@ -126,6 +127,7 @@ do
             break;
         case ConsoleKey.H:
             hotReload = !hotReload;
+            gameWatcher.EnableRaisingEvents = engineWatcher.EnableRaisingEvents = hotReload;
             break;
         default:
             Console.WriteLine("Unrecognized command.");
@@ -142,6 +144,24 @@ Console.WriteLine("Thanks for using the interactive console!");
 return 0;
 
 
+static bool ProcessEngineAsset(string titanDirectory, string file, TitanConfig config)
+{
+    const string AssetProcessor = "Titan.Tools.AssetProcessor.exe";
+    var assetProcessorPath = Path.Combine(titanDirectory, "release", "tools", AssetProcessor);
+    var timer = Stopwatch.StartNew();
+    Console.WriteLine($"Processing engine asset. File = {file}");
+    var content = Path.Combine(titanDirectory, "content");
+    var binary = Path.Combine(titanDirectory, "assets", "titan.tbin");
+    var temp = Path.Combine(titanDirectory, config.Temp);
+    Console.WriteLine($"\tInput = {content}");
+    Console.WriteLine($"\tOutput = {binary}");
+
+    var arguments = $"--path {content} --output {binary} --tmp {temp} --file \"{file}\"";
+    var result = RunProgram(assetProcessorPath, arguments, titanDirectory, redirectOutput: false);
+
+    Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
+    return true;
+}
 static bool ProcessEngineAssets(string titanDirectory, TitanConfig config, bool logging)
 {
     const string AssetProcessor = "Titan.Tools.AssetProcessor.exe";
@@ -176,7 +196,6 @@ static bool ProcessGameAsset(string titanDirectory, string file, TitanConfig con
 
     Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
     return true;
-
 }
 static bool ProcessGameAssets(string titanDirectory, TitanConfig config, bool logging)
 {
