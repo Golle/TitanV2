@@ -1,16 +1,17 @@
 using System.Collections.Concurrent;
+using System.IO;
 using System.Text.Json;
 using Titan.Core.Logging;
 
 namespace Titan.Tools.AssetProcessor.Metadata;
-internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadataBuilder) : IContentFiles
+internal sealed class ContentFiles(string contentFolder, string binaryFolder, MetadataBuilder metadataBuilder) : IContentFiles
 {
     private const string MetadataFileExtension = ".kmeta";
+    private const string BinaryFileExtension = ".kbin";
     private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".mtl"];
 
     public async Task<bool> VerifyMetadataFiles()
     {
-
         var result = true;
         var files = EnumerateFiles(contentFolder, "*")
             .Where(f => !IsIgnored(f));
@@ -57,14 +58,29 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
 
         static bool IsIgnored(string file)
             => IgnoredFileExtensions.Any(ext => Path.GetExtension(file).Equals(ext, StringComparison.OrdinalIgnoreCase));
+
     }
 
-
-    public async Task<AssetFileMetadata[]?> GetFiles()
+    public async Task<AssetFileMetadata[]?> GetFiles(string? singleFile)
     {
         ConcurrentDictionary<Guid, AssetFileMetadata> metadatas = new();
 
-        await Parallel.ForEachAsync(EnumerateFiles(contentFolder, $"*{MetadataFileExtension}"), async (file, _) =>
+        if (singleFile != null)
+        {
+            var filePath = Path.GetFullPath(singleFile);
+            var contentFullPath = Path.GetFullPath(contentFolder);
+            if (!filePath.StartsWith(contentFullPath, StringComparison.InvariantCultureIgnoreCase))
+            {
+                Logger.Error<ContentFiles>($"The target file is not in the content folder. Content Folder =  {contentFullPath} File = {filePath}");
+                throw new InvalidOperationException("File is not part of the content.");
+            }
+        }
+
+        var files = singleFile != null
+            ? GetSingleFile(singleFile)
+            : EnumerateFiles(contentFolder, $"*{MetadataFileExtension}");
+
+        await Parallel.ForEachAsync(files, async (file, _) =>
         {
             var metadata = await ReadMetadata(file);
             if (metadata == null)
@@ -73,9 +89,16 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
                 return;
             }
             var assetFilename = Path.GetFileNameWithoutExtension(file);
+            var filename = Path.GetFileNameWithoutExtension(assetFilename);
+            var binaryFileName = $"{filename}{BinaryFileExtension}";
             var directory = Path.GetDirectoryName(file)!;
             metadata.ContentFileFullPath = Path.Combine(directory, assetFilename);
             metadata.ContentFileRelativePath = Path.GetRelativePath(contentFolder, metadata.ContentFileFullPath);
+            var relativeFolder = Path.GetDirectoryName(metadata.ContentFileRelativePath)!;
+
+            metadata.BinaryFileRelativePath = Path.Combine(relativeFolder, binaryFileName); 
+            metadata.BinaryFileFullPath = Path.Combine(binaryFolder, metadata.BinaryFileRelativePath);
+            
             metadata.FileExtension = Path.GetExtension(assetFilename).ToLowerInvariant();
             if (!metadatas.TryAdd(metadata.Id, metadata))
             {
@@ -108,7 +131,7 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
                 Logger.Error<ContentFiles>($"Failed to deserialize the content. Message = {e.Message}");
                 return null;
             }
-            
+
         }
 
         static bool ResolveDependencies(AssetFileMetadata metadata, IDictionary<Guid, AssetFileMetadata> metadatas)
@@ -147,4 +170,17 @@ internal sealed class ContentFiles(string contentFolder, MetadataBuilder metadat
 
     private static IEnumerable<string> EnumerateFiles(string basePath, string pattern)
         => Directory.EnumerateFiles(basePath, pattern, SearchOption.AllDirectories);
+
+    private static IEnumerable<string> GetSingleFile(string filePath)
+    {
+        var filename = Path.GetFileName(filePath);
+        var directory = Path.GetDirectoryName(filePath)!;
+        var metadataPath = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
+        if (!File.Exists(metadataPath))
+        {
+            throw new FileNotFoundException($"The metadata file for {filePath} does not exist.");
+        }
+
+        yield return metadataPath;
+    }
 }

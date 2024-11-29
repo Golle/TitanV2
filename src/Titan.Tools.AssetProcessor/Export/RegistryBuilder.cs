@@ -121,9 +121,11 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 {nameof(FileDescriptor.Length)} = {baseDescriptor.File.Length},
                 {nameof(FileDescriptor.Offset)} = {baseDescriptor.File.Offset},
 #if !RELEASE
-            AssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Create)}(@""{metadata.ContentFileRelativePath}"")
+            AssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Create)}(@""{metadata.ContentFileRelativePath}""),
+            BinaryAssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Create)}(@""{metadata.BinaryFileRelativePath}"")
 #else
-            AssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Empty)}
+            AssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Empty)},
+            BinaryAssetPath = {typeof(StringRef).FullName}.{nameof(StringRef.Empty)}
 #endif
             }},
             {nameof(AssetDescriptor.Dependencies)} = new({baseDescriptor.Dependencies.Index}, {baseDescriptor.Dependencies.Count}),

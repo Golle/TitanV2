@@ -13,5 +13,6 @@ public struct FileDescriptor
 
     //#if !RELEASE
     public StringRef AssetPath;
+    public StringRef BinaryAssetPath;
     //#endif
 }

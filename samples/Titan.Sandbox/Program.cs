@@ -202,7 +202,6 @@ namespace Titan.Sandbox
             _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet.Asset);
             _sprite2 = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset);
 
-            assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange1.Asset);
             _checkboxStyle = new UICheckboxStyle
             {
                 CheckboxAsset = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
