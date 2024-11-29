@@ -7,6 +7,7 @@ using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32.DXGI;
 using Titan.Rendering;
+using Titan.Rendering.Resources;
 using Titan.UI.Text;
 
 namespace Titan.UI.Resources;
@@ -114,6 +115,12 @@ internal unsafe partial struct FontLoader
         Debug.Assert(asset != null);
         _resourceManager->DestroyTexture(asset->Sprite);
         _assets.SafeFree(asset);
+    }
+
+    public bool Reload(FontAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<FontLoader>("Reload not implemented");
+        return true;
     }
 
     public void Shutdown(in AssetLoaderInitializer init)

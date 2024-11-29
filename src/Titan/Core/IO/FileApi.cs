@@ -39,6 +39,9 @@ internal readonly struct FileApi<TFileApi>(string basePath, bool readOnly) : IFi
     public long GetLength(in NativeFileHandle handle)
         => TFileApi.GetLength(handle);
 
+    public FileTime GetFileTime(in NativeFileHandle handle) =>
+        TFileApi.GetFileTime(handle);
+
     public void Truncate(in NativeFileHandle handle)
     {
         if (IsReadOnly)

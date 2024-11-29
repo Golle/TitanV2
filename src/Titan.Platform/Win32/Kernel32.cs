@@ -126,6 +126,17 @@ public unsafe partial struct Kernel32
         LARGE_INTEGER* lpFileSize
     );
 
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetFileTime(
+        HANDLE hFile,
+        FILETIME* lpCreationTime,
+        FILETIME* lpLastAccessTime,
+        FILETIME* lpLastWriteTime
+    );
+
     [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]

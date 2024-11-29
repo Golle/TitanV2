@@ -67,6 +67,12 @@ internal unsafe partial struct MeshLoader
         *asset = default;
         _meshes.SafeFree(asset);
     }
+
+    public bool Reload(MeshAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<MeshLoader>("Reload not implemented");
+        return true;
+    }
 }
 
 [Asset(AssetType.Mesh)]

@@ -80,4 +80,10 @@ internal unsafe partial struct TextureLoader
         _pool.SafeFree(asset);
         _resourceManager->DestroyTexture(asset->Handle);
     }
+
+    public bool Reload(TextureAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<TextureAsset>("Reload not implemented");
+        return true;
+    }
 }

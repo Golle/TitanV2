@@ -236,7 +236,8 @@ internal unsafe partial struct AssetSystem
                     break;
 
                 case AssetState.LoadRequested:
-                    state->FileBuffer = system->Allocator.Alloc(state->Descriptor->File.Length, false);
+                    var fileSize = GetFilesizeFromState(state);
+                    state->FileBuffer = system->Allocator.Alloc(fileSize, false);
                     if (state->FileBuffer == null)
                     {
                         Logger.Warning("Failed to allocate memory for the file buffer.");
@@ -263,6 +264,13 @@ internal unsafe partial struct AssetSystem
                     state->State = AssetState.Loaded;
 
                     break;
+
+
+#if HOT_RELOAD_ASSETS
+                case AssetState.Reload:
+                    ReloadAsset(system, state);
+                    break;
+#endif
             }
         }
 
@@ -280,6 +288,20 @@ internal unsafe partial struct AssetSystem
         }
     }
 
+    private static uint GetFilesizeFromState(Asset* state)
+    {
+#if HOT_RELOAD_ASSETS
+        // We read the file size, since it might have changed.
+        var fileSystem = state->System->FileSystem.Value;
+        var handle = fileSystem.Open(state->Descriptor->File.BinaryAssetPath.GetString(), state->Registry->EngineRegistry ? FilePathType.Engine : FilePathType.Content);
+        var fileSize = fileSystem.GetLength(handle);
+        fileSystem.Close(ref handle);
+        return (uint)fileSize;
+#else
+        return state->Descriptor->File.Length;
+#endif
+    }
+
     public static void UnloadResourceAsync(Asset* asset)
     {
         Logger.Warning<AssetSystem>("Unload has not been implemented yet. We need reference counting for this to work properly.");
@@ -293,6 +315,18 @@ internal unsafe partial struct AssetSystem
         var fileSystem = asset->System->FileSystem.Value;
         ref readonly var fileDescriptor = ref asset->Descriptor->File;
 
+#if HOT_RELOAD_ASSETS
+        var handle = fileSystem.Open(fileDescriptor.BinaryAssetPath.GetString(), asset->Registry->EngineRegistry ? FilePathType.Engine : FilePathType.Content);
+        var fileLength = fileSystem.GetLength(handle);
+        var bufferSpan = new Span<byte>(asset->FileBuffer, (int)fileLength);
+        var bytesRead = fileSystem.Read(handle, bufferSpan);
+        fileSystem.Close(ref handle);
+        if (fileLength != bytesRead)
+        {
+            Logger.Warning<AssetSystem>($"Mismatch in bytes read and size of asset. Asset Size = {fileLength} Bytes Read = {bytesRead}");
+        }
+        asset->State = AssetState.ReadingFileCompleted;
+#else
         var bufferSpan = new Span<byte>(asset->FileBuffer, (int)fileDescriptor.Length);
         var bytesRead = fileSystem.Read(asset->File->Handle, bufferSpan, fileDescriptor.Offset);
         if (fileDescriptor.Length != bytesRead)
@@ -300,6 +334,7 @@ internal unsafe partial struct AssetSystem
             Logger.Warning<AssetSystem>($"Mismatch in bytes read and size of asset. Asset Size = {fileDescriptor.Length} Bytes Read = {bytesRead}");
         }
         asset->State = AssetState.ReadingFileCompleted;
+#endif
     }
 
     private static void CreateResourceAsync(Asset* asset)
@@ -348,4 +383,77 @@ internal unsafe partial struct AssetSystem
             memoryManager.FreeArray(ref system->Dependencies);
         }
     }
+
+
+
+    // This part is only used when Hot Reload is enabled, and none of these methods can be called in Release builds.
+#if HOT_RELOAD_ASSETS
+    private static void ReloadAsset(AssetSystem* system, Asset* asset)
+    {
+        if (!asset->GetDependencies().IsEmpty)
+        {
+            Logger.Warning<AssetSystem>("Asset Reloading is not supported for assets that has dependencies at this time.");
+            asset->State = AssetState.Loaded;
+
+            return;
+        }
+
+        var loader = asset->GetLoader();
+        // buffer
+        var fileSystem = system->FileSystem.Value;
+        var handle = fileSystem.Open(asset->Descriptor->File.BinaryAssetPath.GetString(), asset->Registry->EngineRegistry ? FilePathType.Engine : FilePathType.Content);
+        var fileLength = fileSystem.GetLength(handle);
+        var buffer = system->Allocator.AllocBuffer((uint)fileLength);
+        if (buffer.IsValid)
+        {
+            var bytesRead = fileSystem.Read(handle, buffer);
+            if (bytesRead != fileLength)
+            {
+                Logger.Warning<AssetSystem>($"The bytes read and the file length are different. Read = {bytesRead} FileLength = {fileLength}");
+            }
+            
+
+            if (!loader->Reload(asset->Resource, *asset->Descriptor, buffer.Slice(0, (uint)bytesRead)))
+            {
+                Logger.Error<AssetSystem>("Failed to reload the Asset, returned false.");
+            }
+
+            system->Allocator.FreeBuffer(ref buffer);
+        }
+        else
+        {
+            Logger.Error<AssetSystem>("failed to allocate a buffer for the file. Can't reload asset.");
+        }
+        fileSystem.Close(ref handle);
+        // always set it back to loaded. might crash, but we'll live with it :)
+        asset->State = AssetState.Loaded;
+    }
+
+
+    private static readonly Lock _lock = new();
+    public void AssetChanged(string relativePath)
+    {
+        // we only want a single file watcher to call this at one time, try to avoid race conditions.
+        lock (_lock)
+        {
+            //foreach (ref var asset in Assets.AsSpan())
+            for (var i = 0; i < Assets.Length; ++i)
+            {
+                ref var asset = ref Assets[i];
+                if (asset.State != AssetState.Loaded)
+                {
+                    // no reason to rigger reload on unloaded assets.
+                    continue;
+                }
+
+                if (asset.Descriptor->File.BinaryAssetPath.GetString().Equals(relativePath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    asset.State = AssetState.Reload;
+                    return;
+                }
+            }
+        }
+    }
+
+#endif
 }

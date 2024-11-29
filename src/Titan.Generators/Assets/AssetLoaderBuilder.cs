@@ -41,6 +41,7 @@ internal static class AssetLoaderBuilder
                 .AppendLine($"(uint){asset.ToDisplayString()}.Type,")
                 .AppendLine("&LoaderStub.Load,")
                 .AppendLine("&LoaderStub.Unload,")
+                .AppendLine("&LoaderStub.Reload,")
                 .AppendLine("&LoaderStub.Init,")
                 .AppendLine("&LoaderStub.Shutdown")
                 .EndIndentation()
@@ -77,6 +78,12 @@ internal static class AssetLoaderBuilder
                 .AppendLine($"public static void Unload(void* context, void* asset)")
                 .BeginIndentation()
                 .AppendLine($"=> (({type.Name}*)context)->Unload(({asset.Name}*)asset);")
+                .EndIndentation()
+                .AppendLine()
+
+                .AppendLine($"public static bool Reload(void* context, void* asset, in {TitanTypes.AssetDescriptor} descriptor, {TitanTypes.TitanBuffer} buffer)")
+                .BeginIndentation()
+                .AppendLine($"=> (({type.Name}*)context)->Reload(({asset.Name}*)asset, descriptor, buffer);")
                 .EndIndentation()
                 .AppendLine()
 

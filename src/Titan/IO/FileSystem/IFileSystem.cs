@@ -13,7 +13,8 @@ public interface IFileSystem : IService
     int Write(in FileHandle handle, ReadOnlySpan<byte> content, ulong offset = 0UL);
     long GetLength(in FileHandle handle);
     void Truncate(in FileHandle handle);
-
+    FileTime GetFileTime(in FileHandle handle);
+    string GetPath(FilePathType type);
 
     internal bool Init();
     internal void Shutdown();

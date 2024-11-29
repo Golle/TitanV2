@@ -9,6 +9,7 @@ public unsafe struct AssetLoaderDescriptor(
     uint assetId,
     delegate*<void*, in AssetDescriptor, TitanBuffer, ReadOnlySpan<AssetDependency>, void*> load,
     delegate*<void*, void*, void> unload,
+    delegate*<void*, void*, in AssetDescriptor, TitanBuffer, bool> reload,
     delegate*<void*, in AssetLoaderInitializer, bool> init,
     delegate*<void*, in AssetLoaderInitializer, void> shutdown)
 {
@@ -26,4 +27,6 @@ public unsafe struct AssetLoaderDescriptor(
         => init(Context, initializer);
     public readonly void Shutdown(in AssetLoaderInitializer initializer)
         => shutdown(Context, initializer);
+    public readonly bool Reload(void* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+        => reload(Context, asset, descriptor, buffer);
 }

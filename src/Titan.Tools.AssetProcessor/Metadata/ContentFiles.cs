@@ -96,9 +96,9 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
             metadata.ContentFileRelativePath = Path.GetRelativePath(contentFolder, metadata.ContentFileFullPath);
             var relativeFolder = Path.GetDirectoryName(metadata.ContentFileRelativePath)!;
 
-            metadata.BinaryFileRelativePath = Path.Combine(relativeFolder, binaryFileName); 
+            metadata.BinaryFileRelativePath = Path.Combine(relativeFolder, binaryFileName);
             metadata.BinaryFileFullPath = Path.Combine(binaryFolder, metadata.BinaryFileRelativePath);
-            
+
             metadata.FileExtension = Path.GetExtension(assetFilename).ToLowerInvariant();
             if (!metadatas.TryAdd(metadata.Id, metadata))
             {
@@ -173,14 +173,22 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
 
     private static IEnumerable<string> GetSingleFile(string filePath)
     {
-        var filename = Path.GetFileName(filePath);
-        var directory = Path.GetDirectoryName(filePath)!;
-        var metadataPath = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
-        if (!File.Exists(metadataPath))
+        var extension = Path.GetExtension(filePath);
+        if (extension == MetadataFileExtension)
         {
-            throw new FileNotFoundException($"The metadata file for {filePath} does not exist.");
+            // metadata file changed
+            yield return filePath;
         }
-
-        yield return metadataPath;
+        else
+        {
+            var filename = Path.GetFileName(filePath);
+            var directory = Path.GetDirectoryName(filePath)!;
+            var metadataPath = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
+            if (!File.Exists(metadataPath))
+            {
+                throw new FileNotFoundException($"The metadata file for {filePath} does not exist.");
+            }
+            yield return metadataPath;
+        }
     }
 }

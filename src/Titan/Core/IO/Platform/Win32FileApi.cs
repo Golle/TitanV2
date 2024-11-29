@@ -103,7 +103,38 @@ internal unsafe struct Win32FileApi : INativeFileApi
         Kernel32.SetEndOfFile(handle.Handle);
     }
 
+    public static FileTime GetFileTime(in NativeFileHandle handle)
+    {
+        Trace($"GetFileTime of file: {handle}");
+        FILETIME creation, access, write;
+        if (Kernel32.GetFileTime(handle.Handle, &creation, &access, &write))
+        {
+            return new FileTime
+            {
+                CreationTime = FileTimeToDateTime(creation),
+                LastAccessTime = FileTimeToDateTime(access),
+                LastWriteTime = FileTimeToDateTime(write)
+            };
+        }
+
+        return default;
+    }
+
 
     [Conditional("TRACE_FILE_API")]
     private static void Trace(string message) => Logger.Trace<Win32FileApi>(message);
+
+    private static DateTime FileTimeToDateTime(FILETIME fileTime)
+    {
+        // Combine the high and low parts of the FILETIME into a single 64-bit value
+        var high = (ulong)fileTime.dwHighDateTime << 32;
+        var low = (ulong)fileTime.dwLowDateTime;
+        var fileTimeTicks = (long)(high | low);
+
+        // FILETIME epoch starts at 1601-01-01
+        const long TicksPerSecond = 10_000_000;
+        const long TicksBetweenEpochs = 504_911_232_000_000_000;
+
+        return new(fileTimeTicks + TicksBetweenEpochs, DateTimeKind.Utc);
+    }
 }

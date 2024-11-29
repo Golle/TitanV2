@@ -1,5 +1,6 @@
 using Titan.Assets;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 
 namespace Titan.Rendering.Resources;
@@ -37,6 +38,12 @@ internal partial struct MaterialLoader
     public unsafe void Unload(Material* asset)
     {
         throw new NotImplementedException();
+    }
+
+    public unsafe bool Reload(Material* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<MaterialLoader>("Reload not implemented");
+        return true;
     }
 }
 

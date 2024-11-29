@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
+using Titan.Assets.Types;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -143,5 +144,13 @@ internal unsafe partial struct SpriteLoader
     public void Unload(SpriteAsset* asset)
     {
         throw new NotImplementedException();
+    }
+
+    public bool Reload(SpriteAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Trace<SpriteLoader>("Reloading asset.");
+
+        var imageData = buffer.Slice((uint)(sizeof(SpriteInfo) * descriptor.Sprite.NumberOfSprites));
+        return _resourceManager->Upload(asset->Texture, imageData);
     }
 }
