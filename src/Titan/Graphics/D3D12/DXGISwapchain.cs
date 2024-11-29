@@ -179,6 +179,7 @@ internal unsafe partial struct DXGISwapchain
         CPUFrame++;
         //var flags = TearingSupport && !Vsync && !Fullscreen ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0;
         var hr = Swapchain.Get()->Present(SyncInterval, PresentFlags);
+        
 
         var fence = Fence.Get();
         queue.Signal(fence, CPUFrame);
@@ -193,7 +194,14 @@ internal unsafe partial struct DXGISwapchain
             }
             GPUFrame = fence->GetCompletedValue();
         }
-        Debug.Assert(SUCCEEDED(hr));
+#if DEBUG
+        if (FAILED(hr))
+        {
+            Logger.Error<DXGISwapchain>("Swapchain FAiled. HRESULT = {hr}");
+            Debugger.Launch();
+        }
+#endif
+        //Debug.Assert(SUCCEEDED(hr));
         FrameIndex = (FrameIndex + 1) % BufferCount;
     }
 

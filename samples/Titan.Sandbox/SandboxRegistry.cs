@@ -66,9 +66,11 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Length = 524288,
                 Offset = 0,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"redsheet.png")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"redsheet.png"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"redsheet.kbin")
 #else
-            AssetPath = Titan.Core.Strings.StringRef.Empty
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
             },
             Dependencies = new(0, 0),
@@ -91,9 +93,11 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Length = 375640,
                 Offset = 524288,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.obj")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.obj"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.kbin")
 #else
-            AssetPath = Titan.Core.Strings.StringRef.Empty
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
             },
             Dependencies = new(0, 0),
@@ -115,9 +119,11 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Length = 67108864,
                 Offset = 899928,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.kbin")
 #else
-            AssetPath = Titan.Core.Strings.StringRef.Empty
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
             },
             Dependencies = new(0, 0),
@@ -140,9 +146,11 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Length = 37616,
                 Offset = 68008792,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.kbin")
 #else
-            AssetPath = Titan.Core.Strings.StringRef.Empty
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
             },
             Dependencies = new(0, 0),
@@ -164,9 +172,11 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Length = 65648,
                 Offset = 68046408,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.kbin")
 #else
-            AssetPath = Titan.Core.Strings.StringRef.Empty
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
 #endif
             },
             Dependencies = new(0, 0),

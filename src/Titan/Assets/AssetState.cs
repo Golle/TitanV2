@@ -12,5 +12,8 @@ internal enum AssetState
     ResourceCreated,
     UnloadRequested,
     Unloading,
+#if HOT_RELOAD_ASSETS
+    Reload,
+#endif
     Error
 }

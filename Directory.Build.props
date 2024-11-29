@@ -4,7 +4,7 @@
     <DefineConstants>$(DefineConstants);TRACE_MODULE_INIT</DefineConstants>
   </PropertyGroup>
 
-<!-- General .NET Settings -->
+  <!-- General .NET Settings -->
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>net9.0</TargetFramework>
@@ -15,6 +15,11 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <InvariantGlobalization>true</InvariantGlobalization>
     <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <!-- Hot Reload, remove this if debugging NON hot reload path -->
+  <PropertyGroup Condition="$(Configuration) != 'Release'">
+    <DefineConstants>$(DefineConstants);HOT_RELOAD_ASSETS</DefineConstants>
   </PropertyGroup>
 
   <!-- Log level constants -->

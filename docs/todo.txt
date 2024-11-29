@@ -1,0 +1,25 @@
+
+
+
+# Asset Processor
+The asset processor is currently just a command line tool that will walk through all assets in a folder and put them into a single binary, based on some configuration in the metadata files.   
+The long term goal is to have a hot reload system, that can detect changes and create reloadable files that the engine can consume in debug builds. 
+
+## Hot Reload
+
+### Asset Processor
+    [X] Rework compilation step into multiple steps.
+        [X] Create and validate metadata files.
+        [X] Process assets and create AssetDescriptors
+        [X] Write assets in the format engine can consume to a binary folder
+        [X] For release builds, combine all these into a single file (per registry)
+
+### Engine Runtime
+    [X] Load data from files intead of combined registry when HotReload is enabled(only possible in debug builds)
+    [X] Implement support for "polling" files for changes. (Using a FileWatcher that is removed for Release builds)
+    [X] Reload assets, load a new one and swap with old.
+    [ ] Implement hot reload for all/most loaders. or the ones that make sense.
+    [ ] Add support for updated descriptors. Make sure its thread safe.
+
+
+

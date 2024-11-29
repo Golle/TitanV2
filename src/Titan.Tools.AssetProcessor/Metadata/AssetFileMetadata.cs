@@ -45,7 +45,10 @@ internal abstract class AssetFileMetadata
     public string ContentFileFullPath { get; set; } = string.Empty;
     [JsonIgnore]
     public string ContentFileRelativePath { get; set; } = string.Empty;
-
+    [JsonIgnore]
+    public string BinaryFileFullPath { get; set; } = string.Empty;
+    [JsonIgnore]
+    public string BinaryFileRelativePath { get; set; } = string.Empty;
     [JsonIgnore]
     public string FileExtension { get; set; } = string.Empty;
 }

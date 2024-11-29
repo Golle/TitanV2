@@ -75,4 +75,10 @@ internal unsafe partial struct ShaderLoader
         }
         _pool.SafeFree(asset);
     }
+
+    public bool Reload(ShaderAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<ShaderLoader>("Reload not implemented");
+        return true;
+    }
 }

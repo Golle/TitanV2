@@ -9,4 +9,5 @@ public interface INativeFileApi
     static abstract void Close(ref NativeFileHandle handle);
     static abstract long GetLength(in NativeFileHandle handle);
     static abstract void Truncate(in NativeFileHandle handle);
+    static abstract FileTime GetFileTime(in NativeFileHandle handle);
 }

@@ -4,6 +4,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
+using Titan.Rendering.Resources;
 
 namespace Titan.Audio.Resources;
 
@@ -62,6 +63,12 @@ internal unsafe partial struct AudioLoader
     {
         SafeFree(ref asset->AudioData);
         _pool.Free(asset);
+    }
+
+    public bool Reload(AudioAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
+    {
+        Logger.Warning<AudioLoader>("Reload not implemented");
+        return true;
     }
 
     public void Shutdown(in AssetLoaderInitializer init)

@@ -494,6 +494,12 @@ public unsafe partial struct D3D12ResourceManager
     }
 
 
+    public readonly bool Upload(Handle<Texture> handle, TitanBuffer buffer)
+    {
+        var texture = Access(handle);
+        return _uploadQueue->Upload(texture->Resource, buffer);
+    }
+
     /// <summary>
     /// Creates a new root signature with ranges, constants, constant buffers and static samplers.
     /// <remarks>

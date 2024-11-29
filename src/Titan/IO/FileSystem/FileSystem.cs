@@ -6,6 +6,8 @@ namespace Titan.IO.FileSystem;
 
 internal class FileSystem<TFileApi>(string appdataName, string enginePath, string contentPath) : IFileSystem where TFileApi : INativeFileApi
 {
+    public string GetPath(FilePathType type) => _fileApis[(int)type].BasePath;
+    
     private readonly FileApi<TFileApi>[] _fileApis = new FileApi<TFileApi>[(int)FilePathType.Count];
 
     public bool Init()
@@ -67,11 +69,14 @@ internal class FileSystem<TFileApi>(string appdataName, string enginePath, strin
     public int Read(in FileHandle handle, Span<byte> buffer, ulong offset)
         => _fileApis[(int)handle.Type].Read(handle.NativeFileHandle, buffer, offset);
 
-    public int Write(in FileHandle handle, ReadOnlySpan<byte> content, ulong offset = 0) 
+    public int Write(in FileHandle handle, ReadOnlySpan<byte> content, ulong offset = 0)
         => _fileApis[(int)handle.Type].Write(handle.NativeFileHandle, content, offset);
 
     public long GetLength(in FileHandle handle)
         => _fileApis[(int)handle.Type].GetLength(handle.NativeFileHandle);
+
+    public FileTime GetFileTime(in FileHandle handle)
+        => _fileApis[(int)handle.Type].GetFileTime(handle.Handle);
 
     public void Truncate(in FileHandle handle)
         => _fileApis[(int)handle.Type].Truncate(handle.NativeFileHandle);
