@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -25,12 +26,51 @@ else
     Console.WriteLine("No config. Make sure you're running this from the correct directory.");
     return 1;
 }
-var titanPath = args[0];
+var titanPath = Path.GetFullPath(args[0]);
+var titanContentPath = Path.Combine(titanPath, "content");
 
 Console.WriteLine("Welcome to Titan");
 Console.WriteLine($"Your Engine Path is set to: {titanPath}");
+Console.WriteLine($"Your Engine Content Path is set to: {titanContentPath}");
 
+
+ConcurrentDictionary<string, DateTime> lastFileChanges = new();
 var logging = true;
+var hotReload = true;
+var engineWatcher = new FileSystemWatcher(titanContentPath);
+var gameWatcher = new FileSystemWatcher(config.Content);
+engineWatcher.Filter = gameWatcher.Filter = "*.*";
+engineWatcher.NotifyFilter = gameWatcher.NotifyFilter = NotifyFilters.LastWrite;
+engineWatcher.IncludeSubdirectories = gameWatcher.IncludeSubdirectories = true;
+
+engineWatcher.Changed += (sender, eventArgs) =>
+{
+    var path = eventArgs.FullPath;
+    var lastWriteTime = File.GetLastWriteTime(path);
+    if (lastFileChanges.TryGetValue(path, out var time) && time >= lastWriteTime)
+    {
+        // we ignore duplicate events, or if the file wasn't changed.
+        return;
+    }
+};
+
+gameWatcher.Changed += (sender, eventArgs) =>
+{
+    Console.WriteLine("Start");
+    var path = eventArgs.FullPath;
+    var lastWriteTime = File.GetLastWriteTime(path);
+    if (lastFileChanges.TryGetValue(path, out var time) && time >= lastWriteTime)
+    {
+        // we ignore duplicate events, or if the file wasn't changed.
+        return;
+    }
+    ProcessGameAsset(titanPath, path, config);
+    
+    lastFileChanges[path] = lastWriteTime;
+    Console.WriteLine("Done");
+};
+
+engineWatcher.EnableRaisingEvents = gameWatcher.EnableRaisingEvents = true;
 do
 {
     Console.WriteLine();
@@ -38,7 +78,11 @@ do
     Console.ForegroundColor = logging ? ConsoleColor.Green : ConsoleColor.Red;
     Console.Write(logging ? "On" : "Off");
     Console.ResetColor();
-    Console.WriteLine(")");
+    Console.Write(", Hot Reload is ");
+    Console.ForegroundColor = hotReload ? ConsoleColor.Green : ConsoleColor.Red;
+    Console.Write(hotReload ? "On" : "Off");
+    Console.ResetColor();
+    Console.Write(")");
 
     Console.WriteLine($"""
                       
@@ -49,7 +93,8 @@ do
                       
                       [5] -> Publish Tools
                       
-                      [L] -> Toggle logging
+                      [L] -> Toggle Logging
+                      [H] -> Toggle Hot Reload
                       """);
 
     var key = Console.ReadKey(true);
@@ -78,6 +123,9 @@ do
             break;
         case ConsoleKey.L:
             logging = !logging;
+            break;
+        case ConsoleKey.H:
+            hotReload = !hotReload;
             break;
         default:
             Console.WriteLine("Unrecognized command.");
@@ -113,6 +161,23 @@ static bool ProcessEngineAssets(string titanDirectory, TitanConfig config, bool 
     return true;
 }
 
+static bool ProcessGameAsset(string titanDirectory, string file, TitanConfig config)
+{
+    const string AssetProcessor = "Titan.Tools.AssetProcessor.exe";
+    var assetProcessorPath = Path.Combine(titanDirectory, "release", "tools", AssetProcessor);
+    var timer = Stopwatch.StartNew();
+    Console.WriteLine($"Processing game asset. File = {file}");
+    var binary = Path.Combine(config.Assets, config.Binary);
+    Console.WriteLine($"\tInput = {config.Content}");
+    Console.WriteLine($"\tOutput = {binary}");
+
+    var arguments = $"--path {config.Content} --output {binary} --tmp {config.Temp} --file \"{file}\"";
+    var result = RunProgram(assetProcessorPath, arguments, titanDirectory, redirectOutput: false);
+
+    Console.WriteLine($"Completed in {timer.Elapsed.TotalMilliseconds}. Exit Code = {result}");
+    return true;
+
+}
 static bool ProcessGameAssets(string titanDirectory, TitanConfig config, bool logging)
 {
     const string AssetProcessor = "Titan.Tools.AssetProcessor.exe";
@@ -152,6 +217,8 @@ static bool PublishGame(string titanDirectory, TitanConfig config, bool logging)
 
     return true;
 }
+
+
 
 static bool PublishTools(string workingDirectory, bool logging)
 {

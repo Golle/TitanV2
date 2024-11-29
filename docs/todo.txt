@@ -8,17 +8,18 @@ The long term goal is to have a hot reload system, that can detect changes and c
 ## Hot Reload
 
 ### Asset Processor
-    [ ] Rework compilation step into multiple steps.
-        [ ] Create and validate metadata files.
-        [ ] Process assets and create AssetDescriptors
-        [ ] Write assets in the format engine can consume to a binary folder
-        [ ] For release builds, combine all these into a single file (per registry)
+    [X] Rework compilation step into multiple steps.
+        [X] Create and validate metadata files.
+        [X] Process assets and create AssetDescriptors
+        [X] Write assets in the format engine can consume to a binary folder
+        [X] For release builds, combine all these into a single file (per registry)
 
 ### Engine Runtime
-    [ ] Load data from files intead of combined registry when HotReload is enabled(only possible in debug builds)
-    [ ] Implement support for "polling" files for changes
-    [ ] Reload assets, load a new one and swap with old.
-    
+    [X] Load data from files intead of combined registry when HotReload is enabled(only possible in debug builds)
+    [X] Implement support for "polling" files for changes. (Using a FileWatcher that is removed for Release builds)
+    [X] Reload assets, load a new one and swap with old.
+    [ ] Implement hot reload for all/most loaders. or the ones that make sense.
+    [ ] Add support for updated descriptors. Make sure its thread safe.
 
 
 
