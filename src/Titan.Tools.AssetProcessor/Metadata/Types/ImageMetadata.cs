@@ -22,7 +22,7 @@ internal sealed class ImageMetadata : AssetFileMetadata
     public ImageType Type { get; set; }
     public CompressionType Compression { get; set; } = CompressionType.None;
     public SpriteMetadata[] Sprites { get; set; } = [];
-    public NinePatchSpriteMetadata[] NinePatch { get; set; } = [];
+    //public NinePatchSpriteMetadata[] NinePatch { get; set; } = [];
 
     [JsonIgnore]
     public bool IsAseprite => FileExtension == ".aseprite";
@@ -35,9 +35,11 @@ internal class SpriteMetadata
     public required Size BottomLeft { get; set; }
     [JsonConverter(typeof(SizeIntArrayJsonConverter))]
     public required Size TopRight { get; set; }
+
+    public NinePatchInsets? NinePatch { get; set; }
 }
 
-internal sealed class NinePatchSpriteMetadata : SpriteMetadata
+internal sealed class NinePatchInsets
 {
     public int Left { get; set; }
     public int Right { get; set; }

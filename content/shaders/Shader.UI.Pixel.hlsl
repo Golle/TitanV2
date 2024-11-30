@@ -5,20 +5,20 @@
 float4 main(UIVertexOutput input) : SV_TARGET
 {
     UIElement element = UIElements[input.InstanceId];
-    if(element.Type == 0)
+    if(element.Type == UI_ELEMENT_COLOR)
     {
         return element.Color;
     }
 
     Texture2D texture =  Textures[element.TextureId];
     // sprite
-    if(element.Type == 1)
+    if(element.Type == UI_ELEMENT_SPRITE)
     {
         float4 color = texture.Sample(PointSampler, input.Texture);
         return element.Color * color;    
     }
 
-    if(element.Type == 2)
+    if(element.Type == UI_ELEMENT_TEXT)
     {
         float4 color = texture.Sample(LinearSampler, input.Texture);
         // font rendering
@@ -30,6 +30,10 @@ float4 main(UIVertexOutput input) : SV_TARGET
         return float4(element.Color.rgb,element.Color.a * color.r);
     }
     
+    if(element.Type == UI_ELEMENT_NINE_PATCH_SPRITE)
+    {
+        // not supported in shader yet. doing it on CPU side.
+    }
 
     // can't get repeating to work :|
     // float2 uv = input.Texture;

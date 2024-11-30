@@ -25,14 +25,34 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
     public readonly struct Meshes
     {
         public static ref readonly Titan.Assets.AssetDescriptor UnnamedAsset1 => ref _assets[1];
-        public static ref readonly Titan.Assets.AssetDescriptor TileLowRed => ref _assets[3];
+        public static ref readonly Titan.Assets.AssetDescriptor TileLowRed => ref _assets[4];
     }
     
     public readonly struct Sprites
     {
+        public static class DebugUiStyle
+        {
+            public static ref readonly Titan.Assets.AssetDescriptor Asset => ref _assets[3];
+            
+            public static class SpriteIndex
+            {
+                public const byte NoNinePatch1 = 0;
+                public const byte FirstNinePatch = 1;
+                public const byte FirstNinePatch_0 = 2;
+                public const byte FirstNinePatch_1 = 3;
+                public const byte FirstNinePatch_2 = 4;
+                public const byte FirstNinePatch_3 = 5;
+                public const byte FirstNinePatch_4 = 6;
+                public const byte FirstNinePatch_5 = 7;
+                public const byte FirstNinePatch_6 = 8;
+                public const byte FirstNinePatch_7 = 9;
+                public const byte FirstNinePatch_8 = 10;
+                public const byte NoNinePatch2 = 11;
+            }
+        }
         public static class UiStyleOrange
         {
-            public static ref readonly Titan.Assets.AssetDescriptor Asset => ref _assets[4];
+            public static ref readonly Titan.Assets.AssetDescriptor Asset => ref _assets[5];
             
             public static class SpriteIndex
             {
@@ -140,11 +160,43 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
         {
             Id = Titan.Assets.AssetId.GetNext(),
             RegistryId = Id,
+            Type = Titan.Assets.AssetType.Sprite,
+            File = 
+            { 
+                Length = 262175,
+                Offset = 68008792,
+#if !RELEASE
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.aseprite"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.kbin")
+#else
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
+#endif
+            },
+            Dependencies = new(0, 0),
+            Sprite = new()
+            {
+                NumberOfSprites = 3,
+                NumberOfNinePatchSprites = 1,
+                Texture = new()
+                {
+                    Width = 256,
+                    Height = 256,
+                    Stride = 1024,
+                    BitsPerPixel = 32,
+                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
+                }
+            }
+        };
+        _assets[4] = new Titan.Assets.AssetDescriptor
+        {
+            Id = Titan.Assets.AssetId.GetNext(),
+            RegistryId = Id,
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
                 Length = 37616,
-                Offset = 68008792,
+                Offset = 68270967,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.kbin")
@@ -162,15 +214,15 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 MaterialCount = -1,
             }
         };
-        _assets[4] = new Titan.Assets.AssetDescriptor
+        _assets[5] = new Titan.Assets.AssetDescriptor
         {
             Id = Titan.Assets.AssetId.GetNext(),
             RegistryId = Id,
             Type = Titan.Assets.AssetType.Sprite,
             File = 
             { 
-                Length = 65648,
-                Offset = 68046408,
+                Length = 65662,
+                Offset = 68308583,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.kbin")
@@ -183,6 +235,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Sprite = new()
             {
                 NumberOfSprites = 14,
+                NumberOfNinePatchSprites = 0,
                 Texture = new()
                 {
                     Width = 128,
@@ -194,7 +247,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             }
         };
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(5)]
+    [System.Runtime.CompilerServices.InlineArrayAttribute(6)]
     private struct __ASSETS__
     {
         private Titan.Assets.AssetDescriptor _ref;

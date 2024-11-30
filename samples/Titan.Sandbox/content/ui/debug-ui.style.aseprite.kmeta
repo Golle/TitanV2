@@ -1,0 +1,36 @@
+{
+  "$type": "ImageMetadata",
+  "type": "SpriteSheet",
+  "compression": "None",
+  "sprites": [
+    {
+      "name" :"No_Nine_Patch1",
+      "bottomLeft": [0,31],
+      "topRight": [47,0]
+    },
+    {
+      "name" :"First_Nine_Patch",
+      "bottomLeft": [0,31],
+      "topRight": [47,0],
+      "ninePatch": {
+        "left": 8,
+        "top": 8,
+        "right" :8,
+        "bottom":8
+      }
+    },{
+      "name" :"No_Nine_Patch2",
+      "bottomLeft": [0,31],
+      "topRight": [47,0]
+    }
+  ],
+  "ninePatch": [],
+  "id": "4f57e3ac-795d-4931-b1a2-15e4d808a22c",
+  "name": "DebugUiStyle",
+  "fileSize": 606,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

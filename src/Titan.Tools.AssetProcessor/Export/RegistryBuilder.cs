@@ -84,6 +84,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             $@"{nameof(AssetDescriptor.Sprite)} = new()
             {{
                 {nameof(SpriteDescriptor.NumberOfSprites)} = {sprite.NumberOfSprites},
+                {nameof(SpriteDescriptor.NumberOfNinePatchSprites)} = {sprite.NumberOfNinePatchSprites},
                 {nameof(SpriteDescriptor.Texture)} = new()
                 {{
                     {nameof(Texture2DDescriptor.Width)} = {texture.Width},
@@ -280,12 +281,22 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                         .AppendLine()
                         .AppendLine("public static class SpriteIndex")
                         .BeginScope();
-                    for (var j = 0; j < imageMetadata.Sprites.Length; ++j)
+
+                    var textureIndex = 0;
+                    foreach (var sprite in imageMetadata.Sprites)
                     {
-                        var sprite = imageMetadata.Sprites[j];
-                        var spriteName = StringHelper.ToPropertyName(sprite.Name ?? $"UnamedSprite{j}");
-                        _builder
-                            .AppendLine($"public const byte {spriteName} = {j};");
+                        var spriteName = StringHelper.ToPropertyName(sprite.Name ?? $"UnamedSprite{textureIndex}");
+                        _builder.AppendLine($"public const byte {spriteName} = {textureIndex};");
+
+                        if (sprite.NinePatch != null)
+                        {
+                            // add indexes for nine patch textures.
+                            for (var i = 0; i < 9; ++i)
+                            {
+                                _builder.AppendLine($"public const byte {spriteName}_{i} = {++textureIndex};");
+                            }
+                        }
+                        textureIndex++;
                     }
 
                     _builder

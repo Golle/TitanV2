@@ -12,14 +12,15 @@ using Titan.Rendering;
 
 namespace Titan.UI.Resources;
 
-
 [StructLayout(LayoutKind.Sequential, Pack = 2)]
 public struct SpriteInfo
 {
-    public ushort MinX;
-    public ushort MinY;
-    public ushort MaxX;
-    public ushort MaxY;
+    public ushort MinX, MinY, MaxX, MaxY;
+}
+
+public struct NinePatchSpriteInfo
+{
+    public byte Left, Top, Right, Bottom;
 }
 
 [Asset(AssetType.Sprite)]
@@ -72,9 +73,6 @@ internal unsafe partial struct SpriteLoader
         ref readonly var spriteDescriptor = ref descriptor.Sprite;
         ref readonly var texture = ref spriteDescriptor.Texture;
 
-        var sprites = buffer.SliceArray<SpriteInfo>(0, spriteDescriptor.NumberOfSprites);
-        var imageData = buffer.Slice((uint)(sizeof(SpriteInfo) * spriteDescriptor.NumberOfSprites));
-
         var asset = _assets.SafeAlloc();
         if (asset == null)
         {
@@ -82,6 +80,35 @@ internal unsafe partial struct SpriteLoader
             return null;
         }
 
+        // 1 slot for sprite, 10 slots for NinePatch
+        asset->Coordinates = SafeAllocArray((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
+        if (!asset->Coordinates.IsValid)
+        {
+            Logger.Error<SpriteLoader>("Failed to allocate memory for texture coordinates.");
+            return null;
+        }
+        var reader = new TitanBinaryReader(buffer);
+
+        var image = new Vector2(texture.Width, texture.Height);
+        var coordinateOffset = 0u;
+        for (var i = 0u; i < spriteDescriptor.NumberOfSprites; ++i)
+        {
+            var isNinePatch = reader.Read<bool>();
+            ref readonly var sprite = ref reader.Read<SpriteInfo>();
+            asset->Coordinates[coordinateOffset++] = new()
+            {
+                UVMin = new Vector2(sprite.MinX, sprite.MinY) / image,
+                UVMax = new Vector2(sprite.MaxX, sprite.MaxY) / image
+            };
+            if (isNinePatch)
+            {
+                ref readonly var ninePatch = ref reader.Read<NinePatchSpriteInfo>();
+                InitNinePatch(asset->Coordinates.Slice(coordinateOffset, 9), image, sprite, ninePatch);
+                coordinateOffset += 9;
+            }
+        }
+
+        var imageData = buffer.Slice(reader.BytesRead);
         asset->Texture = _resourceManager->CreateTexture(new CreateTextureArgs
         {
             Height = texture.Height,
@@ -97,25 +124,60 @@ internal unsafe partial struct SpriteLoader
             return null;
         }
         asset->TextureId = _resourceManager->Access(asset->Texture)->SRV.Index;
-        asset->Coordinates = SafeAllocArray(sprites.Length);
-        if (!asset->Coordinates.IsValid)
-        {
-            Logger.Error<SpriteLoader>("Failed to allocate memory for texture coordinates.");
-            return null;
-        }
-
-        var image = new Vector2(texture.Width, texture.Height);
-        for (var i = 0; i < sprites.Length; ++i)
-        {
-            ref readonly var sprite = ref sprites[i];
-            asset->Coordinates[i] = new()
-            {
-                UVMin = new Vector2(sprite.MinX, sprite.MinY + 1) / image,
-                UVMax = new Vector2(sprite.MaxX + 1, sprite.MaxY) / image
-            };
-        }
-
         return asset;
+    }
+
+    private static void InitNinePatch(TitanArray<TextureCoordinate> slice, in Vector2 imageSize, in SpriteInfo sprite, in NinePatchSpriteInfo ninePatch)
+    {
+        Debug.Assert(slice.Length == 9);
+
+        var x1 = sprite.MinX;
+        var x2 = sprite.MinX + ninePatch.Left;
+        var x3 = sprite.MaxX - ninePatch.Right;
+        var x4 = sprite.MaxX;
+
+        var y1 = sprite.MinY;
+        var y2 = sprite.MinY - ninePatch.Bottom;
+        var y3 = sprite.MaxY + ninePatch.Top;
+        var y4 = sprite.MaxY;
+
+        slice[0] = new(new(x1, y1), new(x2, y2));
+        slice[1] = new(new(x2, y1), new(x3, y2));
+        slice[2] = new(new(x3, y1), new(x4, y2));
+
+        slice[3] = new(new(x1, y2), new(x2, y3));
+        slice[4] = new(new(x2, y2), new(x3, y3));
+        slice[5] = new(new(x3, y2), new(x4, y3));
+
+        slice[6] = new(new(x1, y3), new(x2, y4));
+        slice[7] = new(new(x2, y3), new(x3, y4));
+        slice[8] = new(new(x3, y3), new(x4, y4));
+
+        var vector = (Vector2*)slice.AsPointer();
+        for (var i = 0; i < 18; ++i)
+        {
+            vector[i] /= imageSize;
+        }
+
+        //var minU = sprite.MinX / (float)texture.Width;
+        //var maxU = sprite.MaxX / (float)texture.Width;
+        //var minV = sprite.MinY / (float)texture.Height;
+        //var maxV = sprite.MaxY / (float)texture.Height;
+
+        //var innerLeftU = innerLeft / (float)texture.Width;
+        //var innerRightU = innerRight / (float)texture.Width;
+        //var innerTopV = innerTop / (float)texture.Height;
+        //var innerBottomV = innerBottom / (float)texture.Height;
+
+        //slice[0] = new(new(sprite.MinX, sprite.MinY), new(innerLeftU, innerTopV)); // Top-left corner
+        //slice[1] = new(new(innerLeftU, minV), new(innerRightU, innerTopV)); // Top edge
+        //slice[2] = new(new(innerRightU, minV), new(maxU, innerTopV)); // Top-right corner
+        //slice[3] = new(new(minU, innerTopV), new(innerLeftU, innerBottomV)); // Left edge
+        //slice[4] = new(new(innerLeftU, innerTopV), new(innerRightU, innerBottomV)); // Center
+        //slice[5] = new(new(innerRightU, innerTopV), new(maxU, innerBottomV)); // Right edge
+        //slice[6] = new(new(minU, innerBottomV), new(innerLeftU, maxV)); // Bottom-left corner
+        //slice[7] = new(new(innerLeftU, innerBottomV), new(innerRightU, maxV)); // Bottom edge
+        //slice[8] = new(new(innerRightU, innerBottomV), new(maxU, maxV)); // Bottom-right corner
     }
 
     private TitanArray<TextureCoordinate> SafeAllocArray(uint length)
@@ -150,7 +212,14 @@ internal unsafe partial struct SpriteLoader
     {
         Logger.Trace<SpriteLoader>("Reloading asset.");
 
-        var imageData = buffer.Slice((uint)(sizeof(SpriteInfo) * descriptor.Sprite.NumberOfSprites));
+        var spriteCount = descriptor.Sprite.NumberOfSprites;
+        var ninePatchScount = descriptor.Sprite.NumberOfNinePatchSprites;
+        var totalSize =
+            spriteCount * sizeof(SpriteInfo) +
+            ninePatchScount * sizeof(NinePatchSpriteInfo) +
+            spriteCount * sizeof(byte);
+
+        var imageData = buffer.Slice(totalSize);
         return _resourceManager->Upload(asset->Texture, imageData);
     }
 }

@@ -169,7 +169,6 @@ namespace Titan.Sandbox
 
         private static Inline4<UICheckboxState> _checkboxStates;
         private static AssetHandle<SpriteAsset> _sprite2;
-        private static AssetHandle<SpriteAsset> _sprite;
 
         private static Inline8<AssetHandle<AudioAsset>> _uiEffects;
         private static AssetHandle<AudioAsset> _music;
@@ -199,7 +198,6 @@ namespace Titan.Sandbox
             _font = assetsManager.Load<FontAsset>(Fonts.CutiveMonoRegular);
             _font2 = assetsManager.Load<FontAsset>(Fonts.SyneMonoRegular);
 
-            _sprite = assetsManager.Load<SpriteAsset>(Sprites.RedSheet.Asset);
             _sprite2 = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset);
 
             _checkboxStyle = new UICheckboxStyle
@@ -292,7 +290,7 @@ namespace Titan.Sandbox
 
             //}
 
-            if (assetsManager.IsLoaded(_font) && assetsManager.IsLoaded(_font2) && assetsManager.IsLoaded(_sprite))
+            if (assetsManager.IsLoaded(_font) && assetsManager.IsLoaded(_font2))
             {
                 ref readonly var font = ref assetsManager.Get(_font);
                 ref readonly var font2 = ref assetsManager.Get(_font2);
@@ -305,10 +303,6 @@ namespace Titan.Sandbox
                 ui.Text(new(200, 600), "The Quick Brown Fox"u8, font2);
 
                 //ui.Text(new(110, 220), "Click"u8, font);
-
-                var index = inputState.IsButtonDown(MouseButton.Left)
-                    ? Sprites.RedSheet.SpriteIndex.Button1
-                    : Sprites.RedSheet.SpriteIndex.Button1Hover;
 
                 //ui.Image(new(300, 400), _sprite, index);
                 int y = 350;

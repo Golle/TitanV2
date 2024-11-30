@@ -9,6 +9,8 @@ public unsafe ref struct TitanBinaryReader(ReadOnlySpan<byte> buffer)
     private int _offset;
     public bool HasData => _offset < _buffer.Length;
 
+
+    public bool ReadByteAsBool() => Read<byte>() != 0;
     public ref readonly T Read<T>() where T : unmanaged
     {
         var size = sizeof(T);
@@ -34,6 +36,7 @@ public unsafe ref struct TitanBinaryReader(ReadOnlySpan<byte> buffer)
 
     public void Advance(int bytes) => Read(bytes);
     public ReadOnlySpan<byte> GetRemaining() => _buffer[_offset..];
+    public int BytesRead => _offset;
 
     public static implicit operator TitanBinaryReader(ReadOnlySpan<byte> buffer) => new(buffer);
 }

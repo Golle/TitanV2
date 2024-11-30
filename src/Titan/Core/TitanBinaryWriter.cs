@@ -9,6 +9,8 @@ public ref struct TitanBinaryWriter(Span<byte> buffer)
     private int _length;
     public readonly int Length => _length;
 
+
+    public void WriteBoolAsByte(bool value) => Write((byte)(value ? 1 : 0));
     public void WriteByte(byte value) => Write(value);
     public void WriteUint(uint value) => Write(value);
     public void WriteInt(int value) => Write(value);

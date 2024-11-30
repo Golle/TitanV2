@@ -1,4 +1,6 @@
 using Titan.Application;
+using Titan.Editor;
+using Titan.UI.Resources;
 
 namespace Titan.UI;
 
@@ -18,8 +20,11 @@ internal class UIModule : IModule
     {
         builder
             .AddSystemsAndResource<UISystem>()
-            .AddAssetLoader<Resources.FontLoader>()
-            .AddAssetLoader<Resources.SpriteLoader>()
+            .AddAssetLoader<FontLoader>()
+            .AddAssetLoader<SpriteLoader>()
+
+            //NOTE(Jens): Maybe add a compile time flag here, we don't want debug UI in release builds.
+            .AddModule<EditorModule>()
             ;
 
         return true;

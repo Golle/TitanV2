@@ -1,6 +1,13 @@
 #ifndef _SHADER_UI
 #define _SHADER_UI
 
+#define UI_ELEMENT_COLOR 0
+#define UI_ELEMENT_SPRITE 1
+#define UI_ELEMENT_NINE_PATCH_SPRITE 2
+#define UI_ELEMENT_TEXT 3
+#define UI_ELEMENT_SPRITE_REPEAT 4
+
+
 struct UIElement 
 {
     float4 Color;

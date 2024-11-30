@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core;
+using Titan.Core.Memory;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.UI.Resources;
 
@@ -60,27 +61,41 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
         var spriteDescriptor = new SpriteDescriptor
         {
             Texture = textureDescriptor,
-            NumberOfSprites = (byte)metadata.Sprites.Length
         };
 
-        var totalSize = image.Data.Length + metadata.Sprites.Length * Marshal.SizeOf<SpriteInfo>();
-        var buffer = ArrayPool<byte>.Shared.Rent(totalSize);
+        var estimatedSize = image.Size * 2; // change this if we run into issues.
+        var buffer = ArrayPool<byte>.Shared.Rent(estimatedSize);
         try
         {
             var writer = new TitanBinaryWriter(buffer);
             foreach (var sprite in metadata.Sprites)
             {
-                //var size = sprite.BottomRight - sprite.TopLeft;
+                var isNinePatch = sprite.NinePatch is not null;
+                writer.WriteBoolAsByte(isNinePatch);
                 writer.Write(new SpriteInfo
                 {
                     MinX = (ushort)sprite.BottomLeft.X,
-                    MinY = (ushort)sprite.BottomLeft.Y,
-                    MaxX = (ushort)sprite.TopRight.X,
+                    MinY = (ushort)(sprite.BottomLeft.Y + 1),
+                    MaxX = (ushort)(sprite.TopRight.X + 1),
                     MaxY = (ushort)sprite.TopRight.Y
                 });
+                if (isNinePatch)
+                {
+                    var ninePatch = sprite.NinePatch!;
+                    writer.Write(new NinePatchSpriteInfo
+                    {
+                        Bottom = (byte)ninePatch.Bottom,
+                        Left = (byte)ninePatch.Left,
+                        Right = (byte)ninePatch.Right,
+                        Top = (byte)ninePatch.Top
+                    });
+                    spriteDescriptor.NumberOfNinePatchSprites++;
+                }
+                spriteDescriptor.NumberOfSprites++;
             }
+            // write image bytes
             writer.WriteBytes(image.Data);
-            if (!context.TryAddSprite(spriteDescriptor, buffer.AsSpan()[..totalSize], metadata))
+            if (!context.TryAddSprite(spriteDescriptor, writer.GetData(), metadata))
             {
                 context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to add the sprite to the context. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
             }
@@ -91,19 +106,4 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
         }
     }
 
-    private static byte[] FlipImage(Image image)
-    {
-        var flippedImage = new byte[image.Data.Length];
-
-        var stride = (int)image.Stride;
-        for (var y = 0; y < image.Height; ++y)
-        {
-            var sourceIndex = (int)((image.Height - 1 - y) * stride);
-            var destinationIndex = y * stride;
-            image.Data.AsSpan(sourceIndex, stride)
-                .CopyTo(flippedImage.AsSpan(destinationIndex, stride));
-        }
-
-        return flippedImage;
-    }
 }

@@ -34,8 +34,10 @@ internal enum UIElementType
 {
     None = 0,
     Sprite = 1,
-    Text = 2,
-    SpriteRepeat = 3
+    //
+    NinePatchSprite = 2,
+    Text = 3,
+    SpriteRepeat = 4
 }
 
 internal struct UIState

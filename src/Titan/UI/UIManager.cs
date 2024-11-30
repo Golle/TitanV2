@@ -1,5 +1,7 @@
+using System;
 using System.Diagnostics;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Core.Maths;
@@ -375,8 +377,130 @@ public readonly unsafe struct UIManager
     }
 
 
+    public void Image(in Vector2 position, in SizeF size, in UIImageStyle style)
+    {
+        if (!_assetsManager.IsLoaded(style.Sprite))
+        {
+            return;
+        }
+
+        ref readonly var sprite = ref _assetsManager.Get(style.Sprite);
+
+
+        if (style.IsNinePatch)
+        {
+            ref readonly var ninePatch = ref style.NinePatch;
+            Span<UIElement> elements = stackalloc UIElement[9];
+            var baseElement = new UIElement
+            {
+                Color = Color.White,
+                TextureId = sprite.TextureId,
+                Type = UIElementType.Sprite
+            };
+
+
+            //NOTE(Jens): A very naive way of doing 9 patch, this can be optimized a lot.
+            /*
+             * We're rendering 9 boxes, using 36 coordinates. It's possible to only use 8.
+             * Positions can be shared, we would need shader support for that.
+             * Sizes can be shared, only 4 insets and 2 sizes, we use 18 now.
+             */
+            var coordinateIndex = style.Index + 1;
+
+            var x1 = position.X;
+            var x2 = position.X + ninePatch.Left;
+            var x3 = position.X + size.Width - ninePatch.Right;
+
+            var y1 = position.Y;
+            var y2 = position.Y + ninePatch.Bottom;
+            var y3 = position.Y + size.Height - ninePatch.Top;
+
+            var middleHeight = size.Height - ninePatch.Top - ninePatch.Bottom;
+            var middleWidth = size.Width - ninePatch.Left - ninePatch.Right;
+
+            elements[0] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex],
+                Offset = new(x1, y1),
+                Size = ninePatch.BottomLeft,
+            };
+
+            elements[1] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 1],
+                Offset = new(x2, y1),
+                Size = new(middleWidth, ninePatch.Bottom),
+            };
+            elements[2] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 2],
+                Offset = new(x3, y1),
+                Size = ninePatch.BottomRight,
+            };
+
+            elements[3] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 3],
+                Offset = new(x1, y2),
+                Size = new(ninePatch.Left, middleHeight),
+            };
+            elements[4] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 4],
+                Offset = new(x2, y2),
+                Size = new(middleWidth, middleHeight),
+            };
+
+            elements[5] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 5],
+                Offset = new(x3, y2),
+                Size = new(ninePatch.Right, middleHeight),
+            };
+            elements[6] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 6],
+                Offset = new(x1, y3),
+                Size = ninePatch.TopLeft,
+            };
+
+            elements[7] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 7],
+                Offset = new(x2, y3),
+                Size = new(middleWidth, ninePatch.Top),
+            };
+            elements[8] = baseElement with
+            {
+                TextureCoordinates = sprite.Coordinates[coordinateIndex + 8],
+                Offset = new(x3, y3),
+                Size = ninePatch.TopRight,
+            };
+
+            _system->Add(elements);
+        }
+        else
+        {
+            var element = new UIElement
+            {
+                Color = Color.White,
+                Size = size,
+                Offset = position,
+                TextureCoordinates = sprite.Coordinates[style.Index],
+                TextureId = sprite.TextureId,
+                Type = UIElementType.Sprite
+            };
+            _system->Add(element);
+        }
+
+    }
+
     public void Image(in Vector2 position, in AssetHandle<Resources.SpriteAsset> handle, uint index = 0)
     {
+        if (!_assetsManager.IsLoaded(handle))
+        {
+            return;
+        }
         ref readonly var sprite = ref _assetsManager.Get(handle);
         var element = new UIElement
         {

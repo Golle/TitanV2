@@ -7,4 +7,5 @@ public struct SpriteDescriptor
 {
     public Texture2DDescriptor Texture;
     public byte NumberOfSprites;
+    public byte NumberOfNinePatchSprites;
 }

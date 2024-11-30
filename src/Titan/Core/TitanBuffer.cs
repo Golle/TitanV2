@@ -14,12 +14,19 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
     public ReadOnlySpan<byte> AsReadOnlySpan() => _buffer.AsSpan();
     public Span<byte> AsSpan() => _buffer.AsSpan();
 
+
+    public TitanBuffer Slice(int offset)
+    {
+        Debug.Assert(offset >= 0);
+        return Slice((uint)offset, _buffer.Length - (uint)offset);
+    }
+
     /// <summary>
     /// Slice the buffer with an offset, returning the remaining bytes as a new buffer.
     /// </summary>
     /// <param name="offset">Offset in the buffer</param>
     /// <returns>A buffer with the new size (same memory)</returns>
-    public TitanBuffer Slice(uint offset) 
+    public TitanBuffer Slice(uint offset)
         => Slice(offset, _buffer.Length - offset);
 
     public TitanBuffer Slice(uint offset, uint size)
@@ -34,6 +41,11 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
         return new(AsPointer() + offset, size);
     }
 
+    public TitanArray<T> SliceArray<T>(int offset, int count) where T : unmanaged
+    {
+        Debug.Assert(offset >= 0 && count >= 0);
+        return SliceArray<T>((uint)offset, (uint)count);
+    }
     public TitanArray<T> SliceArray<T>(uint offset, uint count) where T : unmanaged
     {
         if (count == 0)
