@@ -6,6 +6,17 @@
 ## Layouts
     [ ] Add panels, similar to Stack and Horizontal panels in WPF. 
 
+## Version 2 - The Rework
+    [ ] Separate interaction from rendering
+    [ ] Render in same frame, interaction happens in next frame (similar to how it's done today)
+    [ ] Store a hiearchy state and sort before rendering, to support multiple threads building the UI.
+    [ ] Rework Mouse logic so we don't have to do calculations on every single element every frame.
+    [ ] Support UI Scaling
+    [ ] Decide what layout system to use, constraint, anchors etc.
+    [ ] Text scaling
+    [ ] Fit size to content. Automatic scaling of buttons when text is added
+    [ ] Text Area with automatic line breaks
+
 ## 9-Patch Sprite
     [X] Implement a naive rendering and processing for 9-patch sprites
     [ ] Rework 9 patch to a more minimalistic structure, and reduce number of elements needed to be rendered.
