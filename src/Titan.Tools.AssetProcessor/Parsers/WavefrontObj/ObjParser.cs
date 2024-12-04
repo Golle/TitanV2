@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using Microsoft.VisualBasic;
 using Titan.Core.Logging;
 
 namespace Titan.Tools.AssetProcessor.Parsers.WavefrontObj;
@@ -308,9 +309,9 @@ internal class ObjParser
             cursor.Advance();
         }
 
-        if (cursor.Current.Type is not TokenType.Float)
+        if (cursor.Current.Type != TokenType.Float && cursor.Current.Type != TokenType.Integer)
         {
-            throw new ParserException($"Excepted a {nameof(TokenType.Float)} but found a {cursor.Current.Type}", cursor.Current);
+            throw new ParserException($"Expected a {nameof(TokenType.Float)} but found a {cursor.Current.Type}", cursor.Current);
         }
 
         var value = float.Parse(cursor.Current.Value, CultureInfo.InvariantCulture) * sign;

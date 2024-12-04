@@ -93,7 +93,7 @@ internal unsafe partial struct DeferredLightingRenderPass
         var commandList = graph.GetCommandList(pass->PassHandle);
 
 
-        foreach (ref readonly var light in lights.Slice(1, 1))
+        foreach (ref readonly var light in lights)
         {
             var index = (int)light.LightIndex;
             commandList.SetGraphicsRootConstant(RootConstantLightIndex, index);

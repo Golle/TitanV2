@@ -188,14 +188,13 @@ public readonly unsafe struct UIManager
         }
     }
 
-    public void Slider(in Vector2 position, in SizeF size, ref UISliderState state, in UISliderStyle style)
+    public void Slider(in UIID id, in Vector2 position, in SizeF size, ref UISliderState state, in UISliderStyle style)
     {
         if (!_assetsManager.IsLoaded(style.AssetHandle))
         {
             return;
         }
 
-        const int id = 10000;
         ref readonly var sprite = ref _assetsManager.Get(style.AssetHandle);
 
         var sliderPosY = position.Y + (size.Height - style.SliderSize.Height) / 2f;
@@ -227,7 +226,7 @@ public readonly unsafe struct UIManager
                 Type = UIElementType.Sprite,
                 Size = size,
                 Color = Color.White,
-                TextureCoordinates = sprite.Coordinates[style.BackgroundIndex],
+                TextureCoordinates = sprite.Coordinates[style.BackgroundIndexCenter],
                 TextureId = sprite.TextureId,
                 Offset = position
             },

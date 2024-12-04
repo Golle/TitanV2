@@ -22,6 +22,41 @@
       "name" :"No_Nine_Patch2",
       "bottomLeft": [0,31],
       "topRight": [47,0]
+    },
+    {
+      "name" :"Slider_Left",
+      "bottomLeft": [0,15],
+      "topRight": [7,0]
+    },
+    {
+      "name" :"Slider_Right",
+      "bottomLeft": [8,15],
+      "topRight": [15,0]
+    },
+    {
+      "name" :"Slider_Center",
+      "bottomLeft": [16,15],
+      "topRight": [31,0]
+    },
+    {
+      "name" :"Slider_Empty_Left",
+      "bottomLeft": [0,31],
+      "topRight": [7,16]
+    },
+    {
+      "name" :"Slider_Empty_Right",
+      "bottomLeft": [8,31],
+      "topRight": [15,16]
+    },
+    {
+      "name" :"Slider_Empty_Center",
+      "bottomLeft": [16,31],
+      "topRight": [31,16]
+    },
+    {
+      "name" :"Slider_Blob",
+      "bottomLeft": [31,31],
+      "topRight": [63,0]
     }
   ],
   "ninePatch": [],

@@ -179,6 +179,7 @@ namespace Titan.Sandbox
         public static Inline8<UIID> Ids;
         public static Inline3<UIID> RadioIds;
         public static UIID SelectBoxID = UIID.Create();
+        public static UIID SliderID = UIID.Create();
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
@@ -221,7 +222,7 @@ namespace Titan.Sandbox
                 AssetHandle = assetsManager.Load<SpriteAsset>(SandboxRegistry.Sprites.UiStyleOrange.Asset),
                 SliderIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob,
                 SliderSelectedIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1BlobBlack,
-                BackgroundIndex = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1,
+                BackgroundIndexCenter = SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1,
                 SliderSize = new(32, 32)
             };
 
@@ -328,7 +329,7 @@ namespace Titan.Sandbox
                 //ui.Image(new (20, 150), _sprite2, SandboxRegistry.Sprites.UiStyleOrange.SpriteIndex.Slider1Blob);
 
 
-                ui.Slider(new(20, 120), new(200, 36), ref _slider, _sliderStyle);
+                ui.Slider(SliderID, new(20, 120), new(200, 36), ref _slider, _sliderStyle);
 
 
                 int min = 43;

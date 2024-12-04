@@ -14,7 +14,7 @@ internal unsafe partial struct ComponentSystem
     private ArchetypeRegistry* _registry;
     private ComponentCommands _commands;
 
-    [System(SystemStage.Init)]
+    [System(SystemStage.PreInit)]
     public static void Init(ComponentSystem* manager, in UnmanagedResourceRegistry unmanagedResources, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         var config = configurationManager.GetConfigOrDefault<ECSConfig>();
@@ -65,7 +65,7 @@ internal unsafe partial struct ComponentSystem
         system->_commands.Reset();
     }
 
-    [System(SystemStage.Shutdown)]
+    [System(SystemStage.PostShutdown)]
     public static void Shutdown(ComponentSystem* manager, IMemoryManager memoryManager)
     {
         manager->_commands.Shutdown(memoryManager);

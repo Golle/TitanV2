@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Logging;
+using Titan.UI.Resources;
 
 namespace Titan.Assets;
 
@@ -140,4 +141,13 @@ public readonly unsafe struct AssetsManager
     }
 
     private static readonly Lock _lock = new();
+}
+
+
+public static class AssetsManagerExtensions
+{
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<FontAsset> LoadFont(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+        => assetsManager.Load<FontAsset>(descriptor);
 }
