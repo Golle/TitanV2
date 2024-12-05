@@ -36,6 +36,18 @@
         [ ] Dynamic resources, these requires updates every frame :|
         [ ] Static resources, these are uploaded once
 
+# Materials
+    [ ] Add Material support, initial version should just be dynamic. in other words, update every frame. Double buffered.
+    [ ] Additional Improvements
+        [ ] Static materials, uploaded at startup.
+        [ ] Partial Updates for materials. Batch material updates and only upload the parts that changed.
+        [ ] Shared buffer for everything, this requires using offsets between frames.
+
+# Rendering
+## buffers
+    [ ] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
+        [ ] Add double buffering for buffers that are updated each frame
+        [ ] 
 
 ## D3D12 Resources
     [ ] We're using ComittedResource today, should we stick with that since we only allocate a single resource for meshes?

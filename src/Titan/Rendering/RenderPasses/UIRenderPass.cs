@@ -5,7 +5,6 @@ using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
-using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.UI;
@@ -61,7 +60,7 @@ internal unsafe partial struct UIRenderPass
         }
 
         //NOTE(Jens): We can cache these in the UI system.
-        var elementsIndex = resourceManager.Access(system.Instances)->SRV.GPU;
+        var elementsIndex = resourceManager.Access(system.GetInstanceHandle())->SRV.GPU;
         //var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
         var indexBuffer = resourceManager.Access(pass.IndexBuffer);
 

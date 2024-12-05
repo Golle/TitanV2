@@ -16,6 +16,15 @@ public readonly unsafe struct Ptr<T>(T* ptr) where T : unmanaged
     public T* Get() => _value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly T** GetAddressOf()
+    {
+        fixed (T** addressOf = &_value)
+        {
+            return addressOf;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref T AsRef() => ref *_value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

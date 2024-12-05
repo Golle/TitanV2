@@ -24,6 +24,9 @@ internal unsafe partial struct GBufferRenderPass
 {
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
+    private const uint VertexBufferIndex = PassDataIndex + 1;
+    private const uint IndexBufferIndex = VertexBufferIndex + 1;
+    private const uint MeshInstanceIndex = IndexBufferIndex + 1;
 
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
@@ -81,9 +84,9 @@ internal unsafe partial struct GBufferRenderPass
         var vertexBufferIndex = resourceManager.Access(meshStorage.VertexBufferHandle)->SRV.GPU;
         var meshInstanceIndex = resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.GPU;
         //var indexBufferIndex = resourceManager.Access(meshStorage.IndexBufferHandle)->SRV.GPU;
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, vertexBufferIndex);
-        //commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 2, indexBufferIndex);
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 3, meshInstanceIndex);
+        commandList.SetGraphicsRootDescriptorTable(VertexBufferIndex, vertexBufferIndex);
+        //commandList.SetGraphicsRootDescriptorTable(IndexBufferIndex, indexBufferIndex);
+        commandList.SetGraphicsRootDescriptorTable(MeshInstanceIndex, meshInstanceIndex);
     }
 
     /// <summary>

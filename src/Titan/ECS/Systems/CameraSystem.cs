@@ -49,7 +49,7 @@ public struct Camera
 internal partial struct CameraSystem
 {
     public Camera DefaultCamera;
-    
+
     [System(SystemStage.Init)]
     public static void Startup(ref CameraSystem system, in Window window)
     {
@@ -67,37 +67,39 @@ internal partial struct CameraSystem
     [System]
     public static void Update(ref CameraSystem system, in InputState inputState, UIManager uiManager)
     {
+        var speed = inputState.IsKeyDown(KeyCode.Shift) ? 0.5f : 0.1f;
+
         ref var camera = ref system.DefaultCamera;
         //camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
 
 
         if (inputState.IsKeyDown(KeyCode.Down) || inputState.IsKeyDown(KeyCode.S))
         {
-            camera.Position -= camera.Forward * 0.1f;
+            camera.Position -= camera.Forward * speed;
         }
         if (inputState.IsKeyDown(KeyCode.Up) || inputState.IsKeyDown(KeyCode.W))
         {
-            camera.Position += camera.Forward * 0.1f;
+            camera.Position += camera.Forward * speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.Left) || inputState.IsKeyDown(KeyCode.A))
         {
-            camera.Position += camera.Right * 0.1f;
+            camera.Position += camera.Right * speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.Right) || inputState.IsKeyDown(KeyCode.D))
         {
-            camera.Position -= camera.Right * 0.1f;
+            camera.Position -= camera.Right * speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.V))
         {
-            camera.Position += camera.Up * 0.1f;
+            camera.Position += camera.Up * speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.C))
         {
-            camera.Position -= camera.Up * 0.1f;
+            camera.Position -= camera.Up * speed;
         }
 
 
