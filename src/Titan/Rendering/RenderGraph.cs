@@ -198,6 +198,8 @@ internal unsafe partial struct RenderGraph
         pass->CommandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         pass->CommandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
         pass->CommandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
+        pass->CommandList.SetViewport(&pass->Viewport);
+        pass->CommandList.SetScissorRect(&pass->ScissorRect);
 
         //NOTE(Jens): A lot of stack allocs, do we need all of them? :O
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
@@ -294,7 +296,7 @@ internal unsafe partial struct RenderGraph
     }
 
     [System(SystemStage.First)]
-    public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain)
+    public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window)
     {
         if (graph._isReady)
         {
@@ -311,10 +313,35 @@ internal unsafe partial struct RenderGraph
             Logger.Error<RenderGraph>("Failed to create the pipeline states. this is FATAL, no recovering..");
             return;
         }
+
+        graph.SetDefaultViewPorts(window);
         graph.SortRenderGraph();
 
         graph._isReady = true;
         graph._backbufferHandle = swapchain.CurrentBackbuffer;
+    }
+
+    private void SetDefaultViewPorts(in Window window)
+    {
+        foreach (ref var pass in _renderPasses.AsSpan().Slice(0, _renderPassCount))
+        {
+            pass.Viewport = new()
+            {
+                Width = window.Width,
+                Height = window.Height,
+                MaxDepth = 1.0f,
+                MinDepth = 0.0f,
+                TopLeftX = 0,
+                TopLeftY = 0,
+            };
+            pass.ScissorRect = new()
+            {
+                Bottom = window.Height,
+                Right = window.Width,
+                Top = 0,
+                Left = 0
+            };
+        }
     }
 
 
@@ -331,7 +358,7 @@ internal unsafe partial struct RenderGraph
         {
             ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
             CameraPosition = cameraSystem.DefaultCamera.Position,
-            WindowHeight =  (uint)window.Height,
+            WindowHeight = (uint)window.Height,
             WindowWidth = (uint)window.Width
         });
 

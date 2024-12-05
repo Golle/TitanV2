@@ -116,6 +116,14 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->RSSetViewports(1, viewport);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetScissorRect(Rect* rects, uint count = 1)
+        => commandList->RSSetScissorRects(count, (D3D12_RECT*)rects);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetViewport(Viewport* viewports, uint count = 1)
+        => commandList->RSSetViewports(count, (D3D12_VIEWPORT*)viewports);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetScissorRect(D3D12_RECT* rect)
         => commandList->RSSetScissorRects(1, rect);
 

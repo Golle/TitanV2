@@ -46,27 +46,6 @@ internal unsafe partial struct BackbufferRenderPass
             return;
         }
 
-        D3D12_VIEWPORT viewPort = new()
-        {
-            Height = window.Height,
-            Width = window.Width,
-            MaxDepth = 1.0f,
-            MinDepth = 0,
-            TopLeftX = 0,
-            TopLeftY = 0
-        };
-        commandList.SetViewport(&viewPort);
-
-
-        D3D12_RECT rect = new()
-        {
-            Bottom = window.Height,
-            Right = window.Width,
-            Left = 0,
-            Top = 0
-        };
-        commandList.SetScissorRect(&rect);
-
         // draw World
         commandList.SetGraphicsRootConstant(DataIndex, 0u);
         commandList.DrawInstanced(3, 1);

@@ -1,7 +1,5 @@
 
 
-
-
 # UI 
 ## Layouts
     [ ] Add panels, similar to Stack and Horizontal panels in WPF. 
@@ -25,6 +23,23 @@
 ## Improvements
     [ ] Add Font Scaling, right now the font is the same size as it's been printed to the spritesheet.
         [ ] SDF fonts, this is a stretch and a long term goal for crisp text.
+
+# Meshes
+## Mesh Storage
+    [ ] Implement a memory manager for meshes and their data
+    [ ] Add a FreeList for free chunks of GPU memory
+    [ ] Use different algorithms to support best fit or first fit
+    [ ] Synchronize allocations/frees. (lock, spinlock, interlocked)
+    [ ] Separate Static from Dynamic
+        [ ] Should we have direct CPU access to dynamic, and use upload queue for static? or use upload queue for both
+    [ ] Resource management (Constant buffers, vertex buffers and index buffers)
+        [ ] Dynamic resources, these requires updates every frame :|
+        [ ] Static resources, these are uploaded once
+
+
+## D3D12 Resources
+    [ ] We're using ComittedResource today, should we stick with that since we only allocate a single resource for meshes?
+
 
 
 # Asset Processor

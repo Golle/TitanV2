@@ -84,27 +84,6 @@ internal unsafe partial struct GBufferRenderPass
         commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, vertexBufferIndex);
         //commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 2, indexBufferIndex);
         commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 3, meshInstanceIndex);
-
-        //NOTE(Jens): Not sure what to do with these. 
-        D3D12_VIEWPORT viewPort = new()
-        {
-            Height = window.Height,
-            Width = window.Width,
-            MaxDepth = 1.0f,
-            MinDepth = 0,
-            TopLeftX = 0,
-            TopLeftY = 0
-        };
-
-        D3D12_RECT rect = new()
-        {
-            Bottom = window.Height,
-            Right = window.Width,
-            Left = 0,
-            Top = 0
-        };
-        commandList.SetScissorRect(&rect);
-        commandList.SetViewport(&viewPort);
     }
 
     /// <summary>
