@@ -11,7 +11,7 @@ GBufferVertexOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : 
     MeshInstance instance = MeshInstances[PassData.MeshInstanceIndex];
     
     GBufferVertexOutput output;
-    output.Position = mul(float4(v.Position, 1.0), FrameDataBuffer.ViewProjection);
+    output.Position = mul(float4(v.Position, 1.0), mul(instance.ModelMatrix, FrameDataBuffer.ViewProjection));
     output.WorldPosition = mul(float4(v.Position, 1.0), instance.ModelMatrix).xyz;
     output.WorldNormal = normalize(mul(v.Normal, (float3x3)instance.ModelMatrix));
     output.Texture = v.UV;

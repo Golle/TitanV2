@@ -29,7 +29,7 @@ internal struct GPULight
 [UnmanagedResource]
 internal unsafe partial struct LightStorage
 {
-    public Handle<Buffer> LightStorageHandle;
+    public Handle<GPUBuffer> LightStorageHandle;
 
     private TitanArray<GPULight> _cpuLights;
     private GPULight* _gpuLights;

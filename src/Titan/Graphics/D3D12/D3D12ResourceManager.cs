@@ -16,7 +16,6 @@ using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Systems;
-using Buffer = Titan.Rendering.Buffer;
 
 namespace Titan.Graphics.D3D12;
 
@@ -126,10 +125,10 @@ public enum ConstantBufferFlags : byte
     Volatile
 }
 
-public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<Buffer> handle, uint count) where T : unmanaged
+public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<GPUBuffer> handle, uint count) where T : unmanaged
 {
     public T* Ptr => resource;
-    public Handle<Buffer> Handle => handle;
+    public Handle<GPUBuffer> Handle => handle;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteSingle(in T value, uint offset = 0) => *(resource + offset) = value;
 
@@ -148,7 +147,7 @@ public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<Buffer> h
 [UnmanagedResource]
 public unsafe partial struct D3D12ResourceManager
 {
-    private ResourcePool<Buffer> _buffers;
+    private ResourcePool<GPUBuffer> _buffers;
     private ResourcePool<Texture> _textures;
     private ResourcePool<RootSignature> _rootSignatures;
     private ResourcePool<PipelineState> _pipelineStates;
@@ -162,7 +161,7 @@ public unsafe partial struct D3D12ResourceManager
         var count = 1024u;
         if (!memoryManager.TryCreateResourcePool(out manager->_buffers, count))
         {
-            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(Buffer)} Count = {count}.");
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(GPUBuffer)} Count = {count}.");
             return;
         }
 
@@ -199,7 +198,7 @@ public unsafe partial struct D3D12ResourceManager
         memoryManager.FreeResourcePool(ref manager->_pipelineStates);
     }
 
-    public readonly Handle<Buffer> CreateBuffer(in CreateBufferArgs args)
+    public readonly Handle<GPUBuffer> CreateBuffer(in CreateBufferArgs args)
     {
         Debug.Assert(args.Count > 0);
         Debug.Assert(args.Stride > 0);
@@ -211,7 +210,7 @@ public unsafe partial struct D3D12ResourceManager
         var handle = _buffers.SafeAlloc();
         if (handle.IsInvalid)
         {
-            return Handle<Buffer>.Invalid;
+            return Handle<GPUBuffer>.Invalid;
         }
         var buffer = _buffers.AsPtr(handle);
 
@@ -243,7 +242,7 @@ public unsafe partial struct D3D12ResourceManager
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the {nameof(ID3D12Resource)}.");
             _buffers.SafeFree(handle);
-            return Handle<Buffer>.Invalid;
+            return Handle<GPUBuffer>.Invalid;
         }
 
         buffer->StartOffset = 0;
@@ -259,7 +258,7 @@ public unsafe partial struct D3D12ResourceManager
                 Logger.Error<D3D12ResourceManager>("Failed to allocate the SRV for buffer.");
                 buffer->Resource.Dispose();
                 _buffers.SafeFree(handle);
-                return Handle<Buffer>.Invalid;
+                return Handle<GPUBuffer>.Invalid;
             }
 
             //TODO(Jens): Revisit this code. Creating the ConstantBUfferView instead of ShaderResourceView makes the CB non accessible in the shader 1 out of 10 tries..
@@ -290,20 +289,20 @@ public unsafe partial struct D3D12ResourceManager
             Logger.Error<D3D12ResourceManager>($"Failed to upload data to the buffer. Size = {size} Data Size = {args.InitialData.Size}");
             buffer->Resource.Dispose();
             _buffers.SafeFree(handle);
-            return Handle<Buffer>.Invalid;
+            return Handle<GPUBuffer>.Invalid;
         }
 
         return handle;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Buffer* Access(Handle<Buffer> handle)
+    public readonly GPUBuffer* Access(Handle<GPUBuffer> handle)
     {
         Debug.Assert(handle.IsValid, "Trying to access a resource of an invalid handle");
         return _buffers.AsPtr(handle);
     }
 
-    public readonly void DestroyBuffer(Handle<Buffer> handle)
+    public readonly void DestroyBuffer(Handle<GPUBuffer> handle)
     {
         Debug.Assert(handle.IsValid, "Trying to destroy a handle that is invalid.");
 
@@ -314,7 +313,7 @@ public unsafe partial struct D3D12ResourceManager
         _buffers.SafeFree(handle);
     }
 
-    public readonly bool TryMapBuffer<T>(in Handle<Buffer> handle, out MappedGPUResource<T> resource) where T : unmanaged
+    public readonly bool TryMapBuffer<T>(in Handle<GPUBuffer> handle, out MappedGPUResource<T> resource) where T : unmanaged
     {
         var buffer = Access(handle);
         Debug.Assert(buffer->Resource.IsValid);
@@ -510,6 +509,13 @@ public unsafe partial struct D3D12ResourceManager
     {
         var texture = Access(handle);
         return _uploadQueue->Upload(texture->Resource, buffer);
+    }
+
+
+    public readonly bool Upload(Handle<GPUBuffer> handle, TitanBuffer data, uint offset = 0)
+    {
+        var buffer = Access(handle);
+        return _uploadQueue->Upload(buffer->Resource, data, offset);
     }
 
     /// <summary>

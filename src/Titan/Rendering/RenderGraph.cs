@@ -91,7 +91,7 @@ internal unsafe partial struct RenderGraph
     public readonly bool IsReady => _isReady;
 
     private Handle<Texture> _backbufferHandle;
-    private Handle<Buffer> _frameDataConstantBuffer;
+    private Handle<GPUBuffer> _frameDataConstantBuffer;
     private MappedGPUResource<FrameData> _frameDataGPU;
 
 

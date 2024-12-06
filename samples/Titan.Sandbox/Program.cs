@@ -54,6 +54,9 @@ App.Create(appConfig)
 
 namespace Titan.Sandbox
 {
+
+    [Component]
+    public partial struct Selected{}
     internal class GameModule : IModule
     {
         public static bool Build(IAppBuilder builder, AppConfig config)
@@ -89,7 +92,7 @@ namespace Titan.Sandbox
         {
             foreach (ref var transform in transforms)
             {
-                transform.Position += Vector3.One * 0.1f;
+                //transform.Position += Vector3.One * 0.1f;
             }
         }
 
@@ -106,30 +109,31 @@ namespace Titan.Sandbox
             {
                 //entityManager.DestroyEntity(_entity);
                 //entityManager.RemoveComponent<TransformRect>(_entity);
-                _entity = default;
+                //_entity = default;
                 _done = true;
             }
             else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookTexture))
             {
                 _entity = entityManager.CreateEntity();
-                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.Zero));
+                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.UnitZ*10+Vector3.UnitY*-3));
                 entityManager.AddComponent<TransformRect>(_entity);
-                
+
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    //TODO(Jens): Replace this mesh thing with a Create mesh    
-                    MeshIndex = assetsManager.Get(BookMesh).MeshDataHandle,
+                    //TODO(Jens): Replace this mesh thing with a Create mesh
+                    MeshIndex = assetsManager.Get(BookMesh),
                     MaterialIndex = materialsManager.CreateMaterial(new()
                     {
                         Color = Color.White,
                         AlbedoTexture = assetsManager.Get(BookTexture)
                     })
                 });
+                entityManager.AddComponent(_entity, new Selected());
 
                 {
                     var lightEntity = entityManager.CreateEntity();
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY * 10));
-                    entityManager.AddComponent(lightEntity, new Light()
+                    entityManager.AddComponent(lightEntity, new Light
                     {
                         Color = Color.White,
                         Direction = -Vector3.UnitY,
@@ -168,7 +172,8 @@ namespace Titan.Sandbox
         private static UITextBoxStyle _textboxStyle;
         private static UICheckboxStyle _checkboxStyle;
 
-        private static UISliderState _slider;
+        private static UISliderState _slider = new(){Value = 0.5f};
+        private static UISliderState _slider2;
         private static UISliderStyle _sliderStyle;
 
         private static UIRadioState _radio;
@@ -193,6 +198,7 @@ namespace Titan.Sandbox
         public static Inline3<UIID> RadioIds;
         public static UIID SelectBoxID = UIID.Create();
         public static UIID SliderID = UIID.Create();
+        public static UIID SliderID2 = UIID.Create();
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
@@ -343,6 +349,7 @@ namespace Titan.Sandbox
 
 
                 ui.Slider(SliderID, new(20, 120), new(200, 36), ref _slider, _sliderStyle);
+                ui.Slider(SliderID2, new(20, 220), new(200, 36), ref _slider2, _sliderStyle);
 
 
                 int min = 43;
@@ -387,6 +394,16 @@ namespace Titan.Sandbox
             }
         }
 
+        [System]
+        public static void UpdateScale(ReadOnlySpan<Selected> _, Span<Transform3D> transforms)
+        {
+            var scale = _slider.Value;
+            foreach (ref  var transform in transforms)
+            {
+                transform.Scale = Vector3.One * scale;
+                transform.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 2*MathF.PI * _slider2.Value);
+            }
+        }
 
     }
     internal partial struct TheGameLightSystem

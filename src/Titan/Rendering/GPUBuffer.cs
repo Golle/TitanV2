@@ -4,7 +4,7 @@ using Titan.Platform.Win32.D3D12;
 
 namespace Titan.Rendering;
 
-public struct Buffer
+public struct GPUBuffer
 {
     public uint Count;
     public uint Stride;

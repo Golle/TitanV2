@@ -10,3 +10,18 @@ public struct Vertex
     public Vector2 UV;
     public Vector3 Normal;
 }
+
+
+[StructLayout(LayoutKind.Sequential)]
+public struct VertexPositionNormal
+{
+    public Vector3 Position;
+    public Vector3 Normal;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct VertexPositionUV
+{
+    public Vector3 Position;
+    public Vector2 UV;
+}

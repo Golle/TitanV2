@@ -136,11 +136,11 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(Buffer* buffer)
+    public void SetIndexBuffer(GPUBuffer* buffer)
         => SetIndexBuffer(*buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(in Buffer buffer)
+    public void SetIndexBuffer(in GPUBuffer buffer)
     {
         Debug.Assert(buffer.Type is BufferType.Index);
         var view = new D3D12_INDEX_BUFFER_VIEW
@@ -173,11 +173,23 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->SetDescriptorHeaps(count, heaps);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
-        => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, GPUBuffer* buffer)
+        => SetGraphicsRootDescriptorTable(rootParameterIndex, *buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, Buffer* buffer)
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, in GPUBuffer buffer)
+    {
+        Debug.Assert(buffer.SRV.IsValid);
+        Debug.Assert(buffer.SRV.IsShaderVisible);
+        commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, buffer.SRV.GPU);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
+        => commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, baseDescriptor);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, GPUBuffer* buffer)
     {
         Debug.Assert(buffer != null);
         Debug.Assert(buffer->SRV.IsValid);

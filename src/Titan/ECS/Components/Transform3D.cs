@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Materials;
+using Titan.Meshes;
 using Titan.Rendering.Storage;
 
 namespace Titan.ECS.Components;
@@ -29,7 +30,15 @@ public partial struct Mesh
 {
     public Handle<MaterialData> MaterialIndex;
     public Handle<MeshData> MeshIndex;
-    public Matrix4x4 ModelMatrix;
+
+    //TODO(Jens): For static meshes this can be calculated in the asset pipeline
+    public AABB BoundingBox;
+}
+
+public struct AABB
+{
+    public Vector3 Min;
+    public Vector3 Max;
 }
 
 [Component]

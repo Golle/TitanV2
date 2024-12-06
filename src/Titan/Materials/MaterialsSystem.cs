@@ -8,7 +8,6 @@ using Titan.Graphics.D3D12;
 using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
-using Buffer = Titan.Rendering.Buffer;
 
 namespace Titan.Materials;
 
@@ -24,13 +23,13 @@ public unsafe struct MaterialData
 [UnmanagedResource]
 internal unsafe partial struct MaterialsSystem
 {
-    private Inline2<Handle<Buffer>> MaterialBuffers;
+    private Inline2<Handle<GPUBuffer>> MaterialBuffers;
     private Inline2<MappedGPUResource<MaterialData>> GPUMaterialData;
     private TitanArray<MaterialData> Materials;
     private int MaterialCount;
     private int FrameIndex;
 
-    public readonly Handle<Buffer> GetMaterialsGPUHandle() => MaterialBuffers[FrameIndex];
+    public readonly Handle<GPUBuffer> GetMaterialsGPUHandle() => MaterialBuffers[FrameIndex];
 
     [System(SystemStage.Init)]
     public static void Init(MaterialsSystem* storage, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager)

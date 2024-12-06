@@ -16,7 +16,7 @@ namespace Titan.Rendering.RenderPasses;
 internal unsafe partial struct UIRenderPass
 {
     private Handle<RenderPass> PassHandle;
-    private Handle<Buffer> IndexBuffer;
+    private Handle<GPUBuffer> IndexBuffer;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
 
     [System(SystemStage.Init)]

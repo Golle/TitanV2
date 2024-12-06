@@ -14,7 +14,6 @@ using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
 using static Titan.Platform.Win32.Win32Common;
-using Buffer = Titan.Rendering.Buffer;
 
 namespace Titan.UI;
 
@@ -54,13 +53,13 @@ internal unsafe partial struct UISystem
 {
     private const int InvalidId = -1;
 
-    private Inline2<Handle<Buffer>> Instances;
+    private Inline2<Handle<GPUBuffer>> Instances;
     public uint Count;
     private Inline2<Ptr<UIElement>> ElementsGPU;
     private TitanArray<UIElement> ElementsCPU;
     private UIState State;
 
-    public readonly Handle<Buffer> GetInstanceHandle() => Instances[FrameIndex];
+    public readonly Handle<GPUBuffer> GetInstanceHandle() => Instances[FrameIndex];
     public int FrameIndex;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
