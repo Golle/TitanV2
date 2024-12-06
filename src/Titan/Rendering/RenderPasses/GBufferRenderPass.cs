@@ -8,6 +8,7 @@ using Titan.Core.Memory;
 using Titan.ECS.Components;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
+using Titan.Materials;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Rendering.Storage;
@@ -27,6 +28,7 @@ internal unsafe partial struct GBufferRenderPass
     private const uint VertexBufferIndex = PassDataIndex + 1;
     private const uint IndexBufferIndex = VertexBufferIndex + 1;
     private const uint MeshInstanceIndex = IndexBufferIndex + 1;
+    private const uint MaterialsInstanceIndex = MeshInstanceIndex + 1;
 
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
@@ -38,6 +40,7 @@ internal unsafe partial struct GBufferRenderPass
                 .WithDecriptorRange(1, space: 0) // Vertex buffer
                 .WithDecriptorRange(1, space: 1) // IndexBuffer
                 .WithDecriptorRange(1, space: 2) // MeshInstance
+                .WithDecriptorRange(1, space: 3) // MaterialsInstance
             ,
             BlendState = BlendStateType.AlphaBlend, //NOTE(Jens): maybe it should be disabled?
             Outputs =
@@ -72,7 +75,7 @@ internal unsafe partial struct GBufferRenderPass
 
 
     [System(SystemStage.PreUpdate)]
-    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
+    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in MaterialsSystem materialsSystem, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
@@ -83,10 +86,12 @@ internal unsafe partial struct GBufferRenderPass
 
         var vertexBufferIndex = resourceManager.Access(meshStorage.VertexBufferHandle)->SRV.GPU;
         var meshInstanceIndex = resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.GPU;
+        var materialsInstanceIndex = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle())->SRV.GPU;
         //var indexBufferIndex = resourceManager.Access(meshStorage.IndexBufferHandle)->SRV.GPU;
         commandList.SetGraphicsRootDescriptorTable(VertexBufferIndex, vertexBufferIndex);
         //commandList.SetGraphicsRootDescriptorTable(IndexBufferIndex, indexBufferIndex);
         commandList.SetGraphicsRootDescriptorTable(MeshInstanceIndex, meshInstanceIndex);
+        commandList.SetGraphicsRootDescriptorTable(MaterialsInstanceIndex, materialsInstanceIndex);
     }
 
     /// <summary>
@@ -105,26 +110,16 @@ internal unsafe partial struct GBufferRenderPass
         for (var i = 0; i < count; ++i)
         {
             ref readonly var mesh = ref meshes[i];
-            Debug.Assert(mesh.InstanceIndex.IsValid, "Unexpected order of initializing the instance handle.. Fix!");
-            if (mesh.MeshData == null)
-            {
-                continue;
-            }
 
-            if (!assetsManager.IsLoaded(mesh.TextureAsset))
+            storage.UpdateMeshInstance(1, new MeshInstance
             {
-                continue;
-            }
-
-            var textureIndex = resourceManager.Access(assetsManager.Get(mesh.TextureAsset).Handle)->SRV.Index;
-            storage.UpdateMeshInstance(mesh.InstanceIndex, new MeshInstance
-            {
-                AlbedoIndex = textureIndex, // todo: we need a material system for this to work.
+                MaterialIndex = mesh.MaterialIndex,
                 ModelMatrix = Matrix4x4.Identity
             });
 
-            commandList.SetGraphicsRootConstant(PassDataIndex, mesh.InstanceIndex.Value);
-            foreach (ref readonly var submesh in mesh.MeshData->Submeshes.AsReadOnlySpan())
+            commandList.SetGraphicsRootConstant(PassDataIndex, mesh.MeshIndex.Value);
+            var d = storage.Access(mesh.MeshIndex);
+            foreach (ref readonly var submesh in d->Submeshes.AsReadOnlySpan())
             {
                 commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, 0);
             }

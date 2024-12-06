@@ -12,6 +12,8 @@ using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Input;
+using Titan.Materials;
+using Titan.Meshes;
 using Titan.Rendering;
 using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
@@ -72,6 +74,16 @@ namespace Titan.Sandbox
         private Entity _entity;
         private bool _done;
 
+        private AssetHandle<TextureAsset> BookTexture;
+        private AssetHandle<MeshAsset> BookMesh;
+
+        [System(SystemStage.Init)]
+        public static void LoadResources(ref EntityTestSystem system, AssetsManager assetsManager)
+        {
+            system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
+            system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
+        }
+
         [System]
         public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
         {
@@ -81,14 +93,9 @@ namespace Titan.Sandbox
             }
         }
 
-        public static void DrawText(in D3D12TextRenderer renderer)
-        {
-            renderer.DrawText(Vector2.Zero, "This is my text"u8);
-        }
-
         [System]
-        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
-        private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager)
+        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager, MaterialsManager materialsManager, MeshManager meshManager) => sys.InstanceMethod(entityManager, assetsManager, materialsManager, meshManager);
+        private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager, in MaterialsManager materialsManager, in MeshManager meshManager)
         {
             if (_done)
             {
@@ -102,15 +109,21 @@ namespace Titan.Sandbox
                 _entity = default;
                 _done = true;
             }
-            else
+            else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookTexture))
             {
                 _entity = entityManager.CreateEntity();
                 entityManager.AddComponent(_entity, Transform3D.Create(Vector3.Zero));
                 entityManager.AddComponent<TransformRect>(_entity);
+                
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    Asset = assetsManager.Load<MeshAsset>(Meshes.Book),
-                    TextureAsset = assetsManager.Load<TextureAsset>(Textures.BookTexture),
+                    //TODO(Jens): Replace this mesh thing with a Create mesh    
+                    MeshIndex = assetsManager.Get(BookMesh).MeshDataHandle,
+                    MaterialIndex = materialsManager.CreateMaterial(new()
+                    {
+                        Color = Color.White,
+                        AlbedoTexture = assetsManager.Get(BookTexture)
+                    })
                 });
 
                 {

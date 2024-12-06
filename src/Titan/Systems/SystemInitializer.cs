@@ -2,12 +2,15 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Audio;
-using Titan.Audio.XAudio2;
 using Titan.Core;
 using Titan.ECS;
 using Titan.ECS.Archetypes;
 using Titan.Events;
+using Titan.Graphics.D3D12;
 using Titan.Input;
+using Titan.Materials;
+using Titan.Meshes;
+using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Services;
 using Titan.UI;
@@ -63,7 +66,10 @@ public unsafe ref struct SystemInitializer
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public EntityManager CreateEntityManager()
-        => new(_unmanagedResources.GetResourcePointer<EntitySystem>(), _unmanagedResources.GetResourcePointer<ComponentSystem>());
+        => new(
+            _unmanagedResources.GetResourcePointer<EntitySystem>(),
+            _unmanagedResources.GetResourcePointer<ComponentSystem>()
+        );
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AssetsManager CreateAssetsManager()
@@ -79,6 +85,17 @@ public unsafe ref struct SystemInitializer
             _unmanagedResources.GetResourcePointer<InputState>(),
             CreateAssetsManager()
             );
+
+    public MaterialsManager CreateMaterialsManager()
+        => new(
+            _unmanagedResources.GetResourcePointer<MaterialsSystem>(),
+            _unmanagedResources.GetResourcePointer<D3D12ResourceManager>()
+        );
+
+    public MeshManager CreateMeshManager()
+        => new(
+            _unmanagedResources.GetResourcePointer<MeshStorage>()
+        );
 
     public void AddReadOnlyComponent(in ComponentType type)
     {

@@ -10,8 +10,9 @@ struct MeshInstance
 {
     float4x4 ModelMatrix;
     // should be material
+    int MaterialIndex;
     int AlbedoIndex;
-    float3 _padding;
+    float2 _padding;
 };
 
 struct Vertex
@@ -21,12 +22,20 @@ struct Vertex
     float3 Normal;
 };
 
+struct MaterialData 
+{
+    float4 Color;
+    int AlbedoIndex;
+    float3 _padding;
+};
+
 
 ConstantBuffer<GBufferDrawData> PassData : register(b0, space0);
 
 StructuredBuffer<Vertex> GBuffer : register(t0, space0);
 StructuredBuffer<uint> IndexBuffer : register(t0, space1);
 StructuredBuffer<MeshInstance> MeshInstances : register(t0, space2);
+StructuredBuffer<MaterialData> Materials : register(t0, space3);
 
 struct GBufferVertexOutput
 {

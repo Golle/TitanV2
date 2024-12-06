@@ -22,7 +22,9 @@ internal enum ArgumentKind
     EntityCollection,
     AssetsManager,
     AudioManager,
-    UIManager
+    UIManager,
+    MaterialsManager,
+    MeshManager
 }
 
 internal static class SystemsBuilder
@@ -210,6 +212,8 @@ internal static class SystemsBuilder
                 ArgumentKind.AssetsManager => TitanTypes.AssetsManager,
                 ArgumentKind.AudioManager => TitanTypes.AudioManager,
                 ArgumentKind.UIManager => TitanTypes.UIManager,
+                ArgumentKind.MaterialsManager => TitanTypes.MaterialsManager,
+                ArgumentKind.MeshManager => TitanTypes.MeshManager,
                 ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent
                     => null,
                 _ => throw new NotImplementedException($"The kind {parameter.Kind} has not been implemented.")
@@ -263,6 +267,12 @@ internal static class SystemsBuilder
 
                 ArgumentKind.UIManager
                     => $"{ArgumentName}.CreateUIManager()",
+
+                ArgumentKind.MaterialsManager
+                    => $"{ArgumentName}.CreateMaterialsManager()",
+
+                ArgumentKind.MeshManager
+                    => $"{ArgumentName}.CreateMeshManager()",
 
                 ArgumentKind.Managed
                     => $"{ArgumentName}.GetService<{parameter.Type}>()",

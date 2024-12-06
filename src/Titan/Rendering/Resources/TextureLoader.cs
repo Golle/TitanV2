@@ -12,7 +12,8 @@ namespace Titan.Rendering.Resources;
 [StructLayout(LayoutKind.Sequential, Size = 8)] // Force the size to 8 , or pool allocator will fail. Rework of Pool allocator planned.
 public partial struct TextureAsset
 {
-    public Handle<Texture> Handle;
+    internal Handle<Texture> Handle;
+    public static implicit operator Handle<Texture>(in TextureAsset asset) => asset.Handle;
 }
 
 [AssetLoader<TextureAsset>]

@@ -7,7 +7,8 @@ internal class StorageModule : IModule
     {
         builder
             .AddSystemsAndResource<MeshStorage>()
-            .AddSystemsAndResource<LightStorage>();
+            .AddSystemsAndResource<LightStorage>()
+            ;
 
         return true;
     }

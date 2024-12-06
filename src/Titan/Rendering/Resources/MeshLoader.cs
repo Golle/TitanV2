@@ -80,6 +80,7 @@ internal unsafe partial struct MeshLoader
 public partial struct MeshAsset
 {
     internal Handle<MeshData> MeshDataHandle;
+    public static implicit operator Handle<MeshData>(in MeshAsset asset) => asset.MeshDataHandle;
 }
 
 public struct SubMesh

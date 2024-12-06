@@ -22,12 +22,12 @@ namespace Titan.Rendering.Storage;
 /// Represents a Mesh
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-internal struct MeshData
+public struct MeshData
 {
     public uint VertexBufferIndex;
 
     //NOTE(Jens): Maybe we can use Inline8,16,32 here? Not sure how many unique meshes we'll support in a game. Less complex for a bit more memory
-    public TitanArray<SubmeshData> Submeshes;
+    internal TitanArray<SubmeshData> Submeshes;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -45,8 +45,9 @@ internal struct SubmeshData
 public struct MeshInstance
 {
     public Matrix4x4 ModelMatrix;
+    public int MaterialIndex;
     public int AlbedoIndex;
-    private unsafe fixed float _padding[3];
+    private unsafe fixed float _padding[2];
 }
 
 public ref struct CreateMeshArgs
@@ -131,27 +132,7 @@ internal unsafe partial struct MeshStorage
         storage->_uploadQueue = registry.GetResourcePointer<D3D12UploadQueue>();
     }
 
-
-    [System(SystemStage.PreUpdate)]
-    public static void PostUpdate(ref MeshStorage storage, Span<Mesh> meshes, in AssetsManager assetsManager)
-    {
-        foreach (ref var mesh in meshes)
-        {
-            if (mesh.InstanceIndex.IsInvalid)
-            {
-                //NOTE(Jens): Start at 1, but we should replace this with a free list
-                mesh.InstanceIndex = ++storage._meshInstanceIndex;
-            }
-
-            //NOTE(Jens): I don't like this. We need a better approach.
-            if (mesh.MeshData == null && assetsManager.IsLoaded(mesh.Asset))
-            {
-                ref readonly var asset = ref assetsManager.Get(mesh.Asset);
-                mesh.MeshData = storage._meshData.AsPtr(asset.MeshDataHandle);
-            }
-        }
-    }
-
+    
     /// <summary>
     /// Creates and uploads a mesh to the GPU. 
     /// </summary>
@@ -208,6 +189,7 @@ internal unsafe partial struct MeshStorage
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void UpdateMeshInstance(in Handle<MeshInstance> handle, MeshInstance data)
     {
+        //TODO(Jens): This wont work, but we're reworking this anyway.
         //NOTE(Jens): We can skip this check, if the handle is invalid we'd just write to an empty slot.
         Debug.Assert(handle.IsValid);
         byte* data1;

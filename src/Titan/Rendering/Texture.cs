@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
@@ -15,4 +16,11 @@ public struct Texture
     internal D3D12DescriptorHandle RTV;
     internal D3D12DescriptorHandle DSV;
     internal DXGI_FORMAT Format;
+
+
+    public int GetIndex()
+    {
+        Debug.Assert(SRV.IsValid);
+        return SRV.Index;
+    }
 }

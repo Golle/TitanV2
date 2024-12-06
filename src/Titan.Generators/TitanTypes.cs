@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis;
 
 namespace Titan.Generators;
 internal static class TitanTypes
@@ -14,6 +15,8 @@ internal static class TitanTypes
     public const string Core = "Titan.Core";
     public const string ECS = "Titan.ECS";
     public const string UI = "Titan.UI";
+    public const string Materials = "Titan.Materials";
+    public const string Meshes = "Titan.Meshes";
 
     public const string UnmanagedResourceAttribute = $"{Resources}.UnmanagedResourceAttribute";
     public const string UnmanagedResourceGenerator = $"{Resources}.UnmanagedResourceId";
@@ -49,8 +52,11 @@ internal static class TitanTypes
     public const string AssetDependency = $"{Assets}.AssetDependency";
     public const string AssetLoaderDescriptor = $"{Assets}.AssetLoaderDescriptor";
 
+
     public const string AudioManager = $"{Audio}.AudioManager";
     public const string UIManager = $"{UI}.UIManager";
+    public const string MaterialsManager = $"{Materials}.MaterialsManager";
+    public const string MeshManager = $"{Meshes}.MeshManager";
 
     public const string ComponentAttribute = $"{ECS}.ComponentAttribute";
     public const string IComponent = $"{ECS}.IComponent";
@@ -72,5 +78,5 @@ internal static class TitanTypes
 
     public const string Span = "System.Span";
     public const string ReadOnlySpan = "System.ReadOnlySpan";
-
+    
 }

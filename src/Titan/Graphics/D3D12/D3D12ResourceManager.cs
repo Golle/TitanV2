@@ -126,11 +126,23 @@ public enum ConstantBufferFlags : byte
     Volatile
 }
 
-public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<Buffer> handle) where T : unmanaged
+public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<Buffer> handle, uint count) where T : unmanaged
 {
     public T* Ptr => resource;
     public Handle<Buffer> Handle => handle;
-    public void Write(in T value) => *resource = value;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteSingle(in T value, uint offset = 0) => *(resource + offset) = value;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write(ReadOnlySpan<T> values, uint offset = 0)
+    {
+        if (values.Length == 0)
+        {
+            return;
+        }
+        Debug.Assert(values.Length + offset < count);
+        MemoryUtils.Copy(resource + offset, values);
+    }
 }
 
 [UnmanagedResource]
@@ -310,7 +322,7 @@ public unsafe partial struct D3D12ResourceManager
         var result = buffer->Resource.Get()->Map(0, null, (void**)&data);
         if (Win32Common.SUCCEEDED(result))
         {
-            resource = new MappedGPUResource<T>(data, handle);
+            resource = new MappedGPUResource<T>(data, handle, buffer->Count);
             return true;
         }
         resource = default;

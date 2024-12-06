@@ -354,7 +354,7 @@ internal unsafe partial struct RenderGraph
         }
 
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
-        graph._frameDataGPU.Write(new FrameData
+        graph._frameDataGPU.WriteSingle(new FrameData
         {
             ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
             CameraPosition = cameraSystem.DefaultCamera.Position,
