@@ -3,7 +3,7 @@
 
 struct GBufferDrawData 
 {
-    uint MeshInstanceIndex;
+    uint InstanceOffset;
 };
 
 struct MeshInstance
@@ -43,6 +43,7 @@ struct GBufferVertexOutput
     float3 WorldPosition : TEXCOORD0;
     float3 WorldNormal : TEXCOORD1;
     float2 Texture : TEXCOORD2;
+    int MaterialIndex: MATERIALIDX1;
 };
 
 struct GBufferPixelOutput

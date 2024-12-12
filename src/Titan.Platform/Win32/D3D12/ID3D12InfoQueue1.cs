@@ -197,3 +197,4 @@ public unsafe struct ID3D12InfoQueue1 : INativeGuid
     public HRESULT UnregisterMessageCallback(uint CallbackCookie)
         => ((delegate* unmanaged[Stdcall]<void*, uint, HRESULT>)_vtbl[39])(Unsafe.AsPointer(ref this), CallbackCookie);
 }
+

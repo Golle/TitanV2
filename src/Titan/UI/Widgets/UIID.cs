@@ -26,4 +26,14 @@ public readonly struct UIID
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator int(in UIID id) => id.Id;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator UIID(in int id) => new(id);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator UIID(in uint id) => new((int)id);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator UIID(in string id) => new(id.GetHashCode());
 }
+

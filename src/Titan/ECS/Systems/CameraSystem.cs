@@ -102,6 +102,15 @@ internal partial struct CameraSystem
             camera.Position -= camera.Up * speed;
         }
 
+        if (inputState.IsKeyDown(KeyCode.Q))
+        {
+            camera.Forward -= camera.Up * speed*0.04f;
+        }
+        if (inputState.IsKeyDown(KeyCode.E))
+        {
+            camera.Forward-= -camera.Up * speed * 0.04f;
+        }
+
 
         camera.Target = camera.Position + camera.Forward;
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);

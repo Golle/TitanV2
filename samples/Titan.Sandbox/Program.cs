@@ -36,6 +36,11 @@ var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 
 App.Create(appConfig)
     .AddModule<GameModule>()
+    //.AddConfig(ECSConfig.Default with
+    //{
+    //    MaxEntities = 1_000_000,
+    //    MaxCommands = 1_000_000
+    //})
     .AddPersistedConfig(new WindowConfig(1920, 1080, true, true))
     .AddPersistedConfig(new RenderingConfig
     {
@@ -56,7 +61,7 @@ namespace Titan.Sandbox
 {
 
     [Component]
-    public partial struct Selected{}
+    public partial struct Selected { }
     internal class GameModule : IModule
     {
         public static bool Build(IAppBuilder builder, AppConfig config)
@@ -115,19 +120,39 @@ namespace Titan.Sandbox
             else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookTexture))
             {
                 _entity = entityManager.CreateEntity();
-                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.UnitZ*10+Vector3.UnitY*-3));
+                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.UnitZ * 10 + Vector3.UnitY * -3));
                 entityManager.AddComponent<TransformRect>(_entity);
 
+                var bookMaterial = materialsManager.CreateMaterial(new()
+                {
+                    Color = Color.White,
+                    AlbedoTexture = assetsManager.Get(BookTexture)
+                });
                 entityManager.AddComponent(_entity, new Mesh
                 {
                     //TODO(Jens): Replace this mesh thing with a Create mesh
                     MeshIndex = assetsManager.Get(BookMesh),
-                    MaterialIndex = materialsManager.CreateMaterial(new()
-                    {
-                        Color = Color.White,
-                        AlbedoTexture = assetsManager.Get(BookTexture)
-                    })
+                    MaterialIndex = bookMaterial
                 });
+
+
+                for (var z = 0; z < 5; ++z)
+                    for (var j = 0; j < 5; ++j)
+                        for (var i = 0; i < 5; ++i)
+                        {
+                            var ent = entityManager.CreateEntity();
+
+                            entityManager.AddComponent(ent, new Selected());
+                            entityManager.AddComponent(ent, Transform3D.Create(Vector3.UnitZ * 10 * (j + 1) + Vector3.UnitY * 10 * (z + 1) + Vector3.UnitX * 10 * (i + 1)));
+
+                            entityManager.AddComponent(ent, new Mesh
+                            {
+                                //TODO(Jens): Replace this mesh thing with a Create mesh
+                                MeshIndex = assetsManager.Get(BookMesh),
+                                MaterialIndex = bookMaterial
+                            });
+                        }
+
                 entityManager.AddComponent(_entity, new Selected());
 
                 {
@@ -172,7 +197,7 @@ namespace Titan.Sandbox
         private static UITextBoxStyle _textboxStyle;
         private static UICheckboxStyle _checkboxStyle;
 
-        private static UISliderState _slider = new(){Value = 0.5f};
+        private static UISliderState _slider = new() { Value = 0.5f };
         private static UISliderState _slider2;
         private static UISliderStyle _sliderStyle;
 
@@ -398,10 +423,10 @@ namespace Titan.Sandbox
         public static void UpdateScale(ReadOnlySpan<Selected> _, Span<Transform3D> transforms)
         {
             var scale = _slider.Value;
-            foreach (ref  var transform in transforms)
+            foreach (ref var transform in transforms)
             {
                 transform.Scale = Vector3.One * scale;
-                transform.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 2*MathF.PI * _slider2.Value);
+                transform.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 2 * MathF.PI * _slider2.Value);
             }
         }
 

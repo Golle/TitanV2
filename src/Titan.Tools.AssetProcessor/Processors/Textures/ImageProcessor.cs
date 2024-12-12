@@ -25,11 +25,17 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             : ImageLoader.LoadAndCompress(metadata.ContentFileFullPath, metadata.Compression, context.TempFolderPath);
 
 
+
         //NOTE(Jens): The images I've been testing with are upside down and flipped. 
         if (image == null)
         {
             context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to process image. Id = {metadata.Id} Name = {metadata.Name} Path = {metadata.ContentFileRelativePath}");
             return;
+        }
+
+        if (image.Width < 64 || image.Height < 64)
+        {
+            context.AddDiagnostics(DiagnosticsLevel.Error, "The size of the image must be at least 64x64 pixels. this is due to a limitation on the GPU where a rowpitch must be 256 bytes aligned. (When we use atlas packing we don't have to worry about it, but not each texture is a single resource)");
         }
 
         var textureDescriptor = new Texture2DDescriptor

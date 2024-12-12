@@ -5,9 +5,7 @@ GBufferPixelOutput main(GBufferVertexOutput input)
 {
     GBufferPixelOutput output;
 
-    MeshInstance instance =  MeshInstances[PassData.MeshInstanceIndex];
-
-    MaterialData material = Materials[instance.MaterialIndex];
+    MaterialData material = Materials[input.MaterialIndex];
 
     Texture2D albedoTexture =  Textures[material.AlbedoIndex];
     output.Albedo = albedoTexture.Sample(PointSampler, input.Texture); // Alpha channel is free for other data

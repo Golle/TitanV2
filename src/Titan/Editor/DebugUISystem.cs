@@ -1,9 +1,7 @@
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Numerics;
 using Titan.Assets;
 using Titan.Core.Maths;
-using Titan.Resources;
 using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
@@ -13,6 +11,11 @@ namespace Titan.Editor;
 
 internal partial struct DebugUISystem
 {
+
+    public static ulong Vertices = 0;
+    public static ulong DrawCalls = 0;
+    public static ulong PrevVertices = 0;
+    public static ulong PrevDrawCalls = 0;
     private static AssetHandle<FontAsset> _font;
     private static AssetHandle<SpriteAsset> _uiSprite;
 
@@ -20,7 +23,7 @@ internal partial struct DebugUISystem
     private static UISliderStyle _sliderStyle;
 
     public static UIImageStyle _testStyle;
-    private static UIID _sliderID = UIID.Create();
+    private static readonly UIID _sliderID = "TheSlider";
 
     [System(SystemStage.Init)]
     public static void Init(AssetsManager assetsManager)
@@ -53,29 +56,45 @@ internal partial struct DebugUISystem
 
     private static float _rand;
     [System]
-    public static void Update(UIManager ui)
+    public static void PrintStats(UIManager ui)
     {
+        //NOTE(Jens): disable this for now
+        return;
         _testStyle.NinePatch = UIImageStyleNinePatch.FromValue(24);
         //var timer = Stopwatch.StartNew();
         ////ui.Image(new(900, 200), new(200, 150), _testStyle);
         //timer.Stop();
         var timer = TimeSpan.FromMilliseconds(123.123);
-        _rand = Random.Shared.Next(100,1999);
-        Span<byte> textbuffer = stackalloc byte[32];
-        _rand.TryFormat(textbuffer, out var bytesWritten);
-        ui.Text(new(900, 700), textbuffer[..bytesWritten], _font, Color.Green);
+        _rand = Random.Shared.Next(100, 1999);
+        Span<byte> textbufferVertices = stackalloc byte[64];
+        Span<byte> textbufferDrawCalls = stackalloc byte[64];
+        "Draw: "u8.CopyTo(textbufferDrawCalls);
+        "Vertices: "u8.CopyTo(textbufferVertices);
+        PrevVertices.TryFormat(textbufferVertices[10..], out var verticeWritten);
+        PrevDrawCalls.TryFormat(textbufferDrawCalls[6..], out var drawCallsWritten);
+        //_rand.TryFormat(textbuffer, out var bytesWritten);
+        ui.Text(new(900, 700), textbufferDrawCalls[..(drawCallsWritten + 6)], _font, Color.Green);
+        ui.Text(new(900, 800), textbufferVertices[..(verticeWritten + 10)], _font, Color.Green);
         //ui.Text(new(900, 700), "Hey"u8, _font);
-        
+
         return;
 
         ui.Slider(_sliderID, new Vector2(1000, 300), new SizeF(200, 32), ref _sliderState, _sliderStyle);
-        
+
     }
+
+    //[System(SystemStage.Last)]
+    //public static void Update()
+    //{
+    //    PrevDrawCalls = DrawCalls;
+    //    PrevVertices = Vertices;
+    //    DrawCalls = Vertices = 0;
+    //}
 
     [System(SystemStage.Shutdown)]
     public static void Shutdown(AssetsManager assetsManager)
     {
         assetsManager.Unload(ref _uiSprite);
-
+        assetsManager.Unload(ref _font);
     }
 }

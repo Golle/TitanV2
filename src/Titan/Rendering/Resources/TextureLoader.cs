@@ -84,7 +84,12 @@ internal unsafe partial struct TextureLoader
 
     public bool Reload(TextureAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
     {
-        Logger.Warning<TextureAsset>("Reload not implemented");
+        if (!_resourceManager->Upload(asset->Handle, buffer))
+        {
+            Logger.Error<TextureAsset>("Failed to reload texture.");
+            return false;
+        }
+        
         return true;
     }
 }

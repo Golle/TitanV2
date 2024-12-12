@@ -212,7 +212,10 @@ public static unsafe class MemoryUtils
         var length = lhs.Length;
         return MSVCRT.memcmp(lhs.AsPointer(), rhs.AsPointer(), length * size) == 0;
     }
-    
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint SizeOf<T>() where T : unmanaged => (uint)sizeof(T);
+
     /// <summary>
     /// This should only be used where other allocators can't be used. 
     /// </summary>

@@ -6,6 +6,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.ECS.Components;
+using Titan.Editor;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Materials;
@@ -49,7 +50,7 @@ internal unsafe partial struct GBufferRenderPass
     [System(SystemStage.Init)]
     public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager)
     {
-        const uint MaxStagedMeshes = 1024;
+        const uint MaxStagedMeshes = 20 * 1024;
 
         var passArgs = new CreateRenderPassArgs
         {
@@ -158,12 +159,13 @@ internal unsafe partial struct GBufferRenderPass
 
             //TODO(Jens): Add frustrum culling
 
-
             var meshData = meshSystem.Access(mesh.MeshIndex);
             var meshInstanceIndex = pass->MeshInstances++;
             ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
             meshInstanceData.MaterialIndex = mesh.MaterialIndex;
 
+            //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
+            //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
             meshInstanceData.ModelMatrix = Matrix4x4.Transpose(Matrix4x4.CreateScale(transform.Scale) *
                                            Matrix4x4.CreateFromQuaternion(transform.Rotation) *
                                            Matrix4x4.CreateTranslation(transform.Position)
@@ -171,13 +173,14 @@ internal unsafe partial struct GBufferRenderPass
                                            ;
 
             //TODO: Implement GPU instancing
-            var instances = 1u;
+
             commandList.SetGraphicsRootConstant(PassDataIndex, meshInstanceIndex);
             for (var index = 0; index < meshData->SubMeshCount; ++index)
             {
                 ref readonly var submesh = ref meshData->SubMeshes[index];
-                commandList.DrawIndexedInstanced(submesh.IndexCount, instances, submesh.IndexStartLocation, 0);
+                commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.IndexStartLocation, 0);
             }
+            
         }
     }
 

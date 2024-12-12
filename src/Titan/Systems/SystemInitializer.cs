@@ -94,7 +94,7 @@ public unsafe ref struct SystemInitializer
 
     public MeshManager CreateMeshManager()
         => new(
-            _unmanagedResources.GetResourcePointer<MeshStorage>()
+            _unmanagedResources.GetResourcePointer<MeshSystem>()
         );
 
     public void AddReadOnlyComponent(in ComponentType type)

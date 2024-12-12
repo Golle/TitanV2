@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -124,7 +125,6 @@ internal unsafe partial struct D3D12CommandQueue
         var index = Interlocked.Increment(ref Next) - 1;
         var commandList = CommandLists[BufferIndex][index].Get();
         var allocator = Allocators[BufferIndex][index].Get();
-
         allocator->Reset();
         commandList->Reset(allocator, pipelineState);
         return new(commandList);
@@ -152,3 +152,4 @@ internal unsafe partial struct D3D12CommandQueue
         Queue.Get()->ExecuteCommandLists(1, (ID3D12CommandList**)&commandList);
     }
 }
+

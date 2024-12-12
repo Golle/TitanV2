@@ -23,6 +23,7 @@
 ## Improvements
     [ ] Add Font Scaling, right now the font is the same size as it's been printed to the spritesheet.
         [ ] SDF fonts, this is a stretch and a long term goal for crisp text.
+        [ ] Look into MSDF fonts as well, might be harder to generate but will yield a better result
 
 # Meshes
 ## Mesh Storage
@@ -44,14 +45,19 @@
         [ ] Shared buffer for everything, this requires using offsets between frames.
 
 # Rendering
+## Bugs
+    [ ] D3D12 Crashes, most likely due to some resources not being processed correctly, or in parallel when it's not supposed to.
+        [X] Figure out a way to get the D3D12 error/debug layer printed. (Similar to the messages in output window when debugger is attached)
+        [ ] Swapchain fails, returns none 0 HRESULT. Does not happen when debugger is attached.
+        [ ] CommandList.Close() fails. Does not happen when debugger is attached.
+
 ## buffers
-    [ ] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
-        [ ] Add double buffering for buffers that are updated each frame
-        [ ] 
+    [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
+        [X] Add double buffering for buffers that are updated each frame
+        
 
 ## D3D12 Resources
     [ ] We're using ComittedResource today, should we stick with that since we only allocate a single resource for meshes?
-
 
 
 # Asset Processor
