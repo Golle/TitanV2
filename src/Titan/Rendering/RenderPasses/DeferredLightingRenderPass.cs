@@ -50,6 +50,7 @@ internal unsafe partial struct DeferredLightingRenderPass
             RootSignatureBuilder = static builder => builder
                 .WithDecriptorRange(1, register: 0, space: 0),
             BlendState = BlendStateType.Additive,
+            CullMode = CullMode.Back,
             Outputs = [BuiltInRenderTargets.DeferredLighting],
             Inputs =
             [

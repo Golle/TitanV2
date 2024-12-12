@@ -23,6 +23,8 @@ public struct RenderPass
     public CommandList CommandList;
     public unsafe delegate*<ReadOnlySpan<Ptr<Texture>>, TitanOptional<Texture>, in CommandList, void> ClearFunction;
     public BlendStateType BlendState;
+    public CullMode CullMode;
+    public FillMode FillMode;
     public Viewport Viewport;
     public Rect ScissorRect;
 }

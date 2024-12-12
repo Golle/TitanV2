@@ -68,6 +68,8 @@ public ref struct CreatePipelineStateArgs
     public required ReadOnlySpan<Handle<Texture>> RenderTargets { get; init; }
     public DepthStencilArgs Depth { get; init; }
     public BlendStateType BlendState { get; init; }
+    public CullMode CullMode { get; init; }
+    public FillMode FillMode { get; init; }
 }
 
 public ref struct CreateRootSignatureArgs
@@ -643,12 +645,16 @@ public unsafe partial struct D3D12ResourceManager
 
         var pipelineState = _pipelineStates.AsPtr(handle);
 
+        var fillMode = args.FillMode == 0 ? D3D12_FILL_MODE.D3D12_FILL_MODE_SOLID : (D3D12_FILL_MODE)args.FillMode;
+        var cullMode = args.CullMode == 0 ? D3D12_CULL_MODE.D3D12_CULL_MODE_NONE : (D3D12_CULL_MODE)args.CullMode;
+
         var psoStream = new D3D12PipelineSubobjectStream()
                 .Blend(D3D12Helpers.GetBlendState(args.BlendState)) //TODO(Jens): Should be configurable, but keep it simple for now.
                 .Topology(args.Topology)
                 .Razterizer(D3D12_RASTERIZER_DESC.Default() with
                 {
-                    CullMode = D3D12_CULL_MODE.D3D12_CULL_MODE_NONE, // TODO(Jens): Should be configurable
+                    CullMode = cullMode,
+                    FillMode = fillMode
                 })
                 .RenderTargetFormat(new(formats.AsReadOnlySpan()))
                 .RootSignature(rootSignature->Resource)

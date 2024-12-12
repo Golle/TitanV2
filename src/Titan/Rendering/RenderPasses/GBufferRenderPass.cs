@@ -28,6 +28,7 @@ internal struct MeshInstanceData
     public int MaterialIndex;
     private unsafe fixed float _padding[3];
 }
+
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
 {
@@ -58,6 +59,8 @@ internal unsafe partial struct GBufferRenderPass
                 .WithDecriptorRange(1, space: 3) // MaterialsInstance
             ,
             BlendState = BlendStateType.AlphaBlend, //NOTE(Jens): maybe it should be disabled?
+            CullMode = CullMode.Back,
+            FillMode = FillMode.Solid,
             Outputs =
             [
                 BuiltInRenderTargets.GBufferPosition,

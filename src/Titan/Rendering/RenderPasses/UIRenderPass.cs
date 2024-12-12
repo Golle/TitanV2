@@ -36,6 +36,7 @@ internal unsafe partial struct UIRenderPass
         var args = new CreateRenderPassArgs
         {
             BlendState = BlendStateType.AlphaBlend,
+            CullMode = CullMode.Back,
             ClearFunction = &Clear,
             DepthBuffer = null,
             Inputs = [],

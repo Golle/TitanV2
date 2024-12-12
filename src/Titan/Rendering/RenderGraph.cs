@@ -46,6 +46,8 @@ public ref struct CreateRenderPassArgs
     public AssetDescriptor PixelShader;
 
     public BlendStateType BlendState;
+    public CullMode CullMode;
+    public FillMode FillMode;
     //public AssetDescriptor ComputerShader;
 
     /// <summary>
@@ -157,6 +159,8 @@ internal unsafe partial struct RenderGraph
         pass->Outputs = _allocator.AllocateArray<Handle<Texture>>(args.Outputs.Length);
         pass->Inputs = _allocator.AllocateArray<Handle<Texture>>(args.Inputs.Length);
         pass->BlendState = args.BlendState;
+        pass->CullMode = args.CullMode;
+        pass->FillMode = args.FillMode;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
             pass->Outputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Outputs[i]);
@@ -417,7 +421,9 @@ internal unsafe partial struct RenderGraph
                 RootSignature = pass.RootSignature,
                 VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
                 PixelShader = _assetsManager.Get(pass.PixelShader).ShaderByteCode,
-                Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+                Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+                CullMode = pass.CullMode,
+                FillMode = pass.FillMode
             });
             if (pass.PipelineState.IsInvalid)
             {
