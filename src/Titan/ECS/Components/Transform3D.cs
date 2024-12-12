@@ -4,7 +4,6 @@ using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Materials;
 using Titan.Meshes;
-using Titan.Rendering.Storage;
 
 namespace Titan.ECS.Components;
 
@@ -49,6 +48,8 @@ public partial struct Light
     public LightType LightType;
     [FieldOffset(1)]
     internal short LightIndex;
+    [FieldOffset(3)]
+    public bool Active;
     [FieldOffset(4)]
     public ColorRGB Color;
     [FieldOffset(16)]

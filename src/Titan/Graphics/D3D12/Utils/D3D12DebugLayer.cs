@@ -23,6 +23,10 @@ internal unsafe partial struct D3D12DebugLayer
 
     private static readonly Guid Producer = *DXGI_DEBUG_ID.IID_DXGI_DEBUG_ALL;
 
+    private static Thread? MessageThread;
+    private static bool Active;
+
+
     [System(SystemStage.Startup, SystemExecutionType.Inline)]
     public static void Init()
     {
@@ -57,10 +61,15 @@ internal unsafe partial struct D3D12DebugLayer
         Debug.Assert(buffer != null);
         MessageBuffer = new((char*)buffer, bufferSize);
 
+
+        //NOTE(Jens): we use a separate thread for this since ClearStorage might not update the value correctly across threads.
+        Active = true;
+        MessageThread = new Thread(GetDebugMessages);
+        MessageThread.Start();
+
         Logger.Info<D3D12DebugLayer>($"Successfully initialize the D3D12 Debug Layer. GPUValidation = {GPUValidation}");
     }
 
-    [System]
     public static void GetDebugMessages()
     {
         if (!DXGIInfoQueue.IsValid)
@@ -72,28 +81,36 @@ internal unsafe partial struct D3D12DebugLayer
         {
             return;
         }
-        var numberOfMessages = DXGIInfoQueue.Get()->GetNumStoredMessages(Producer);
-        for (var i = 0ul; i < numberOfMessages; ++i)
+
+        while (Active)
         {
-            var message = (DXGI_INFO_QUEUE_MESSAGE*)MessageBuffer.AsPointer();
-            nuint messageLength;
-            var hr = DXGIInfoQueue.Get()->GetMessage(Producer, i, message, &messageLength);
-            if (FAILED(hr))
+            Thread.Sleep(100);
+            var numberOfMessages = DXGIInfoQueue.Get()->GetNumStoredMessages(Producer);
+            for (var i = 0ul; i < numberOfMessages; ++i)
             {
-                Logger.Error<D3D12DebugLayer>($"Failed to get the message at index {i}. HRESULT = {hr}");
-                continue;
+                var message = (DXGI_INFO_QUEUE_MESSAGE*)MessageBuffer.AsPointer();
+                nuint messageLength;
+                var hr = DXGIInfoQueue.Get()->GetMessage(Producer, i, message, &messageLength);
+                if (FAILED(hr))
+                {
+                    Logger.Error<D3D12DebugLayer>($"Failed to get the message at index {i}. HRESULT = {hr}");
+                    continue;
+                }
+
+                var description = Encoding.ASCII.GetString(message->pDescription, (int)messageLength);
+                Logger.Error<D3D12DebugLayer>(description);
             }
 
-            var description = Encoding.ASCII.GetString(message->pDescription, (int)messageLength);
-            Logger.Error<D3D12DebugLayer>(description);
+            DXGIInfoQueue.Get()->ClearStoredMessages(Producer);
         }
 
-        DXGIInfoQueue.Get()->ClearStoredMessages(Producer);
     }
 
     [System(SystemStage.EndOfLife)]
     public static void Shutdown()
     {
+        Active = false;
+        MessageThread?.Join();
         if (DXGIDebug.IsValid)
         {
             DXGIDebug.Get()->ReportLiveObjects(IID.DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS.DXGI_DEBUG_RLO_ALL);

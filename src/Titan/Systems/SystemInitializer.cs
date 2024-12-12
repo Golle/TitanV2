@@ -10,7 +10,6 @@ using Titan.Graphics.D3D12;
 using Titan.Input;
 using Titan.Materials;
 using Titan.Meshes;
-using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Services;
 using Titan.UI;

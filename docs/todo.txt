@@ -24,6 +24,10 @@
     [ ] Add Font Scaling, right now the font is the same size as it's been printed to the spritesheet.
         [ ] SDF fonts, this is a stretch and a long term goal for crisp text.
         [ ] Look into MSDF fonts as well, might be harder to generate but will yield a better result
+# Art/Debug UI
+    [ ] Create a base set of debug UI controls that can easily be used to create menues etc for an in-game editor.
+    [ ] Implement pre-loaded designes/styles used in Debug mode
+
 
 # Meshes
 ## Mesh Storage
@@ -51,14 +55,21 @@
         [ ] Swapchain fails, returns none 0 HRESULT. Does not happen when debugger is attached.
         [ ] CommandList.Close() fails. Does not happen when debugger is attached.
 
+## Resizing/Fullscreen ( sen TitanV1 for inspiration)
+    [ ] Add support for resizing and render pipeline re-creation
+    [ ] Add support for Fullscreen (Alt-Enter)
+
 ## buffers
     [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
         [X] Add double buffering for buffers that are updated each frame
         
+## Lighting
+    [ ] Use DrawIndexedInstanced to group lights into a single draw call
+    [ ] Use staging/per frame buffers for active lights
+
 
 ## D3D12 Resources
     [ ] We're using ComittedResource today, should we stick with that since we only allocate a single resource for meshes?
-
 
 # Asset Processor
 The asset processor is currently just a command line tool that will walk through all assets in a folder and put them into a single binary, based on some configuration in the metadata files.   
@@ -82,4 +93,7 @@ The long term goal is to have a hot reload system, that can detect changes and c
         - This is to support changing coordinates in a sprite sheet for example. 
 
 
+# Editor
 
+## Widgets
+    [ ] Add widget for Lights and other Entities, render them as squares in window space.

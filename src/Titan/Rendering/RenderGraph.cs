@@ -88,11 +88,15 @@ internal unsafe partial struct RenderGraph
     private bool _isReady;
     private int _renderPassCount;
     private uint _groupCount;
+    private uint _frameIndex;
     public readonly bool IsReady => _isReady;
+    public readonly uint FrameIndex => _frameIndex;
 
     private Handle<Texture> _backbufferHandle;
     private Handle<GPUBuffer> _frameDataConstantBuffer;
     private MappedGPUResource<FrameData> _frameDataGPU;
+
+
 
 
     [System(SystemStage.PreInit)]
@@ -298,6 +302,11 @@ internal unsafe partial struct RenderGraph
     [System(SystemStage.First)]
     public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window)
     {
+#if TRIPLE_BUFFERING
+        graph._frameIndex = (graph._frameIndex + 1) % GlobalConfiguration.MaxRenderFrames; 
+#else
+        graph._frameIndex = (graph._frameIndex + 1) & 0x1;
+#endif
         if (graph._isReady)
         {
             return;

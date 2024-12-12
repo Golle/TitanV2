@@ -160,9 +160,10 @@ namespace Titan.Sandbox
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY * 10));
                     entityManager.AddComponent(lightEntity, new Light
                     {
+                        Active = true,
                         Color = Color.White,
                         Direction = -Vector3.UnitY,
-                        Intensity = 100f,
+                        Intensity = 0,
                         Radius = 100f,
                         LightType = LightType.Point
                     });
@@ -173,9 +174,10 @@ namespace Titan.Sandbox
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitZ * 10));
                     entityManager.AddComponent(lightEntity, new Light()
                     {
+                        Active = true,
                         Color = new ColorRGB(0.4f, 0.8f, 1f),
                         Direction = -Vector3.UnitY,
-                        Intensity = 100f,
+                        Intensity = 0,
                         Radius = 100f,
                         LightType = LightType.Point
                     });
@@ -199,6 +201,7 @@ namespace Titan.Sandbox
 
         private static UISliderState _slider = new() { Value = 0.5f };
         private static UISliderState _slider2;
+        private static UISliderState _slider3;
         private static UISliderStyle _sliderStyle;
 
         private static UIRadioState _radio;
@@ -224,6 +227,7 @@ namespace Titan.Sandbox
         public static UIID SelectBoxID = UIID.Create();
         public static UIID SliderID = UIID.Create();
         public static UIID SliderID2 = UIID.Create();
+        public static UIID SliderID3 = UIID.Create();
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
@@ -375,6 +379,7 @@ namespace Titan.Sandbox
 
                 ui.Slider(SliderID, new(20, 120), new(200, 36), ref _slider, _sliderStyle);
                 ui.Slider(SliderID2, new(20, 220), new(200, 36), ref _slider2, _sliderStyle);
+                ui.Slider(SliderID3, new(20, 320), new(200, 36), ref _slider3, _sliderStyle);
 
 
                 int min = 43;
@@ -427,6 +432,16 @@ namespace Titan.Sandbox
             {
                 transform.Scale = Vector3.One * scale;
                 transform.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 2 * MathF.PI * _slider2.Value);
+            }
+        }
+
+        [System]
+        public static void UpdateLights(Span<Light> lights)
+        {
+            for (var i = 0; i < lights.Length; ++i)
+            {
+                lights[i].Active = _checkboxStates[i];
+                lights[i].Color.R = _slider3.Value;
             }
         }
 

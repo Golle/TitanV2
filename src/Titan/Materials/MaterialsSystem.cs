@@ -27,9 +27,12 @@ internal unsafe partial struct MaterialsSystem
     private Inline2<MappedGPUResource<MaterialData>> GPUMaterialData;
     private TitanArray<MaterialData> Materials;
     private int MaterialCount;
-    private int FrameIndex;
 
-    public readonly Handle<GPUBuffer> GetMaterialsGPUHandle() => MaterialBuffers[FrameIndex];
+    public readonly Handle<GPUBuffer> GetMaterialsGPUHandle(uint frameIndex)
+    {
+        Debug.Assert(frameIndex < GlobalConfiguration.MaxRenderFrames);
+        return MaterialBuffers[frameIndex];
+    }
 
     [System(SystemStage.Init)]
     public static void Init(MaterialsSystem* storage, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager)
@@ -75,21 +78,15 @@ internal unsafe partial struct MaterialsSystem
 
 
     [System]
-    public static void Update(MaterialsSystem* storage, in D3D12ResourceManager resourceManager)
+    public static void Update(MaterialsSystem* storage, in D3D12ResourceManager resourceManager, in RenderGraph graph)
     {
         if (storage->MaterialCount > 0)
         {
             //TODO(Jens): Check for dirty materials. Right now we keep it simple.
             //NOTE(Jens): Implement dirty flag as a byte, start with value 2 and decrease for each update. This will ensure that all buffers have the same value.
             var updatedMaterials = storage->Materials.AsReadOnlySpan()[..storage->MaterialCount];
-            storage->GPUMaterialData[storage->FrameIndex].Write(updatedMaterials);
+            storage->GPUMaterialData[graph.FrameIndex].Write(updatedMaterials);
         }
-    }
-
-    [System(SystemStage.Last, SystemExecutionType.Inline)]
-    public static void Last(MaterialsSystem* storage)
-    {
-        storage->FrameIndex = (int)((storage->FrameIndex + 1) % GlobalConfiguration.MaxRenderFrames);
     }
 
 

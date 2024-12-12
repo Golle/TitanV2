@@ -136,8 +136,8 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, uint startInstanceLocation = 0) 
-        => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
+    public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startVertexLocation = 0, uint startInstanceLocation = 0) 
+        => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIndexBuffer(GPUBuffer* buffer) 
