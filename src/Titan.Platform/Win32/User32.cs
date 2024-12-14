@@ -252,4 +252,37 @@ public static unsafe partial class User32
         char* lpCaption,
         uint uType
     );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int ShowCursor(int bShow);
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetCursorInfo(
+        CURSORINFO* pci
+    );
+
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool PostThreadMessageW(
+        uint idThread,
+        WindowMessage Msg,
+        nuint wParam,
+        nuint lParam
+    );
+
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool PostMessageW(
+        HWND hWnd,
+        WindowMessage Msg,
+        nuint wParam,
+        nuint lParam
+    );
 }

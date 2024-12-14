@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Titan.Configurations;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Threading;
 using Titan.Input;
 using Titan.Platform.Win32;
@@ -15,6 +16,15 @@ namespace Titan.Windows.Win32;
 
 internal unsafe partial struct Win32WindowSystem
 {
+    // keep track of the cursor so we can change it.
+    public const WindowMessage WM_TOGGLE_CURSOR = WM_USER + 1;
+
+    public static readonly Size ScreenSize = new
+    (
+        GetSystemMetrics(SystemMetricCodes.SM_CXSCREEN),
+        GetSystemMetrics(SystemMetricCodes.SM_CYSCREEN)
+    );
+
     private const string ClassName = nameof(Win32WindowSystem);
     [System(SystemStage.Init)]
     public static void CreateWindow(Window* window, Win32MessageQueue* queue, IThreadManager threadManager, IConfigurationManager configurationManager)
@@ -31,13 +41,21 @@ internal unsafe partial struct Win32WindowSystem
         window->X = config.X;
         window->Y = config.Y;
         window->Queue = queue;
-
+        window->ScreenHeight = ScreenSize.Height;
+        window->ScreenWidth = ScreenSize.Width;
         window->WindowThread = threadManager.Create(&CreateAndStartWindow, window, true);
         //TODO(Jens): This should be handled in some nicer way. CreateEvent and SetEvent causes the debugger to deadlock though, so not sure what we can do.
         //NOTE(Jens): Update, this is not true anymore, it was due to GC supress
         while (window->Handle == 0)
         {
             Thread.Sleep(1);
+        }
+
+        CURSORINFO cursorInfo;
+        cursorInfo.cbSize = (uint)sizeof(CURSORINFO);
+        if (GetCursorInfo(&cursorInfo))
+        {
+            window->CursorVisible = cursorInfo.flags != CURSOR_STATE.CURSOR_HIDDEN;
         }
     }
 
@@ -84,6 +102,7 @@ internal unsafe partial struct Win32WindowSystem
             Logger.Trace<Win32WindowSystem>("Toggle Top Most");
             window.ToggleTopMost();
         }
+
     }
 
     [UnmanagedCallersOnly]
@@ -144,11 +163,8 @@ internal unsafe partial struct Win32WindowSystem
         if (window->X < 0 || window->Y < 0)
         {
             //NOTE(Jens): This will use the primary monitor. 
-            var screenWidth = GetSystemMetrics(SystemMetricCodes.SM_CXSCREEN);
-            var screenHeight = GetSystemMetrics(SystemMetricCodes.SM_CYSCREEN);
-
-            window->X = (screenWidth - window->Width) / 2;
-            window->Y = (screenHeight - window->Height) / 2;
+            window->X = (ScreenSize.Width - window->Width) / 2;
+            window->Y = (ScreenSize.Height - window->Height) / 2;
         }
 
         HWND handle;
@@ -182,6 +198,7 @@ internal unsafe partial struct Win32WindowSystem
         window->Active = true;
         ShowWindow(handle, ShowWindowCommands.SW_SHOW);
 
+
         ref var active = ref window->Active;
         while (active)
         {
@@ -193,6 +210,23 @@ internal unsafe partial struct Win32WindowSystem
                 active = false;
                 break;
             }
+
+            if (msg.Message == WM_TOGGLE_CURSOR)
+            {
+                //NOTE(Jens): ShowCursor has a counter inside, we don't want to increase it more than once.
+                if (window->CursorVisible && msg.WParam == 0)
+                {
+                    ShowCursor(0);
+                }
+                else if (!window->CursorVisible && msg.WParam == 1)
+                {
+                    ShowCursor(1);
+                }
+
+                window->CursorVisible = msg.WParam == 1;
+                continue;
+            }
+
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
@@ -236,6 +270,7 @@ internal unsafe partial struct Win32WindowSystem
 
         switch (message)
         {
+
             case WM_KEYDOWN:
             case WM_SYSKEYDOWN:
                 {

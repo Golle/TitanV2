@@ -1,4 +1,10 @@
 
+# Windowing
+    [X] Implement hide cursor
+    [ ] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
+        [X] Add external function to detect this, so UI doesn't trigger hover effects for example.
+    [ ] Add bounds check for mouse clicks
+
 
 # UI 
 ## Layouts

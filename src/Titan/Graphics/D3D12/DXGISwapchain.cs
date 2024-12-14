@@ -196,8 +196,8 @@ internal unsafe partial struct DXGISwapchain
         }
 #if DEBUG
         if (FAILED(hr))
-        {
-            Logger.Error<DXGISwapchain>("Swapchain FAiled. HRESULT = {hr}");
+        { 
+            Logger.Error<DXGISwapchain>($"Swapchain FAiled. HRESULT = {hr}");
             Debugger.Launch();
         }
 #endif

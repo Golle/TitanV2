@@ -20,7 +20,7 @@ public enum MouseButton : byte
 [UnmanagedResource]
 public unsafe partial struct InputState
 {
-    
+
     public const int MaxTypedCharacters = 32;
 
     public fixed bool Current[(int)KeyCode.NumberOfKeys];
@@ -39,7 +39,10 @@ public unsafe partial struct InputState
     public Point MousePositionUI;
     public Point PreviousMousePositionUI;
     public Vector2 MousePositionDelta;
+    internal Point MousePositionSavedState;
     public bool OutsideWindow;
+    public bool MouseVisible => !MouseHidden;
+    public bool MouseHidden;
 
     public readonly bool IsKeyDown(KeyCode code) => Current[(int)code];
     public readonly bool IsKeyUp(KeyCode code) => !Current[(int)code];

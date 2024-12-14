@@ -1,16 +1,22 @@
+using System.Diagnostics;
 using System.Numerics;
-using Titan.Assets;
 using Titan.Input;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.UI;
-using Titan.UI.Widgets;
 using Titan.Windows;
 
 namespace Titan.ECS.Systems;
 
 public struct Camera
 {
+    /// <summary>
+    /// Clamp value to avoid camera flipping
+    /// </summary>
+    public const float PitchClampValue = 89.9f * (MathF.PI / 180.0f);
+    public static readonly Vector3 DefaultForward = Vector3.UnitZ;
+    public static readonly Vector3 DefaultUp = Vector3.UnitY;
+    public static readonly Vector3 DefaultRight = Vector3.UnitX;
     public Vector3 Position;
     public Vector3 Target;
     public Vector3 Up;
@@ -26,16 +32,19 @@ public struct Camera
     public Matrix4x4 ProjectionMatrix;
     public Matrix4x4 ViewMatrix;
     public Matrix4x4 ViewProjectionMatrix;
+    public float Pitch;
+    public float Yaw;
+    public float Roll;
 
     public static Camera Create()
     {
         return new Camera
         {
             Position = Vector3.Zero,
-            Target = Vector3.UnitZ,
-            Up = Vector3.UnitY,
-            Forward = Vector3.UnitZ,
-            Right = Vector3.UnitX,
+            Target = DefaultForward,
+            Up = DefaultUp,
+            Forward = DefaultForward,
+            Right = DefaultRight,
             Fov = MathF.PI / 4,
             //AspectRatio = 
             NearPlane = 0.1f,
@@ -65,54 +74,81 @@ internal partial struct CameraSystem
     }
 
     [System]
-    public static void Update(ref CameraSystem system, in InputState inputState, UIManager uiManager)
+    public static void Update(ref CameraSystem system, in InputState inputState, UIManager uiManager, in Window window)
     {
-        var speed = inputState.IsKeyDown(KeyCode.Shift) ? 0.5f : 0.1f;
+        const float mouseLookMultiplier = 0.002f;
+        var speed = inputState.IsKeyDown(KeyCode.Shift) ? 0.2f : 0.1f;
 
         ref var camera = ref system.DefaultCamera;
-        //camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
 
+        Vector3 movement = default;
+
+        if (inputState.IsButtonPressed(MouseButton.Right))
+        {
+            // we hide the cursor (and lock it in place) when moving the camera
+            window.ShowCursor(false);
+        }
+
+        if (inputState.IsButtonReleased(MouseButton.Right))
+        {
+            window.ShowCursor(true);
+        }
 
         if (inputState.IsKeyDown(KeyCode.Down) || inputState.IsKeyDown(KeyCode.S))
         {
-            camera.Position -= camera.Forward * speed;
+            movement.Z += -speed;
         }
         if (inputState.IsKeyDown(KeyCode.Up) || inputState.IsKeyDown(KeyCode.W))
         {
-            camera.Position += camera.Forward * speed;
+            movement.Z -= -speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.Left) || inputState.IsKeyDown(KeyCode.A))
         {
-            camera.Position += camera.Right * speed;
+            movement.X += speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.Right) || inputState.IsKeyDown(KeyCode.D))
         {
-            camera.Position -= camera.Right * speed;
+            movement.X -= speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.V))
         {
-            camera.Position += camera.Up * speed;
+            movement.Y += speed;
         }
 
         if (inputState.IsKeyDown(KeyCode.C))
         {
-            camera.Position -= camera.Up * speed;
+            movement.Y -= speed;
         }
 
-        if (inputState.IsKeyDown(KeyCode.Q))
+        if (inputState.IsButtonDown(MouseButton.Right))
         {
-            camera.Forward -= camera.Up * speed*0.04f;
-        }
-        if (inputState.IsKeyDown(KeyCode.E))
-        {
-            camera.Forward-= -camera.Up * speed * 0.04f;
+            if (inputState.MousePositionDelta.Y != 0)
+            {
+                Debugger.Break();
+                ;
+            }
+            camera.Pitch -= inputState.MousePositionDelta.Y * mouseLookMultiplier;
+            camera.Pitch = Math.Clamp(camera.Pitch, -Camera.PitchClampValue, Camera.PitchClampValue);
+
+            camera.Yaw += inputState.MousePositionDelta.X * mouseLookMultiplier;
         }
 
+        var rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
+        camera.Target = Vector3.Normalize(Vector3.Transform(Camera.DefaultForward, rotationMatrix));
 
-        camera.Target = camera.Position + camera.Forward;
+        var rotatationYMatrix = Matrix4x4.CreateRotationY(camera.Yaw);
+        camera.Right = Vector3.Transform(Camera.DefaultRight, rotatationYMatrix);
+        camera.Up = Vector3.Transform(Camera.DefaultUp, rotatationYMatrix);
+        camera.Forward = Vector3.Transform(Camera.DefaultForward, rotationMatrix);
+
+        camera.Position += movement.X * camera.Right;
+        camera.Position += movement.Z * camera.Forward;
+        camera.Position += movement.Y * camera.Up;
+
+        camera.Target = camera.Position + camera.Target;
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
         camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
         camera.ViewProjectionMatrix = Matrix4x4.Transpose(camera.ViewProjectionMatrix);

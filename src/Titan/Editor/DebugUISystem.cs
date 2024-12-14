@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Numerics;
 using Titan.Assets;
+using Titan.Core;
 using Titan.Core.Maths;
+using Titan.Input;
 using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
@@ -56,8 +58,24 @@ internal partial struct DebugUISystem
 
     private static float _rand;
     [System]
-    public static void PrintStats(UIManager ui)
+    public static void PrintStats(UIManager ui, in InputState inputState)
     {
+
+        if (inputState.MouseVisible)
+        {
+            ui.Text(new(800, 200), "Mouse Visible"u8, _font, Color.Magenta);
+        }
+        else
+        {
+            ui.Text(new(800, 200), "Mouse Hidden"u8, _font, Color.Magenta);
+
+            Inline256<byte> text = default;
+            inputState.MousePositionDelta.X.TryFormat(text, out var size);
+            ui.Text(new(870, 300), text[..size], _font, Color.Magenta);
+            inputState.MousePositionDelta.Y.TryFormat(text, out size);
+            ui.Text(new(870, 400), text[..size], _font, Color.Magenta);
+        }
+
         //NOTE(Jens): disable this for now
         return;
         _testStyle.NinePatch = UIImageStyleNinePatch.FromValue(24);

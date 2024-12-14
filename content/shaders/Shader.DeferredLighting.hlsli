@@ -26,10 +26,21 @@ struct LightInstanceData
     float2 _padding;
 };
 
+
+struct DeferredLightingPassData {
+    float3 AmbientLight;
+};
+
 StructuredBuffer<LightInstanceData> LightBuffer : register(t0, space0);
+ConstantBuffer<DeferredLightingPassData> PassData : register(b0, space0);
 
 LightInstanceData GetLight(uint index) {
     return LightBuffer[index];
+}
+
+float3 GetAmbientLight()
+{
+    return PassData.AmbientLight;
 }
 
 

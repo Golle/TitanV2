@@ -11,6 +11,7 @@ using Titan.Core.Logging;
 using System.Numerics;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
+using Titan.Input;
 using static Titan.Assets.EngineAssetsRegistry.Shaders;
 
 namespace Titan.Rendering.RenderPasses;
@@ -28,8 +29,21 @@ internal struct LightInstanceData
 [UnmanagedResource]
 internal unsafe partial struct DeferredLightingRenderPass
 {
+    private static Vector3[] HardcodedLights =
+    [
+
+        new(0.4f, 0.4f, 0.4f), // Neutral gray, 40% brightness
+        new(0.5f, 0.45f, 0.35f), // Slightly warm tone
+        new(0.3f, 0.35f, 0.4f), // Cool tone with bluish tint
+        new(0.1f, 0.1f, 0.2f), // Dim with a bluish hue
+        new(0.05f, 0.05f, 0.1f) // Minimal light with a hint of blue
+    ];
+
+    private static int LightIndex = 0;
+
     private Handle<RenderPass> PassHandle;
-    private const uint RootConstantLightInstanceIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
+    private const uint RootConstantPassData = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
+    private const uint RootConstantLightInstanceIndex = RootConstantPassData + 1;
 
     private Inline2<Handle<GPUBuffer>> LightInstanceHandles;
     private Inline2<MappedGPUResource<LightInstanceData>> GPULights;
@@ -48,6 +62,7 @@ internal unsafe partial struct DeferredLightingRenderPass
         renderPass->PassHandle = graph.CreatePass("DeferredLighting", new()
         {
             RootSignatureBuilder = static builder => builder
+                .WithConstant(3, ShaderVisibility.Pixel, register: 0, space: 0)
                 .WithDecriptorRange(1, register: 0, space: 0),
             BlendState = BlendStateType.Additive,
             CullMode = CullMode.Back,
@@ -106,7 +121,9 @@ internal unsafe partial struct DeferredLightingRenderPass
 
         var lightsBuffer = resourceManager.Access(pass->LightInstanceHandles[graph.FrameIndex]);
         commandList.SetGraphicsRootDescriptorTable(RootConstantLightInstanceIndex, lightsBuffer);
-
+        //TODO(Jens): This should be set somewhere else
+        
+        commandList.SetGraphicsRootConstant(RootConstantPassData, HardcodedLights[LightIndex]);
         pass->LightInstances = 0;
     }
 
@@ -141,11 +158,16 @@ internal unsafe partial struct DeferredLightingRenderPass
     }
 
     [System]
-    public static void EndPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in D3D12ResourceManager resourceManager)
+    public static void EndPass(in DeferredLightingRenderPass pass, in RenderGraph graph, in D3D12ResourceManager resourceManager, in InputState inputState)
     {
         if (!graph.IsReady)
         {
             return;
+        }
+
+        if (inputState.IsKeyReleased(KeyCode.L))
+        {
+            LightIndex = (LightIndex + 1) % HardcodedLights.Length;
         }
 
         var commandList = graph.GetCommandList(pass.PassHandle);

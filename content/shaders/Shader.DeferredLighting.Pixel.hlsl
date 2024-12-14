@@ -1,13 +1,12 @@
 #include "Shader.DeferredLighting.hlsli"
 
-// float3 AmbientColorTEMP = float3(0.7, 0.7, 0.7);
-
 
 float3 CalculateBlinnPhongLighting(LightInstanceData light, float3 position, float3 normal, float3 albedo, float specularStrength)
 {
     float3 cameraPosition = GetCameraPosition();
 
-    float3 ambient = 0.1 * albedo;
+    float3 ambientLight = GetAmbientLight();
+    float3 ambient = ambientLight * albedo;
     float3 lightDirection = normalize(light.Position - position);
     float diff = max(dot(normal, lightDirection), 0.0);
     float3 diffuse = diff * light.Color * albedo;
