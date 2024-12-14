@@ -58,6 +58,7 @@ internal unsafe partial struct UISystem
     private Inline2<Ptr<UIElement>> ElementsGPU;
     private TitanArray<UIElement> ElementsCPU;
     private UIState State;
+    public bool Visible { get; private set; }
 
     public readonly Handle<GPUBuffer> GetInstanceHandle() => Instances[FrameIndex];
     public int FrameIndex;
@@ -120,7 +121,13 @@ internal unsafe partial struct UISystem
                 return;
             }
         }
+
+        uiSystem->Visible = true;
     }
+
+
+    public void SetVisibility(bool visible) 
+        => Visible = visible;
 
     [System(SystemStage.PreUpdate)]
     public static void PreUpdate(ref UISystem system)
@@ -143,9 +150,7 @@ internal unsafe partial struct UISystem
         //{
         //    system.State.ActiveId = InvalidId;
         //}
-
         MemoryUtils.Copy(system.ElementsGPU[system.FrameIndex].Get(), system.ElementsCPU.AsPointer(), (uint)sizeof(UIElement) * system.Count);
-
     }
 
     [System(SystemStage.Shutdown)]

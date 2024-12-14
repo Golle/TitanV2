@@ -22,8 +22,6 @@ internal unsafe partial struct UIRenderPass
     [System(SystemStage.Init)]
     public static void Init(UIRenderPass* renderPass, in RenderGraph graph, in D3D12ResourceManager resourceManager)
     {
-        Logger.Error<UIRenderPass>("init UI render pass");
-
         TitanArray<ushort> indexBuffer = stackalloc ushort[6];
         D3D12Helpers.InitSquareIndexBuffer(indexBuffer);
         renderPass->IndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<ushort>(indexBuffer.Length, BufferType.Index, indexBuffer.AsBuffer()));
@@ -82,12 +80,9 @@ internal unsafe partial struct UIRenderPass
         //NOTE(Jens): Maybe we need to rethink the way this is executed. 
         var commandList = graph.GetCommandList(pass.PassHandle);
 
-        if (ui.Count > 0)
+        if (ui is { Count: > 0, Visible: true })
         {
-            //commandList.SetIndexBuffer();
-            //TODO(Jens): replace this with DrawIndexedInstanced and use an index buffer
             commandList.DrawIndexedInstanced(6, ui.Count);
-            //commandList.Draw
         }
 
         graph.End(pass.PassHandle);
