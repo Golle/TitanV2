@@ -125,11 +125,6 @@ internal partial struct CameraSystem
 
         if (inputState.IsButtonDown(MouseButton.Right))
         {
-            if (inputState.MousePositionDelta.Y != 0)
-            {
-                Debugger.Break();
-                ;
-            }
             camera.Pitch -= inputState.MousePositionDelta.Y * mouseLookMultiplier;
             camera.Pitch = Math.Clamp(camera.Pitch, -Camera.PitchClampValue, Camera.PitchClampValue);
 
