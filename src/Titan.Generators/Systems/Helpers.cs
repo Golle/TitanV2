@@ -132,6 +132,14 @@ internal static class Helpers
                 {
                     builder.Add(new SystemParameter(TitanTypes.UIManager, ArgumentKind.UIManager, ModifierType.Value));
                 }
+                else if (typeName is TitanTypes.MaterialsManager)
+                {
+                    builder.Add(new SystemParameter(TitanTypes.MaterialsManager, ArgumentKind.MaterialsManager, ModifierType.Value));
+                }
+                else if (typeName is TitanTypes.MeshManager)
+                {
+                    builder.Add(new SystemParameter(TitanTypes.MeshManager, ArgumentKind.MeshManager, ModifierType.Value));
+                }
                 else if (typeName.StartsWith(TitanTypes.EventReader))
                 {
                     var eventType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();

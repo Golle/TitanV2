@@ -27,6 +27,11 @@ public readonly unsafe struct UIManager
         _assetsManager = assetsManager;
     }
 
+
+    public void HideUI() => SetUIVisibility(false);
+    public void ShowUI() => SetUIVisibility(true);
+    public void SetUIVisibility(bool visible) => _system->SetVisibility(visible);
+
     public void ProgressBar(in Vector2 position, in SizeF size, ref UIProgressBarState state, in UIProgressBarStyle style)
     {
         if (!_assetsManager.IsLoaded(style.AssetHandle))

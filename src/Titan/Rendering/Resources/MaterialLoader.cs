@@ -25,12 +25,12 @@ internal partial struct MaterialLoader
         throw new NotImplementedException();
     }
 
-    public void Shutdown(in AssetLoaderInitializer init)
+    public unsafe Material* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies)
     {
         throw new NotImplementedException();
     }
 
-    public unsafe Material* Load(in AssetDescriptor descriptor, TitanBuffer buffer, ReadOnlySpan<AssetDependency> dependencies)
+    public void Shutdown(in AssetLoaderInitializer init)
     {
         throw new NotImplementedException();
     }

@@ -12,7 +12,8 @@ namespace Titan.Rendering.Resources;
 [StructLayout(LayoutKind.Sequential, Size = 8)] // Force the size to 8 , or pool allocator will fail. Rework of Pool allocator planned.
 public partial struct TextureAsset
 {
-    public Handle<Texture> Handle;
+    internal Handle<Texture> Handle;
+    public static implicit operator Handle<Texture>(in TextureAsset asset) => asset.Handle;
 }
 
 [AssetLoader<TextureAsset>]
@@ -83,7 +84,12 @@ internal unsafe partial struct TextureLoader
 
     public bool Reload(TextureAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
     {
-        Logger.Warning<TextureAsset>("Reload not implemented");
+        if (!_resourceManager->Upload(asset->Handle, buffer))
+        {
+            Logger.Error<TextureAsset>("Failed to reload texture.");
+            return false;
+        }
+        
         return true;
     }
 }

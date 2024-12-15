@@ -9,6 +9,7 @@ using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Graphics.D3D12;
 using Titan.Input;
+using Titan.Platform.Win32;
 using Titan.Rendering;
 using Titan.Resources;
 using Titan.Systems;
@@ -52,13 +53,15 @@ internal unsafe partial struct UISystem
 {
     private const int InvalidId = -1;
 
-    public Handle<Rendering.Buffer> Instances;
-    public Handle<Rendering.Buffer> GlyphInstances;
+    private Inline2<Handle<GPUBuffer>> Instances;
     public uint Count;
-    private UIElement* ElementsGPU;
-
+    private Inline2<Ptr<UIElement>> ElementsGPU;
     private TitanArray<UIElement> ElementsCPU;
     private UIState State;
+    public bool Visible { get; private set; }
+
+    public readonly Handle<GPUBuffer> GetInstanceHandle() => Instances[FrameIndex];
+    public int FrameIndex;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsActive(int id)
@@ -92,8 +95,8 @@ internal unsafe partial struct UISystem
     [System(SystemStage.Init)]
     public static void Init(UISystem* uiSystem, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
+        Debug.Assert(GlobalConfiguration.MaxRenderFrames == 2, "Update UI to support more if needed.");
         var config = configurationManager.GetConfigOrDefault<UIConfig>();
-        var s = sizeof(UIElement) * config.MaxElements;
         // Allocate memory for CPU side
         if (!memoryManager.TryAllocArray(out uiSystem->ElementsCPU, config.MaxElements))
         {
@@ -102,37 +105,29 @@ internal unsafe partial struct UISystem
         }
 
         // Set up GPU resources
-        uiSystem->Instances = resourceManager.CreateBuffer(CreateBufferArgs.Create<UIElement>(1024, BufferType.Structured, cpuVisible: true, shaderVisible: true));
-        if (uiSystem->Instances.IsInvalid)
+        for (var i = 0; i < 2; ++i)
         {
-            Logger.Error<UISystem>("Failed to create a structured buffer for UI Elements.");
-            return;
+            uiSystem->Instances[i] = resourceManager.CreateBuffer(CreateBufferArgs.Create<UIElement>(config.MaxElements, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+            if (uiSystem->Instances[i].IsInvalid)
+            {
+                Logger.Error<UISystem>($"Failed to create a structured buffer for UI Elements. Index = {i}");
+                return;
+            }
+
+            var hr = resourceManager.Access(uiSystem->Instances[i])->Resource.Get()->Map(0, null, (void**)uiSystem->ElementsGPU[i].GetAddressOf());
+            if (FAILED(hr))
+            {
+                Logger.Error<UISystem>("Failed to Map the UI elements buffer.");
+                return;
+            }
         }
 
-        ////NOTE(Jens): Maybe this should be configurable? 
-        //const uint glyphcount = 10 * 256;
-        //uiSystem->GlyphInstances = resourceManager.CreateBuffer(CreateBufferArgs.Create<Glyph>(glyphcount, BufferType.Structured, cpuVisible: true, shaderVisible: true));
-        //if (uiSystem->GlyphInstances.IsInvalid)
-        //{
-        //    Logger.Error<UISystem>("Failed to create a structured buffer for Glyphs.");
-        //    return;
-        //}
-
-        // map the resources
-        var hr = resourceManager.Access(uiSystem->Instances)->Resource.Get()->Map(0, null, (void**)&uiSystem->ElementsGPU);
-        if (FAILED(hr))
-        {
-            Logger.Error<UISystem>("Failed to Map the UI elements buffer.");
-            return;
-        }
-
-        //hr = resourceManager.Access(uiSystem->GlyphInstances)->Resource.Get()->Map(0, null, (void**)&uiSystem->GlyphsGPU);
-        //if (FAILED(hr))
-        //{
-        //    Logger.Error<UISystem>("Failed to Map the Glyph instances buffer.");
-        //    return;
-        //}
+        uiSystem->Visible = true;
     }
+
+
+    public void SetVisibility(bool visible) 
+        => Visible = visible;
 
     [System(SystemStage.PreUpdate)]
     public static void PreUpdate(ref UISystem system)
@@ -140,6 +135,7 @@ internal unsafe partial struct UISystem
         system.Count = 0;
         system.State.NextId = 1;
         system.State.HighlightedId = InvalidId;
+        system.FrameIndex = (int)((system.FrameIndex + 1) % GlobalConfiguration.MaxRenderFrames);
         //system.State.ActiveId = -1;
     }
 
@@ -154,17 +150,18 @@ internal unsafe partial struct UISystem
         //{
         //    system.State.ActiveId = InvalidId;
         //}
-
-        MemoryUtils.Copy(system.ElementsGPU, system.ElementsCPU.AsPointer(), (uint)sizeof(UIElement) * system.Count);
+        MemoryUtils.Copy(system.ElementsGPU[system.FrameIndex].Get(), system.ElementsCPU.AsPointer(), (uint)sizeof(UIElement) * system.Count);
     }
 
     [System(SystemStage.Shutdown)]
     public static void Shutdown(UISystem* stuff, in D3D12ResourceManager resourceManager)
     {
-        if (stuff->Instances.IsValid)
+        foreach (var instance in stuff->Instances)
         {
-            Logger.Warning<UISystem>("cant shut down this..");
-            //resourceManager.DestroyBuffer(stuff->Instances);
+            if (instance.IsValid)
+            {
+                Logger.Warning<UISystem>("cant shut down this..");
+            }
         }
     }
 

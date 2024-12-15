@@ -1,5 +1,17 @@
 
+# Windowing
+    [X] Implement hide cursor
+    [X] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
+        [X] Add external function to detect this, so UI doesn't trigger hover effects for example.
+    [ ] Add bounds check for mouse clicks
 
+# Input
+    [X] Clear keystate on LostFocus
+
+    The current input system is tightly coupled to key presses. IsKeyDown etc. This is fine as a low level system, but if we ever want to have something that switches between "modes" this will be very hard to achieve in game code.
+    One example could be during dev, we want to use the development free look camera to freely look at the world. We'd need to check "is in free look mode" in game code to prevent keys from being recorded. 
+    [ ] Implement a base for the Input System where we can set actions that reacts on different key combinations. 
+    [ ] Disable this system when in Editor/Developer Mode.
 
 
 # UI 
@@ -25,7 +37,53 @@
 ## Improvements
     [ ] Add Font Scaling, right now the font is the same size as it's been printed to the spritesheet.
         [ ] SDF fonts, this is a stretch and a long term goal for crisp text.
+        [ ] Look into MSDF fonts as well, might be harder to generate but will yield a better result
+# Art/Debug UI
+    [ ] Create a base set of debug UI controls that can easily be used to create menues etc for an in-game editor.
+    [ ] Implement pre-loaded designes/styles used in Debug mode
 
+
+# Meshes
+## Mesh Storage
+    [ ] Implement a memory manager for meshes and their data
+    [ ] Add a FreeList for free chunks of GPU memory
+    [ ] Use different algorithms to support best fit or first fit
+    [ ] Synchronize allocations/frees. (lock, spinlock, interlocked)
+    [ ] Separate Static from Dynamic
+        [ ] Should we have direct CPU access to dynamic, and use upload queue for static? or use upload queue for both
+    [ ] Resource management (Constant buffers, vertex buffers and index buffers)
+        [ ] Dynamic resources, these requires updates every frame :|
+        [ ] Static resources, these are uploaded once
+
+# Materials
+    [X] Add Material support, initial version should just be dynamic. in other words, update every frame. Double buffered.
+    [ ] Additional Improvements
+        [ ] Static materials, uploaded at startup.
+        [ ] Partial Updates for materials. Batch material updates and only upload the parts that changed.
+        [ ] Shared buffer for everything, this requires using offsets between frames.
+
+# Rendering
+## Bugs
+    [ ] D3D12 Crashes, most likely due to some resources not being processed correctly, or in parallel when it's not supposed to.
+        [X] Figure out a way to get the D3D12 error/debug layer printed. (Similar to the messages in output window when debugger is attached)
+        [ ] Swapchain fails, returns none 0 HRESULT. Does not happen when debugger is attached.
+        [ ] CommandList.Close() fails. Does not happen when debugger is attached.
+
+## Resizing/Fullscreen ( sen TitanV1 for inspiration)
+    [ ] Add support for resizing and render pipeline re-creation
+    [ ] Add support for Fullscreen (Alt-Enter)
+
+## buffers
+    [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
+        [X] Add double buffering for buffers that are updated each frame
+        
+## Lighting
+    [ ] Use DrawIndexedInstanced to group lights into a single draw call
+    [ ] Use staging/per frame buffers for active lights
+
+
+## D3D12 Resources
+    [ ] We're using ComittedResource today, should we stick with that since we only allocate a single resource for meshes?
 
 # Asset Processor
 The asset processor is currently just a command line tool that will walk through all assets in a folder and put them into a single binary, based on some configuration in the metadata files.   
@@ -49,4 +107,7 @@ The long term goal is to have a hot reload system, that can detect changes and c
         - This is to support changing coordinates in a sprite sheet for example. 
 
 
+# Editor
 
+## Widgets
+    [ ] Add widget for Lights and other Entities, render them as squares in window space.

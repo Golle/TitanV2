@@ -9,12 +9,15 @@
 #define SpecularIndex 3
 
 
-struct LightDrawData 
+struct LightsVertexOutput 
 {
-    int LightIndex;
+    float4 Position : SV_POSITION;
+    float2 Texture : TEXCOORD0;
+    uint InstanceId : INSTANCE_ID;
 };
 
-struct Light 
+
+struct LightInstanceData
 {
     float3 Position;
     float3 Direction;
@@ -23,12 +26,23 @@ struct Light
     float2 _padding;
 };
 
-StructuredBuffer<Light> LightBuffer : register(t0, space0);
-ConstantBuffer<LightDrawData> PassData : register(b0, space0);
 
-Light GetCurrentLight() {
-    int index = PassData.LightIndex;
+struct DeferredLightingPassData {
+    float3 AmbientLight;
+};
+
+StructuredBuffer<LightInstanceData> LightBuffer : register(t0, space0);
+ConstantBuffer<DeferredLightingPassData> PassData : register(b0, space0);
+
+LightInstanceData GetLight(uint index) {
     return LightBuffer[index];
 }
+
+float3 GetAmbientLight()
+{
+    return PassData.AmbientLight;
+}
+
+
 
 #endif

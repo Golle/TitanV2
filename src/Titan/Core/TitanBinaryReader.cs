@@ -1,5 +1,6 @@
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Titan.Core;
 
@@ -21,6 +22,19 @@ public unsafe ref struct TitanBinaryReader(ReadOnlySpan<byte> buffer)
             _offset += size;
             return ref *data;
         }
+    }
+
+    public ReadOnlySpan<T> Read<T>(uint count) where T : unmanaged
+        => Read<T>((int)count);
+
+    public ReadOnlySpan<T> Read<T>(int count) where T : unmanaged
+    {
+        var length = sizeof(T) * count;
+        Debug.Assert(_offset + length <= _buffer.Length);
+        var span = _buffer.Slice(_offset, length);
+        _offset += length;
+        //NOTE(Jens): not sure of the overhead of this.
+        return MemoryMarshal.Cast<byte, T>(span);
     }
 
     public ReadOnlySpan<byte> Read(uint length)

@@ -9,7 +9,7 @@ public readonly unsafe struct EventReader<T> where T : unmanaged, IEvent
     {
         _state = state;
     }
-    
+
     public bool HasEvents => EventCount != 0;
     /// <summary>
     /// Returns the events in the event queue

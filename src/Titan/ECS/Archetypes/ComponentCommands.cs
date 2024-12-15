@@ -29,11 +29,11 @@ internal unsafe struct ComponentCommands
     private TitanArray<EntityCommand> _commands;
     private volatile int _commandCount;
 
-    public bool Init(IMemoryManager memoryManager, uint maxEntities, uint maxComponentsSize)
+    public bool Init(IMemoryManager memoryManager, uint maxCommands, uint maxComponentsSize)
     {
-        if (!memoryManager.TryAllocArray(out _commands, maxEntities))
+        if (!memoryManager.TryAllocArray(out _commands, maxCommands))
         {
-            Logger.Error<ComponentCommands>($"Failed to create the commands array. Max Entites = {maxEntities} Size = {maxEntities * sizeof(EntityCommand)} bytes");
+            Logger.Error<ComponentCommands>($"Failed to create the commands array. Max Entites = {maxCommands} Size = {maxCommands * sizeof(EntityCommand)} bytes");
             return false;
         }
 

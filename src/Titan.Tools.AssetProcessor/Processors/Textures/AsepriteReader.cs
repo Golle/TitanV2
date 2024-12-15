@@ -92,7 +92,8 @@ internal class AsepriteReader
             bottom.R = (byte)((1.0f - alpha) * bottom.R + alpha * top.R);
             bottom.G = (byte)((1.0f - alpha) * bottom.G + alpha * top.G);
             bottom.B = (byte)((1.0f - alpha) * bottom.B + alpha * top.B);
-            bottom.A = (byte)((1.0f - alpha) * bottom.A + alpha * top.A);
+            bottom.A = (byte)((1.0f - alpha) * bottom.A + top.A);
+
         }
 
         static void Decompress(Stream stream, ReadOnlySpan<byte> data)

@@ -6,6 +6,8 @@ namespace Titan.Core.Memory.Allocators;
 public unsafe struct BumpAllocator(byte* mem, uint allocatorSize) : IAllocator
 {
     private uint _offset;
+
+    public static BumpAllocator From(TitanBuffer buffer) => new(buffer.AsPointer(), buffer.Size);
     public static void* Alloc(void* allocator, uint size)
     {
         var bump = (BumpAllocator*)allocator;

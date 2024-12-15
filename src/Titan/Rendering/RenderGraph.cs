@@ -46,6 +46,8 @@ public ref struct CreateRenderPassArgs
     public AssetDescriptor PixelShader;
 
     public BlendStateType BlendState;
+    public CullMode CullMode;
+    public FillMode FillMode;
     //public AssetDescriptor ComputerShader;
 
     /// <summary>
@@ -88,11 +90,15 @@ internal unsafe partial struct RenderGraph
     private bool _isReady;
     private int _renderPassCount;
     private uint _groupCount;
+    private uint _frameIndex;
     public readonly bool IsReady => _isReady;
+    public readonly uint FrameIndex => _frameIndex;
 
     private Handle<Texture> _backbufferHandle;
-    private Handle<Buffer> _frameDataConstantBuffer;
+    private Handle<GPUBuffer> _frameDataConstantBuffer;
     private MappedGPUResource<FrameData> _frameDataGPU;
+
+
 
 
     [System(SystemStage.PreInit)]
@@ -153,6 +159,8 @@ internal unsafe partial struct RenderGraph
         pass->Outputs = _allocator.AllocateArray<Handle<Texture>>(args.Outputs.Length);
         pass->Inputs = _allocator.AllocateArray<Handle<Texture>>(args.Inputs.Length);
         pass->BlendState = args.BlendState;
+        pass->CullMode = args.CullMode;
+        pass->FillMode = args.FillMode;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
             pass->Outputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Outputs[i]);
@@ -198,6 +206,8 @@ internal unsafe partial struct RenderGraph
         pass->CommandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         pass->CommandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
         pass->CommandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
+        pass->CommandList.SetViewport(&pass->Viewport);
+        pass->CommandList.SetScissorRect(&pass->ScissorRect);
 
         //NOTE(Jens): A lot of stack allocs, do we need all of them? :O
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
@@ -294,8 +304,13 @@ internal unsafe partial struct RenderGraph
     }
 
     [System(SystemStage.First)]
-    public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain)
+    public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window)
     {
+#if TRIPLE_BUFFERING
+        graph._frameIndex = (graph._frameIndex + 1) % GlobalConfiguration.MaxRenderFrames; 
+#else
+        graph._frameIndex = (graph._frameIndex + 1) & 0x1;
+#endif
         if (graph._isReady)
         {
             return;
@@ -311,10 +326,35 @@ internal unsafe partial struct RenderGraph
             Logger.Error<RenderGraph>("Failed to create the pipeline states. this is FATAL, no recovering..");
             return;
         }
+
+        graph.SetDefaultViewPorts(window);
         graph.SortRenderGraph();
 
         graph._isReady = true;
         graph._backbufferHandle = swapchain.CurrentBackbuffer;
+    }
+
+    private void SetDefaultViewPorts(in Window window)
+    {
+        foreach (ref var pass in _renderPasses.AsSpan().Slice(0, _renderPassCount))
+        {
+            pass.Viewport = new()
+            {
+                Width = window.Width,
+                Height = window.Height,
+                MaxDepth = 1.0f,
+                MinDepth = 0.0f,
+                TopLeftX = 0,
+                TopLeftY = 0,
+            };
+            pass.ScissorRect = new()
+            {
+                Bottom = window.Height,
+                Right = window.Width,
+                Top = 0,
+                Left = 0
+            };
+        }
     }
 
 
@@ -327,11 +367,11 @@ internal unsafe partial struct RenderGraph
         }
 
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
-        graph._frameDataGPU.Write(new FrameData
+        graph._frameDataGPU.WriteSingle(new FrameData
         {
             ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
             CameraPosition = cameraSystem.DefaultCamera.Position,
-            WindowHeight =  (uint)window.Height,
+            WindowHeight = (uint)window.Height,
             WindowWidth = (uint)window.Width
         });
 
@@ -381,7 +421,9 @@ internal unsafe partial struct RenderGraph
                 RootSignature = pass.RootSignature,
                 VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
                 PixelShader = _assetsManager.Get(pass.PixelShader).ShaderByteCode,
-                Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+                Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+                CullMode = pass.CullMode,
+                FillMode = pass.FillMode
             });
             if (pass.PipelineState.IsInvalid)
             {

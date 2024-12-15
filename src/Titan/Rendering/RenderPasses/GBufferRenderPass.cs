@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
@@ -8,9 +7,10 @@ using Titan.Core.Memory;
 using Titan.ECS.Components;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
+using Titan.Materials;
+using Titan.Meshes;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
-using Titan.Rendering.Storage;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
@@ -18,16 +18,37 @@ using static Titan.Assets.EngineAssetsRegistry.Shaders;
 
 namespace Titan.Rendering.RenderPasses;
 
+/// <summary>
+/// This is stored on the GPU, have to be 16 byte aligned.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct MeshInstanceData
+{
+    public Matrix4x4 ModelMatrix;
+    public int MaterialIndex;
+    private unsafe fixed float _padding[3];
+}
 
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
 {
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
+    private const uint VertexBufferIndex = PassDataIndex + 1;
+    private const uint IndexBufferIndex = VertexBufferIndex + 1;
+    private const uint MeshInstanceIndex = IndexBufferIndex + 1;
+    private const uint MaterialsInstanceIndex = MeshInstanceIndex + 1;
+
+    private uint MeshInstances;
+    private TitanArray<MeshInstanceData> StagingBuffer;
+    private Inline2<Handle<GPUBuffer>> MeshInstancesHandles;
+    private Inline2<MappedGPUResource<MeshInstanceData>> GPUMeshIntances;
 
     [System(SystemStage.Init)]
-    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, IMemoryManager memoryManager)
+    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager)
     {
+        const uint MaxStagedMeshes = 20 * 1024;
+
         var passArgs = new CreateRenderPassArgs
         {
             RootSignatureBuilder = static builder => builder
@@ -35,8 +56,11 @@ internal unsafe partial struct GBufferRenderPass
                 .WithDecriptorRange(1, space: 0) // Vertex buffer
                 .WithDecriptorRange(1, space: 1) // IndexBuffer
                 .WithDecriptorRange(1, space: 2) // MeshInstance
+                .WithDecriptorRange(1, space: 3) // MaterialsInstance
             ,
             BlendState = BlendStateType.AlphaBlend, //NOTE(Jens): maybe it should be disabled?
+            CullMode = CullMode.Back,
+            FillMode = FillMode.Solid,
             Outputs =
             [
                 BuiltInRenderTargets.GBufferPosition,
@@ -52,6 +76,29 @@ internal unsafe partial struct GBufferRenderPass
         };
 
         renderPass->PassHandle = renderGraph.CreatePass("GBuffer", passArgs);
+
+        if (!memoryManager.TryAllocArray(out renderPass->StagingBuffer, MaxStagedMeshes))
+        {
+            Logger.Error<GBufferRenderPass>("Failed to allocate memory for the staging buffer.");
+            return;
+        }
+
+        for (var i = 0; i < GlobalConfiguration.MaxRenderFrames; ++i)
+        {
+            renderPass->MeshInstancesHandles[i] = resourceManager.CreateBuffer(CreateBufferArgs.Create<MeshInstanceData>(MaxStagedMeshes, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+            if (renderPass->MeshInstancesHandles[i].IsInvalid)
+            {
+                Logger.Error<GBufferRenderPass>("Failed to allocate the Instance Buffer");
+                return;
+            }
+            if (!resourceManager.TryMapBuffer(renderPass->MeshInstancesHandles[i], out renderPass->GPUMeshIntances[i]))
+            {
+                Logger.Error<GBufferRenderPass>("Failed to map the Instance Buffer");
+                return;
+            }
+        }
+
+        renderPass->MeshInstances = 0;
     }
 
     private static void ClearFunction(ReadOnlySpan<Ptr<Texture>> renderTargets, TitanOptional<Texture> depthBuffer, in CommandList commandList)
@@ -69,49 +116,31 @@ internal unsafe partial struct GBufferRenderPass
 
 
     [System(SystemStage.PreUpdate)]
-    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshStorage meshStorage, in D3D12ResourceManager resourceManager)
+    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshSystem meshSystem, in MaterialsSystem materialsSystem, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
             return;
         }
 
-        commandList.SetIndexBuffer(resourceManager.Access(meshStorage.IndexBufferHandle)); // remove when we support indexing into the index buffer inside the shader.
+        pass->MeshInstances = 0;
 
-        var vertexBufferIndex = resourceManager.Access(meshStorage.VertexBufferHandle)->SRV.GPU;
-        var meshInstanceIndex = resourceManager.Access(meshStorage.MeshInstancesHandle)->SRV.GPU;
-        //var indexBufferIndex = resourceManager.Access(meshStorage.IndexBufferHandle)->SRV.GPU;
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 1, vertexBufferIndex);
-        //commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 2, indexBufferIndex);
-        commandList.SetGraphicsRootDescriptorTable(PassDataIndex + 3, meshInstanceIndex);
+        var meshBuffer = resourceManager.Access(pass->MeshInstancesHandles[graph.FrameIndex]);
+        var materialBuffer = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle(graph.FrameIndex));
+        var indexBuffer = resourceManager.Access(meshSystem.GetIndexBufferHandle());
+        var vertexBuffer = resourceManager.Access(meshSystem.GetVertexBufferHandle());
 
-        //NOTE(Jens): Not sure what to do with these. 
-        D3D12_VIEWPORT viewPort = new()
-        {
-            Height = window.Height,
-            Width = window.Width,
-            MaxDepth = 1.0f,
-            MinDepth = 0,
-            TopLeftX = 0,
-            TopLeftY = 0
-        };
-
-        D3D12_RECT rect = new()
-        {
-            Bottom = window.Height,
-            Right = window.Width,
-            Left = 0,
-            Top = 0
-        };
-        commandList.SetScissorRect(&rect);
-        commandList.SetViewport(&viewPort);
+        commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
+        commandList.SetGraphicsRootDescriptorTable(VertexBufferIndex, vertexBuffer);
+        commandList.SetGraphicsRootDescriptorTable(MeshInstanceIndex, meshBuffer);
+        commandList.SetGraphicsRootDescriptorTable(MaterialsInstanceIndex, materialBuffer);
     }
 
     /// <summary>
     /// Renders the meshes. This function will be called multiple times depending on the archetypes
     /// </summary>
     [System]
-    public static void RenderMeshes(GBufferRenderPass* pass, ReadOnlySpan<Mesh> meshes, ReadOnlySpan<Transform3D> transform, in AssetsManager assetsManager, in MeshStorage storage, in RenderGraph graph, in D3D12ResourceManager resourceManager)
+    public static void RenderMeshes(GBufferRenderPass* pass, ReadOnlySpan<Mesh> meshes, in MeshSystem meshSystem, ReadOnlySpan<Transform3D> transforms, in AssetsManager assetsManager, in RenderGraph graph, in D3D12ResourceManager resourceManager)
     {
         if (!graph.IsReady)
         {
@@ -119,33 +148,37 @@ internal unsafe partial struct GBufferRenderPass
         }
 
         var commandList = graph.GetCommandList(pass->PassHandle);
+
         var count = meshes.Length;
         for (var i = 0; i < count; ++i)
         {
             ref readonly var mesh = ref meshes[i];
-            Debug.Assert(mesh.InstanceIndex.IsValid, "Unexpected order of initializing the instance handle.. Fix!");
-            if (mesh.MeshData == null)
+            ref readonly var transform = ref transforms[i];
+
+            //TODO(Jens): Add frustrum culling
+
+            var meshData = meshSystem.Access(mesh.MeshIndex);
+            var meshInstanceIndex = pass->MeshInstances++;
+            ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
+            meshInstanceData.MaterialIndex = mesh.MaterialIndex;
+
+            //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
+            //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
+            meshInstanceData.ModelMatrix = Matrix4x4.Transpose(Matrix4x4.CreateScale(transform.Scale) *
+                                           Matrix4x4.CreateFromQuaternion(transform.Rotation) *
+                                           Matrix4x4.CreateTranslation(transform.Position)
+                                           )
+                                           ;
+
+            //TODO: Implement GPU instancing
+
+            commandList.SetGraphicsRootConstant(PassDataIndex, meshInstanceIndex);
+            for (var index = 0; index < meshData->SubMeshCount; ++index)
             {
-                continue;
+                ref readonly var submesh = ref meshData->SubMeshes[index];
+                commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.IndexStartLocation, 0);
             }
 
-            if (!assetsManager.IsLoaded(mesh.TextureAsset))
-            {
-                continue;
-            }
-
-            var textureIndex = resourceManager.Access(assetsManager.Get(mesh.TextureAsset).Handle)->SRV.Index;
-            storage.UpdateMeshInstance(mesh.InstanceIndex, new MeshInstance
-            {
-                AlbedoIndex = textureIndex, // todo: we need a material system for this to work.
-                ModelMatrix = Matrix4x4.Identity
-            });
-
-            commandList.SetGraphicsRootConstant(PassDataIndex, mesh.InstanceIndex.Value);
-            foreach (ref readonly var submesh in mesh.MeshData->Submeshes.AsReadOnlySpan())
-            {
-                commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, 0);
-            }
         }
     }
 
@@ -155,6 +188,8 @@ internal unsafe partial struct GBufferRenderPass
     [System]
     public static void EndPass(in GBufferRenderPass pass, in RenderGraph graph)
     {
+        pass.GPUMeshIntances[graph.FrameIndex].Write(pass.StagingBuffer.Slice(0, pass.MeshInstances));
+
         graph.End(pass.PassHandle);
     }
 
@@ -164,12 +199,6 @@ internal unsafe partial struct GBufferRenderPass
         Logger.Warning<GBufferRenderPass>("Shutdown has not been implemented");
         graph.DestroyPass(pass->PassHandle);
         pass->PassHandle = Handle<RenderPass>.Invalid;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    private struct GBufferPassData
-    {
-        public int MeshIndex;
     }
 }
 

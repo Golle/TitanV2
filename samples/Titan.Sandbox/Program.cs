@@ -12,6 +12,8 @@ using Titan.Core.Memory;
 using Titan.ECS;
 using Titan.ECS.Components;
 using Titan.Input;
+using Titan.Materials;
+using Titan.Meshes;
 using Titan.Rendering;
 using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
@@ -34,6 +36,11 @@ var appConfig = new AppConfig("Titan.Sandbox", "0.0.1")
 
 App.Create(appConfig)
     .AddModule<GameModule>()
+    //.AddConfig(ECSConfig.Default with
+    //{
+    //    MaxEntities = 1_000_000,
+    //    MaxCommands = 1_000_000
+    //})
     .AddPersistedConfig(new WindowConfig(1920, 1080, true, true))
     .AddPersistedConfig(new RenderingConfig
     {
@@ -52,6 +59,9 @@ App.Create(appConfig)
 
 namespace Titan.Sandbox
 {
+
+    [Component]
+    public partial struct Selected { }
     internal class GameModule : IModule
     {
         public static bool Build(IAppBuilder builder, AppConfig config)
@@ -72,23 +82,28 @@ namespace Titan.Sandbox
         private Entity _entity;
         private bool _done;
 
+        private AssetHandle<TextureAsset> BookTexture;
+        private AssetHandle<MeshAsset> BookMesh;
+
+        [System(SystemStage.Init)]
+        public static void LoadResources(ref EntityTestSystem system, AssetsManager assetsManager)
+        {
+            system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
+            system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
+        }
+
         [System]
         public static void TransformFunction(in EntityTestSystem sys, ReadOnlySpan<Entity> entities, Span<Transform3D> transforms, ReadOnlySpan<TransformRect> rects, IMemoryManager memoryManager, in EntityManager entityManager)
         {
             foreach (ref var transform in transforms)
             {
-                transform.Position += Vector3.One * 0.1f;
+                //transform.Position += Vector3.One * 0.1f;
             }
         }
 
-        public static void DrawText(in D3D12TextRenderer renderer)
-        {
-            renderer.DrawText(Vector2.Zero, "This is my text"u8);
-        }
-
         [System]
-        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager) => sys.InstanceMethod(entityManager, assetsManager);
-        private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager)
+        public static void RunMe(ref EntityTestSystem sys, in EntityManager entityManager, AssetsManager assetsManager, MaterialsManager materialsManager, MeshManager meshManager) => sys.InstanceMethod(entityManager, assetsManager, materialsManager, meshManager);
+        private void InstanceMethod(in EntityManager entityManager, AssetsManager assetsManager, in MaterialsManager materialsManager, in MeshManager meshManager)
         {
             if (_done)
             {
@@ -99,28 +114,56 @@ namespace Titan.Sandbox
             {
                 //entityManager.DestroyEntity(_entity);
                 //entityManager.RemoveComponent<TransformRect>(_entity);
-                _entity = default;
+                //_entity = default;
                 _done = true;
             }
-            else
+            else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookTexture))
             {
                 _entity = entityManager.CreateEntity();
-                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.Zero));
+                entityManager.AddComponent(_entity, Transform3D.Create(Vector3.UnitZ * 10 + Vector3.UnitY * -3));
                 entityManager.AddComponent<TransformRect>(_entity);
+
+                var bookMaterial = materialsManager.CreateMaterial(new()
+                {
+                    Color = Color.White,
+                    AlbedoTexture = assetsManager.Get(BookTexture)
+                });
                 entityManager.AddComponent(_entity, new Mesh
                 {
-                    Asset = assetsManager.Load<MeshAsset>(Meshes.Book),
-                    TextureAsset = assetsManager.Load<TextureAsset>(Textures.BookTexture),
+                    //TODO(Jens): Replace this mesh thing with a Create mesh
+                    MeshIndex = assetsManager.Get(BookMesh),
+                    MaterialIndex = bookMaterial
                 });
+
+
+                for (var z = 0; z < 5; ++z)
+                    for (var j = 0; j < 5; ++j)
+                        for (var i = 0; i < 5; ++i)
+                        {
+                            var ent = entityManager.CreateEntity();
+
+                            entityManager.AddComponent(ent, new Selected());
+                            entityManager.AddComponent(ent, Transform3D.Create(Vector3.UnitZ * 10 * (j + 1) + Vector3.UnitY * 10 * (z + 1) + Vector3.UnitX * 10 * (i + 1)));
+
+                            entityManager.AddComponent(ent, new Mesh
+                            {
+                                //TODO(Jens): Replace this mesh thing with a Create mesh
+                                MeshIndex = assetsManager.Get(BookMesh),
+                                MaterialIndex = bookMaterial
+                            });
+                        }
+
+                entityManager.AddComponent(_entity, new Selected());
 
                 {
                     var lightEntity = entityManager.CreateEntity();
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitY * 10));
-                    entityManager.AddComponent(lightEntity, new Light()
+                    entityManager.AddComponent(lightEntity, new Light
                     {
+                        Active = true,
                         Color = Color.White,
                         Direction = -Vector3.UnitY,
-                        Intensity = 100f,
+                        Intensity = 0,
                         Radius = 100f,
                         LightType = LightType.Point
                     });
@@ -131,9 +174,10 @@ namespace Titan.Sandbox
                     entityManager.AddComponent(lightEntity, Transform3D.Create(Vector3.UnitZ * 10));
                     entityManager.AddComponent(lightEntity, new Light()
                     {
+                        Active = true,
                         Color = new ColorRGB(0.4f, 0.8f, 1f),
                         Direction = -Vector3.UnitY,
-                        Intensity = 100f,
+                        Intensity = 0,
                         Radius = 100f,
                         LightType = LightType.Point
                     });
@@ -155,7 +199,9 @@ namespace Titan.Sandbox
         private static UITextBoxStyle _textboxStyle;
         private static UICheckboxStyle _checkboxStyle;
 
-        private static UISliderState _slider;
+        private static UISliderState _slider = new() { Value = 0.5f };
+        private static UISliderState _slider2;
+        private static UISliderState _slider3;
         private static UISliderStyle _sliderStyle;
 
         private static UIRadioState _radio;
@@ -180,6 +226,8 @@ namespace Titan.Sandbox
         public static Inline3<UIID> RadioIds;
         public static UIID SelectBoxID = UIID.Create();
         public static UIID SliderID = UIID.Create();
+        public static UIID SliderID2 = UIID.Create();
+        public static UIID SliderID3 = UIID.Create();
         private static bool _playing = false;
 
         [System(SystemStage.Init)]
@@ -330,6 +378,8 @@ namespace Titan.Sandbox
 
 
                 ui.Slider(SliderID, new(20, 120), new(200, 36), ref _slider, _sliderStyle);
+                ui.Slider(SliderID2, new(20, 220), new(200, 36), ref _slider2, _sliderStyle);
+                ui.Slider(SliderID3, new(20, 320), new(200, 36), ref _slider3, _sliderStyle);
 
 
                 int min = 43;
@@ -374,6 +424,26 @@ namespace Titan.Sandbox
             }
         }
 
+        [System]
+        public static void UpdateScale(ReadOnlySpan<Selected> _, Span<Transform3D> transforms)
+        {
+            var scale = _slider.Value;
+            foreach (ref var transform in transforms)
+            {
+                transform.Scale = Vector3.One * scale;
+                transform.Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 2 * MathF.PI * _slider2.Value);
+            }
+        }
+
+        [System]
+        public static void UpdateLights(Span<Light> lights)
+        {
+            for (var i = 0; i < lights.Length; ++i)
+            {
+                lights[i].Active = _checkboxStates[i];
+                lights[i].Color.R = _slider3.Value;
+            }
+        }
 
     }
     internal partial struct TheGameLightSystem

@@ -1,10 +1,9 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Maths;
-using Titan.Rendering.Resources;
-using Titan.Rendering.Storage;
+using Titan.Materials;
+using Titan.Meshes;
 
 namespace Titan.ECS.Components;
 
@@ -28,12 +27,17 @@ public partial struct Transform3D
 [Component]
 public partial struct Mesh
 {
-    public AssetHandle<MeshAsset> Asset;
-    public AssetHandle<TextureAsset> TextureAsset;
-    public Handle<MeshInstance> InstanceIndex;
-    public Matrix4x4 ModelMatrix;
+    public Handle<MaterialData> MaterialIndex;
+    public Handle<MeshData> MeshIndex;
 
-    internal unsafe MeshData* MeshData;
+    //TODO(Jens): For static meshes this can be calculated in the asset pipeline
+    public AABB BoundingBox;
+}
+
+public struct AABB
+{
+    public Vector3 Min;
+    public Vector3 Max;
 }
 
 [Component]
@@ -44,6 +48,8 @@ public partial struct Light
     public LightType LightType;
     [FieldOffset(1)]
     internal short LightIndex;
+    [FieldOffset(3)]
+    public bool Active;
     [FieldOffset(4)]
     public ColorRGB Color;
     [FieldOffset(16)]

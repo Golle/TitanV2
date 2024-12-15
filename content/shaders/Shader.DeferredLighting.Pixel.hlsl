@@ -1,14 +1,12 @@
 #include "Shader.DeferredLighting.hlsli"
 
-// float3 AmbientColorTEMP = float3(0.7, 0.7, 0.7);
 
-
-float3 CalculateBlinnPhongLighting(float3 position, float3 normal, float3 albedo, float specularStrength)
+float3 CalculateBlinnPhongLighting(LightInstanceData light, float3 position, float3 normal, float3 albedo, float specularStrength)
 {
-    Light light = GetCurrentLight();
     float3 cameraPosition = GetCameraPosition();
 
-    float3 ambient = 0.1 * albedo;
+    float3 ambientLight = GetAmbientLight();
+    float3 ambient = ambientLight * albedo;
     float3 lightDirection = normalize(light.Position - position);
     float diff = max(dot(normal, lightDirection), 0.0);
     float3 diffuse = diff * light.Color * albedo;
@@ -21,7 +19,7 @@ float3 CalculateBlinnPhongLighting(float3 position, float3 normal, float3 albedo
 }
 
 
-float4 main(FullScreenVertexOutput input): SV_TARGET0
+float4 main(LightsVertexOutput input): SV_TARGET0
 {
     Texture2D gPosition = GetInputTexture(PositionIndex);
     Texture2D gAlbedo = GetInputTexture(AlbedoIndex);
@@ -33,7 +31,8 @@ float4 main(FullScreenVertexOutput input): SV_TARGET0
     float4 albedo  = gAlbedo.Sample(PointSampler, input.Texture);
     float3 albedoColor = albedo.rgb;
 
-    float3 lighting = CalculateBlinnPhongLighting(position, normal, albedoColor, albedo.a);
+    LightInstanceData light = GetLight(input.InstanceId);
+    float3 lighting = CalculateBlinnPhongLighting(light, position, normal, albedoColor, albedo.a);
 
     return float4(lighting, 1.0);
 }

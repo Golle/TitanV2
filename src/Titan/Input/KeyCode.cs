@@ -109,7 +109,9 @@ public enum KeyCode : byte
     F24 = 0x87,
     Numlock = 0x90,
     ScrollLock = 0x91,
+    [Obsolete("Use Shift instead of Left/Right Shift. We don't support this yet.")]
     LeftShift = 0xA0,
+    [Obsolete("Use Shift instead of Left/Right Shift. We don't support this yet.")]
     RightShift = 0xA1,
     LeftControl = 0xA2,
     RightContol = 0xA3,

@@ -12,7 +12,7 @@ internal sealed class D3D12GraphicsModule : IModule
     {
         builder
 #if DEBUG
-            .AddSystemsAndResource<D3D12DebugLayer>()
+            .AddSystems<D3D12DebugLayer>()
 #endif
             .AddSystemsAndResource<D3D12Adapter>()
             .AddSystemsAndResource<D3D12Device>()

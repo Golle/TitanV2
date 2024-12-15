@@ -108,7 +108,11 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     {
         Debug.Assert(commandList != null);
         var hr = commandList->Close();
-        Debug.Assert(Win32Common.SUCCEEDED(hr), "Failed to Close the command list.");
+        if (Win32Common.FAILED(hr))
+        {
+            Debugger.Launch();
+        }
+        //Debug.Assert(Win32Common.SUCCEEDED(hr), "Failed to Close the command list.");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,23 +120,31 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->RSSetViewports(1, viewport);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetScissorRect(Rect* rects, uint count = 1)
+        => commandList->RSSetScissorRects(count, (D3D12_RECT*)rects);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetViewport(Viewport* viewports, uint count = 1)
+        => commandList->RSSetViewports(count, (D3D12_VIEWPORT*)viewports);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetScissorRect(D3D12_RECT* rect)
         => commandList->RSSetScissorRects(1, rect);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void DrawIndexedInstanced(uint indexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, int baseVertexLocation = 0, uint startInstanceLocation = 0)
+    public void DrawIndexedInstanced(uint indexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, int baseVertexLocation = 0, uint startInstanceLocation = 0) 
         => commandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startIndexLocation = 0, uint startInstanceLocation = 0)
-        => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startIndexLocation, startInstanceLocation);
+    public void DrawInstanced(uint vertexCountPerInstance, uint instanceCount, uint startVertexLocation = 0, uint startInstanceLocation = 0) 
+        => commandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(Buffer* buffer)
+    public void SetIndexBuffer(GPUBuffer* buffer) 
         => SetIndexBuffer(*buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(in Buffer buffer)
+    public void SetIndexBuffer(in GPUBuffer buffer)
     {
         Debug.Assert(buffer.Type is BufferType.Index);
         var view = new D3D12_INDEX_BUFFER_VIEW
@@ -145,38 +157,50 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW view)
+    public void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW view) 
         => commandList->IASetIndexBuffer(&view);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootSignature(ID3D12RootSignature* rootSignature)
+    public void SetGraphicsRootSignature(ID3D12RootSignature* rootSignature) 
         => commandList->SetGraphicsRootSignature(rootSignature);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetTopology(D3D_PRIMITIVE_TOPOLOGY type)
+    public void SetTopology(D3D_PRIMITIVE_TOPOLOGY type) 
         => commandList->IASetPrimitiveTopology(type);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetDescriptorHeap(ID3D12DescriptorHeap* heap)
+    public void SetDescriptorHeap(ID3D12DescriptorHeap* heap) 
         => SetDescriptorHeaps(1, &heap);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetDescriptorHeaps(uint count, ID3D12DescriptorHeap** heaps)
+    public void SetDescriptorHeaps(uint count, ID3D12DescriptorHeap** heaps) 
         => commandList->SetDescriptorHeaps(count, heaps);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootDescriptorTable(uint index, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
-        => commandList->SetGraphicsRootDescriptorTable(index, baseDescriptor);
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, GPUBuffer* buffer)
+        => SetGraphicsRootDescriptorTable(rootParameterIndex, *buffer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, Buffer* buffer)
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, in GPUBuffer buffer)
+    {
+        Debug.Assert(buffer.SRV.IsValid);
+        Debug.Assert(buffer.SRV.IsShaderVisible);
+        commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, buffer.SRV.GPU);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor) 
+        => commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, baseDescriptor);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetGraphicsRootConstantBuffer(uint rootParameterIndex, GPUBuffer* buffer)
     {
         Debug.Assert(buffer != null);
         Debug.Assert(buffer->SRV.IsValid);
         commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, buffer->Resource.Get()->GetGPUVirtualAddress());
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootConstantBufferView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
+    public void SetGraphicsRootConstantBufferView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation) 
         => commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -195,18 +219,17 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         commandList->SetGraphicsRoot32BitConstants(index, (uint)(sizeof(T) / 4u), MemoryUtils.AsPointer(value), 0);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetGraphicsRootShaderResourceView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
+    public void SetGraphicsRootShaderResourceView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation) 
         => commandList->SetGraphicsRootShaderResourceView(rootParameterIndex, bufferLocation);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
+    public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects) 
         => commandList->ClearDepthStencilView(depthStencilView, flags, depth, stencil, numberOfRects, rects);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(Texture* depthBuffer, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
     {
         Debug.Assert(depthBuffer != null);
-
         commandList->ClearDepthStencilView(depthBuffer->DSV.CPU, flags, depth, stencil, numberOfRects, rects);
     }
 }

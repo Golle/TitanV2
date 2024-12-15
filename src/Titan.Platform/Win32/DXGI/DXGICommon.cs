@@ -21,12 +21,18 @@ public static unsafe partial class DXGICommon
         void** ppFactory
     );
 
-    
-    
     [LibraryImport(DebugDllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     public static partial HRESULT DXGIGetDebugInterface(
         Guid* riid,
         void** ppDebug
+    );
+
+    [LibraryImport(DebugDllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial HRESULT DXGIGetDebugInterface1(
+        uint Flags,
+        Guid* riid,
+        void** pDebug
     );
 }

@@ -5,7 +5,6 @@ using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Utils;
 using Titan.Platform.Win32;
-using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.UI;
@@ -17,14 +16,12 @@ namespace Titan.Rendering.RenderPasses;
 internal unsafe partial struct UIRenderPass
 {
     private Handle<RenderPass> PassHandle;
-    private Handle<Buffer> IndexBuffer;
+    private Handle<GPUBuffer> IndexBuffer;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
 
     [System(SystemStage.Init)]
     public static void Init(UIRenderPass* renderPass, in RenderGraph graph, in D3D12ResourceManager resourceManager)
     {
-        Logger.Error<UIRenderPass>("init UI render pass");
-
         TitanArray<ushort> indexBuffer = stackalloc ushort[6];
         D3D12Helpers.InitSquareIndexBuffer(indexBuffer);
         renderPass->IndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<ushort>(indexBuffer.Length, BufferType.Index, indexBuffer.AsBuffer()));
@@ -37,6 +34,7 @@ internal unsafe partial struct UIRenderPass
         var args = new CreateRenderPassArgs
         {
             BlendState = BlendStateType.AlphaBlend,
+            CullMode = CullMode.Back,
             ClearFunction = &Clear,
             DepthBuffer = null,
             Inputs = [],
@@ -60,28 +58,8 @@ internal unsafe partial struct UIRenderPass
             return;
         }
 
-        D3D12_VIEWPORT viewPort = new()
-        {
-            Height = window.Height,
-            Width = window.Width,
-            MaxDepth = 1.0f,
-            MinDepth = 0,
-            TopLeftX = 0,
-            TopLeftY = 0
-        };
-
-        D3D12_RECT rect = new()
-        {
-            Bottom = window.Height,
-            Right = window.Width,
-            Left = 0,
-            Top = 0
-        };
-        commandList.SetScissorRect(&rect);
-        commandList.SetViewport(&viewPort);
-
         //NOTE(Jens): We can cache these in the UI system.
-        var elementsIndex = resourceManager.Access(system.Instances)->SRV.GPU;
+        var elementsIndex = resourceManager.Access(system.GetInstanceHandle())->SRV.GPU;
         //var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
         var indexBuffer = resourceManager.Access(pass.IndexBuffer);
 
@@ -102,12 +80,9 @@ internal unsafe partial struct UIRenderPass
         //NOTE(Jens): Maybe we need to rethink the way this is executed. 
         var commandList = graph.GetCommandList(pass.PassHandle);
 
-        if (ui.Count > 0)
+        if (ui is { Count: > 0, Visible: true })
         {
-            //commandList.SetIndexBuffer();
-            //TODO(Jens): replace this with DrawIndexedInstanced and use an index buffer
             commandList.DrawIndexedInstanced(6, ui.Count);
-            //commandList.Draw
         }
 
         graph.End(pass.PassHandle);

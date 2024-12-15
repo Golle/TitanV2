@@ -5,15 +5,22 @@ namespace Titan.Windows.Win32;
 
 internal readonly unsafe struct WindowFunctions(
     delegate*<nuint, Point> getRelativeCursorPosition,
+    delegate*<Point> getAbsoluteCursorPosition,
+    delegate*<nuint, Point, void> setCursorPosition,
     delegate*<MouseButton, bool> isButtonDown,
     delegate*<nuint, char*, bool> setTitle,
     delegate*<nuint, void> close,
-    delegate*<nuint, ref bool, void> toggleTopMost
+    delegate*<nuint, ref bool, void> toggleTopMost,
+    delegate*<nuint, bool, void> showCursor
 )
 {
     public readonly delegate*<nuint, Point> GetRelativeCursorPosition = getRelativeCursorPosition;
+    public readonly delegate*<Point> GetAbsoluteCursorPosition = getAbsoluteCursorPosition;
+    public readonly delegate*<nuint, Point, void> SetCursorPosition = setCursorPosition;
     public readonly delegate*<MouseButton, bool> IsButtonDown = isButtonDown;
     public readonly delegate*<nuint, char*, bool> SetTitle = setTitle;
     public readonly delegate*<nuint, void> Close = close;
     public readonly delegate*<nuint, ref bool, void> ToggleTopMost = toggleTopMost;
+    public readonly delegate*<nuint, bool, void> ShowCursor = showCursor;
+
 }

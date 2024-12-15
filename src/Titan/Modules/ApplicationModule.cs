@@ -2,6 +2,8 @@ using Titan.Application;
 using Titan.Audio;
 using Titan.Core.Logging;
 using Titan.Input;
+using Titan.Materials;
+using Titan.Meshes;
 using Titan.Rendering;
 using Titan.UI;
 using Titan.Windows;
@@ -18,6 +20,8 @@ public class ApplicationModule : IModule
             builder
                 .AddModule<WindowModule>()
                 .AddModule<RenderingModule>()
+                .AddModule<MaterialsModule>()
+                .AddModule<MeshModule>()
                 .AddModule<UIModule>()
                 .AddModule<InputModule>()
                 .AddModule<AudioModule>()

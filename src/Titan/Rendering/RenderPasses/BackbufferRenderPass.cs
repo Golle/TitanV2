@@ -1,11 +1,9 @@
-using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
-using Titan.Platform.Win32.D3D12;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.Windows;
@@ -26,6 +24,7 @@ internal unsafe partial struct BackbufferRenderPass
         {
             RootSignatureBuilder = static builder => builder.WithRootConstant<uint>(register: 1, space: 7),
             BlendState = BlendStateType.AlphaBlend,
+            CullMode = CullMode.Back,
             Inputs = [BuiltInRenderTargets.DeferredLighting, BuiltInRenderTargets.UI],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = ShaderFullscreenPixel,
@@ -45,27 +44,6 @@ internal unsafe partial struct BackbufferRenderPass
         {
             return;
         }
-
-        D3D12_VIEWPORT viewPort = new()
-        {
-            Height = window.Height,
-            Width = window.Width,
-            MaxDepth = 1.0f,
-            MinDepth = 0,
-            TopLeftX = 0,
-            TopLeftY = 0
-        };
-        commandList.SetViewport(&viewPort);
-
-
-        D3D12_RECT rect = new()
-        {
-            Bottom = window.Height,
-            Right = window.Width,
-            Left = 0,
-            Top = 0
-        };
-        commandList.SetScissorRect(&rect);
 
         // draw World
         commandList.SetGraphicsRootConstant(DataIndex, 0u);

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Core.Logging;
+using Titan.Rendering.Resources;
 using Titan.UI.Resources;
 
 namespace Titan.Assets;
@@ -149,5 +150,24 @@ public static class AssetsManagerExtensions
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static AssetHandle<FontAsset> LoadFont(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
-        => assetsManager.Load<FontAsset>(descriptor);
+    {
+        Debug.Assert(descriptor.Type is AssetType.Font);
+        return assetsManager.Load<FontAsset>(descriptor);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<TextureAsset> LoadTexture(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Texture);
+        return assetsManager.Load<TextureAsset>(descriptor);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<MeshAsset> LoadMesh(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Mesh);
+        return assetsManager.Load<MeshAsset>(descriptor);
+    }
 }
+

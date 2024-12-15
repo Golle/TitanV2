@@ -20,7 +20,7 @@ internal unsafe partial struct D3D12UploadQueue
 
     private ulong FenceValue;
     private HANDLE FenceEvent;
-    
+
     private D3D12Device* Device;
 
     [System(SystemStage.PreInit)]
@@ -50,7 +50,7 @@ internal unsafe partial struct D3D12UploadQueue
         }
     }
 
-    public bool Upload(ID3D12Resource* destination, in TitanBuffer buffer)
+    public bool Upload(ID3D12Resource* destination, in TitanBuffer buffer, ulong offset = 0)
     {
         Debug.Assert(destination != null && buffer.Size > 0);
 
@@ -63,11 +63,11 @@ internal unsafe partial struct D3D12UploadQueue
         if (heapProperties.Type is D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK or D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD)
         {
             // CPU visible resource, we can just map and copy.
-
             void* data;
-            destination->Map(0, null, &data);
+            D3D12_RANGE range = default;
+            destination->Map(0, &range, &data);
             MemoryUtils.Copy(data, buffer.AsReadOnlySpan());
-
+            destination->Unmap(0, null);
             return true;
         }
 
@@ -83,7 +83,8 @@ internal unsafe partial struct D3D12UploadQueue
         // Copy the buffer into the temp buffer.
         {
             void* data;
-            var hr = tempBuffer.Get()->Map(0, null, &data);
+            D3D12_RANGE range = default;
+            var hr = tempBuffer.Get()->Map(0, &range, &data);
             if (Win32Common.FAILED(hr) || data == null)
             {
                 Logger.Error<D3D12UploadQueue>("Failed to map the temp buffer.");
@@ -91,7 +92,7 @@ internal unsafe partial struct D3D12UploadQueue
             }
 
             MemoryUtils.Copy(data, buffer.AsReadOnlySpan());
-            tempBuffer.Get()->Unmap(0, null); // This might not be needed since we dispose the buffer at the end. 
+            tempBuffer.Get()->Unmap(0, &range); // This might not be needed since we dispose the buffer at the end. 
         }
 
         var frame = GetAvailableFrame();
@@ -102,10 +103,11 @@ internal unsafe partial struct D3D12UploadQueue
 
         if (resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION.D3D12_RESOURCE_DIMENSION_BUFFER)
         {
-            commandList->CopyBufferRegion(destination, 0, tempBuffer, 0, buffer.Size);
+            commandList->CopyBufferRegion(destination, offset, tempBuffer, 0, buffer.Size);
         }
         else
         {
+            Debug.Assert(offset == 0, "Offset is not supported for Textures.");
             D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
             Device->Device.Get()->GetCopyableFootprints(&resourceDesc, 0, 1, 0, &footprint, null, null, null);
 

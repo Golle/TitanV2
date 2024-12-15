@@ -5,7 +5,7 @@ using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
-using Titan.Rendering.Storage;
+using Titan.Meshes;
 
 namespace Titan.Rendering.Resources;
 
@@ -14,7 +14,7 @@ internal unsafe partial struct MeshLoader
 {
     private PoolAllocator<MeshAsset> _meshes;
     private D3D12ResourceManager* _resourceManager;
-    private MeshStorage* _meshStorage;
+    private MeshSystem* _meshSystem;
 
     public bool Init(in AssetLoaderInitializer init)
     {
@@ -25,7 +25,7 @@ internal unsafe partial struct MeshLoader
         }
 
         _resourceManager = init.GetResourcePointer<D3D12ResourceManager>();
-        _meshStorage = init.GetResourcePointer<MeshStorage>();
+        _meshSystem = init.GetResourcePointer<MeshSystem>();
         return true;
     }
 
@@ -38,6 +38,8 @@ internal unsafe partial struct MeshLoader
     {
         Debug.Assert(descriptor.Type == AssetType.Mesh);
         ref readonly var meshDescriptor = ref descriptor.Mesh;
+
+
         var verticesOffset = meshDescriptor.SubMeshCount * sizeof(SubMesh);
         var indicesOffset = verticesOffset + meshDescriptor.VertexCount * sizeof(Vertex);
 
@@ -52,11 +54,11 @@ internal unsafe partial struct MeshLoader
             return null;
         }
 
-        mesh->MeshDataHandle = _meshStorage->CreateMesh(new CreateMeshArgs
+        mesh->MeshDataHandle = _meshSystem->CreateMesh(new MeshArgs
         {
-            SubMeshes = subMeshes,
+            Indicies = indices,
             Vertices = vertices,
-            Indices = indices
+            SubMeshes = subMeshes
         });
 
         return mesh;
@@ -80,6 +82,7 @@ internal unsafe partial struct MeshLoader
 public partial struct MeshAsset
 {
     internal Handle<MeshData> MeshDataHandle;
+    public static implicit operator Handle<MeshData>(in MeshAsset asset) => asset.MeshDataHandle;
 }
 
 public struct SubMesh
