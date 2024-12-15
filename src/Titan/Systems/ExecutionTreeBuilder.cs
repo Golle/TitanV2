@@ -95,7 +95,11 @@ internal unsafe ref struct ExecutionTreeBuilder
                     {
                         if (IsCircular(nodes, inner, outer))
                         {
+#if DEBUG
+                            Logger.Warning<SystemsScheduler>($"System {outerSystem.Descriptor.Name.GetString()} has a circular dependency to {innerSystem.Descriptor.Name.GetString()}. The system will not be added to the dependency list and will be executed before the other system");
+#else
                             Logger.Warning<SystemsScheduler>($"System {outer} has a circular dependency to {inner}. The system will not be added to the dependency list and will be executed before the other system");
+#endif
                         }
                         else
                         {
