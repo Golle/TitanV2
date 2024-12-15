@@ -1,10 +1,10 @@
 using System.Numerics;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Events;
 using Titan.Systems;
 using Titan.Windows;
-using static Titan.Systems.SystemStageCollection;
 
 namespace Titan.Input;
 
@@ -14,12 +14,17 @@ internal unsafe partial struct InputSystem
     private const uint MouseStateSize = sizeof(bool) * (uint)MouseButton.Count;
 
     [System(SystemStage.PreUpdate)]
-    public static void Update(InputState* state, in Window window, EventReader<KeyUpEvent> keyUpEvents, EventReader<KeyDownEvent> keyDownEvents, EventReader<CharacterTypedEvent> characterEvents)
+    public static void Update(InputState* state, in Window window, EventReader<KeyUpEvent> keyUpEvents, EventReader<KeyDownEvent> keyDownEvents, EventReader<CharacterTypedEvent> characterEvents, EventReader<WindowLostFocusEvent> lostFocusEvents, EventReader<WindowGainedFocusEvent> gainedFocusEvents)
     {
+        var lostFocus = lostFocusEvents.Any();
+        if (lostFocus)
+        {
+            Logger.Trace<InputSystem>("Window lost focus, clearing key states");
+            MemoryUtils.Init(state->Current, (int)KeyCode.NumberOfKeys);
+        }
+
         MemoryUtils.Copy(state->Previous, state->Current, KeyStateSize);
         MemoryUtils.Copy(state->PreviousMouseState, state->MouseState, MouseStateSize);
-
-
 
         // If we hide the cursor we want to put it back where it was.
         if (window.CursorVisible && state->MouseHidden)

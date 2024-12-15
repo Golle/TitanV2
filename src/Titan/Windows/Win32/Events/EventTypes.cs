@@ -11,5 +11,9 @@ internal static class EventTypes
 
     public const int Quit = 20001;
     public const int Close = 20002;
-    
+
+
+    public const int LostFocus = 40001;
+    public const int GainedFocus = 40002;
+
 }

@@ -1,9 +1,17 @@
 
 # Windowing
     [X] Implement hide cursor
-    [ ] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
+    [X] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
         [X] Add external function to detect this, so UI doesn't trigger hover effects for example.
     [ ] Add bounds check for mouse clicks
+
+# Input
+    [X] Clear keystate on LostFocus
+
+    The current input system is tightly coupled to key presses. IsKeyDown etc. This is fine as a low level system, but if we ever want to have something that switches between "modes" this will be very hard to achieve in game code.
+    One example could be during dev, we want to use the development free look camera to freely look at the world. We'd need to check "is in free look mode" in game code to prevent keys from being recorded. 
+    [ ] Implement a base for the Input System where we can set actions that reacts on different key combinations. 
+    [ ] Disable this system when in Editor/Developer Mode.
 
 
 # UI 
@@ -48,7 +56,7 @@
         [ ] Static resources, these are uploaded once
 
 # Materials
-    [ ] Add Material support, initial version should just be dynamic. in other words, update every frame. Double buffered.
+    [X] Add Material support, initial version should just be dynamic. in other words, update every frame. Double buffered.
     [ ] Additional Improvements
         [ ] Static materials, uploaded at startup.
         [ ] Partial Updates for materials. Batch material updates and only upload the parts that changed.

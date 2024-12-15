@@ -270,7 +270,6 @@ internal unsafe partial struct Win32WindowSystem
 
         switch (message)
         {
-
             case WM_KEYDOWN:
             case WM_SYSKEYDOWN:
                 {
@@ -297,6 +296,15 @@ internal unsafe partial struct Win32WindowSystem
             case WM_CLOSE:
                 queue->Push(new Win32CloseEvent());
                 break;
+
+            case WM_KILLFOCUS:
+                queue->Push(new Win32LostFocusEvent());
+                break;
+
+            case WM_SETFOCUS:
+                queue->Push(new Win32GainedFocusEvent());
+                break;
+
             case WM_DEVICECHANGE:
                 var devinterface = (DEV_BROADCAST_DEVICEINTERFACE_W*)lParam; // This is also the DEV_BROADCAST_HDR struct
                 if (devinterface == null || devinterface->dbcc_devicetype != (nint)DBT_DEVICE_TYPES.DBT_DEVTYP_DEVICEINTERFACE || devinterface->dbcc_classguid != DEVICEINTERFACE_AUDIO.DEVINTERFACE_AUDIO_RENDER)

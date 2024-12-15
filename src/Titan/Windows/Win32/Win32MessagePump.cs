@@ -49,7 +49,12 @@ internal unsafe partial struct Win32MessagePump
                 case EventTypes.Quit:
                     Logger.Trace<Win32WindowSystem>("Quit message received!");
                     break;
-
+                case EventTypes.LostFocus:
+                    writer.Send(new WindowLostFocusEvent());
+                    break;
+                case EventTypes.GainedFocus:
+                    writer.Send(new WindowGainedFocusEvent());
+                    break;
                 case EventTypes.AudioDeviceArrival:
                 case EventTypes.AudioDeviceRemoveComplete:
                     // Maybe we need a more granular approach later, but for now this will do.
