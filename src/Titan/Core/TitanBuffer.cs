@@ -64,13 +64,13 @@ public readonly unsafe struct TitanBuffer(void* ptr, uint bufferSize)
     public TitanArray<T> AsArray<T>() where T : unmanaged
     {
         var maxCount = Size / sizeof(T);
-        return new((T*)ptr, (uint)maxCount);
+        return new((T*)_buffer.AsPointer(), (uint)maxCount);
     }
 
     public TitanList<T> AsList<T>() where T : unmanaged
     {
         var maxCount = Size / sizeof(T);
-        return new((T*)ptr, (uint)maxCount);
+        return new((T*)_buffer.AsPointer(), (uint)maxCount);
     }
 
     public static implicit operator ReadOnlySpan<byte>(in TitanBuffer buffer) => buffer.AsReadOnlySpan();
