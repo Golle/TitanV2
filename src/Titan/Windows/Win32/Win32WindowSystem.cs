@@ -33,6 +33,10 @@ internal unsafe partial struct Win32WindowSystem
         *queue = default;
 
         var config = configurationManager.GetConfigOrDefault<WindowConfig>();
+        if (config.Resizable)
+        {
+            Logger.Warning<Win32WindowSystem>("Resizable is set to true, this is currently not supported.");
+        }
         window->Functions = Win32Functions.GetFunctionPointers();
         window->SetTitle(config.Title ?? "Win32 Window");
         window->Height = (int)config.Height;
@@ -142,11 +146,10 @@ internal unsafe partial struct Win32WindowSystem
         HWND parent = default;
         WindowStylesEx windowStyleEx = 0;//WindowStylesEx.WS_EX_TOPMOST;
 
-        var windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
-        //if (!config.Resizable)
-        //{
-        //    windowStyle ^= WindowStyles.WS_THICKFRAME;
-        //}
+        var windowStyle = (WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE) & ~WindowStyles.WS_MAXIMIZEBOX;
+        //NOTE(Jens): Re remove ths posibility to resize by pulling the edges. Doesn't really make sense for a game anyway. Cool feature, but not practical at this stage.
+        windowStyle &= ~WindowStyles.WS_THICKFRAME;
+
         const int windowOffset = 100;
         var windowRect = new RECT
         {
@@ -155,6 +158,7 @@ internal unsafe partial struct Win32WindowSystem
             Right = window->Width + windowOffset,
             Bottom = window->Height + windowOffset
         };
+
         if (!AdjustWindowRect(&windowRect, windowStyle, false))
         {
             Logger.Warning<Win32WindowSystem>($"Failed to {nameof(AdjustWindowRect)}.");

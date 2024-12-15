@@ -41,7 +41,7 @@ App.Create(appConfig)
     //    MaxEntities = 1_000_000,
     //    MaxCommands = 1_000_000
     //})
-    .AddPersistedConfig(new WindowConfig(1920, 1080, true, true))
+    .AddPersistedConfig(new WindowConfig(1920, 1080, true))
     .AddPersistedConfig(new RenderingConfig
     {
 #if DEBUG
