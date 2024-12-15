@@ -41,7 +41,7 @@ App.Create(appConfig)
     //    MaxEntities = 1_000_000,
     //    MaxCommands = 1_000_000
     //})
-    .AddPersistedConfig(new WindowConfig(1920, 1080, true))
+    .AddPersistedConfig(new WindowConfig(1920, 1080, false))
     .AddPersistedConfig(new RenderingConfig
     {
 #if DEBUG
@@ -70,9 +70,23 @@ namespace Titan.Sandbox
                 //.AddSystems<TheGameLightSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
                 .AddSystems<TheAudioThing>()
+                .AddSystems<InputStuff>()
                 ;
 
             return true;
+        }
+    }
+
+    internal unsafe partial struct InputStuff
+    {
+
+        [System]
+        public static void Update(in Window window, in InputState state)
+        {
+            if (state.IsKeyReleased(KeyCode.Escape))
+            {
+                window.Close();
+            }
         }
     }
 

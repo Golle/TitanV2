@@ -35,7 +35,7 @@ internal static unsafe class Win32Functions
         => User32.SetWindowTextW(handle, title);
 
     private static void Close(nuint handle)
-        => User32.CloseWindow(handle);
+        => User32.PostMessageW(handle, WindowMessage.WM_CLOSE, 0, 0);
 
     private static bool IsButtonDown(MouseButton button)
         => (User32.GetAsyncKeyState((int)button) & 0x8000) != 0;

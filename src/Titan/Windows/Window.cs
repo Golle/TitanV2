@@ -65,7 +65,7 @@ internal unsafe partial struct Window
     public readonly void SetCursorPosition(Point point)
         => Functions.SetCursorPosition(Handle, point);
 
-    public void Close()
+    public readonly void Close()
         => Functions.Close(Handle);
 
     public readonly void ToggleTopMost()

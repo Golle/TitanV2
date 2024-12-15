@@ -16,6 +16,12 @@ namespace Titan.Windows.Win32;
 
 internal unsafe partial struct Win32WindowSystem
 {
+
+    private const WindowStyles BorderlessFullscreen = WindowStyles.WS_POPUP | WindowStyles.WS_VISIBLE;
+
+    //NOTE(Jens): We remove ths posibility to resize by pulling the edges. Doesn't really make sense for a game anyway. Cool feature, but not practical at this stage.
+    private const WindowStyles Windowed = (WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE) & ~WindowStyles.WS_MAXIMIZEBOX & ~WindowStyles.WS_THICKFRAME;
+
     // keep track of the cursor so we can change it.
     public const WindowMessage WM_TOGGLE_CURSOR = WM_USER + 1;
 
@@ -37,6 +43,8 @@ internal unsafe partial struct Win32WindowSystem
         {
             Logger.Warning<Win32WindowSystem>("Resizable is set to true, this is currently not supported.");
         }
+
+
         window->Functions = Win32Functions.GetFunctionPointers();
         window->SetTitle(config.Title ?? "Win32 Window");
         window->Height = (int)config.Height;
@@ -146,29 +154,41 @@ internal unsafe partial struct Win32WindowSystem
         HWND parent = default;
         WindowStylesEx windowStyleEx = 0;//WindowStylesEx.WS_EX_TOPMOST;
 
-        var windowStyle = (WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE) & ~WindowStyles.WS_MAXIMIZEBOX;
-        //NOTE(Jens): Re remove ths posibility to resize by pulling the edges. Doesn't really make sense for a game anyway. Cool feature, but not practical at this stage.
-        windowStyle &= ~WindowStyles.WS_THICKFRAME;
+        var windowStyle = window->Windowed
+            ? Windowed
+            : BorderlessFullscreen;
 
-        const int windowOffset = 100;
-        var windowRect = new RECT
+        if (window->Windowed)
         {
-            Left = windowOffset,
-            Top = windowOffset,
-            Right = window->Width + windowOffset,
-            Bottom = window->Height + windowOffset
-        };
+            const int windowOffset = 100;
+            var windowRect = new RECT
+            {
+                Left = windowOffset,
+                Top = windowOffset,
+                Right = window->Width + windowOffset,
+                Bottom = window->Height + windowOffset
+            };
 
-        if (!AdjustWindowRect(&windowRect, windowStyle, false))
-        {
-            Logger.Warning<Win32WindowSystem>($"Failed to {nameof(AdjustWindowRect)}.");
+            if (!AdjustWindowRect(&windowRect, windowStyle, false))
+            {
+                Logger.Warning<Win32WindowSystem>($"Failed to {nameof(AdjustWindowRect)}.");
+            }
+
+            if (window->X < 0 || window->Y < 0)
+            {
+                //NOTE(Jens): This will use the primary monitor. 
+                window->X = (ScreenSize.Width - window->Width) / 2;
+                window->Y = (ScreenSize.Height - window->Height) / 2;
+            }
+
+            window->Width = windowRect.Right - windowRect.Left;
+            window->Height = windowRect.Bottom - windowRect.Top;
         }
-
-        if (window->X < 0 || window->Y < 0)
+        else
         {
-            //NOTE(Jens): This will use the primary monitor. 
-            window->X = (ScreenSize.Width - window->Width) / 2;
-            window->Y = (ScreenSize.Height - window->Height) / 2;
+            window->X = window->Y = 0;
+            window->Width = ScreenSize.Width;
+            window->Height = ScreenSize.Height;
         }
 
         HWND handle;
@@ -181,8 +201,8 @@ internal unsafe partial struct Win32WindowSystem
                 windowStyle,
                 window->X,
                 window->Y,
-                windowRect.Right - windowRect.Left,
-                windowRect.Bottom - windowRect.Top,
+                window->Width,
+                window->Height,
                 parent,
                 hMenu: 0,
                 instance,
@@ -307,6 +327,17 @@ internal unsafe partial struct Win32WindowSystem
 
             case WM_SETFOCUS:
                 queue->Push(new Win32GainedFocusEvent());
+                break;
+
+            case WM_SIZE:
+                Logger.Warning("Size!");
+                break;
+
+            case WM_SIZING:
+                Logger.Warning("Sizing!");
+                break;
+            case WM_EXITSIZEMOVE:
+                Logger.Warning("Exit size!");
                 break;
 
             case WM_DEVICECHANGE:
