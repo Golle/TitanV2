@@ -24,6 +24,7 @@ internal unsafe partial struct Win32WindowSystem
 
     // keep track of the cursor so we can change it.
     public const WindowMessage WM_TOGGLE_CURSOR = WM_USER + 1;
+    public const WindowMessage WM_CLIP_CURSOR_TO_SCREEN = WM_TOGGLE_CURSOR + 1;
 
     public static readonly Size ScreenSize = new
     (
@@ -69,6 +70,8 @@ internal unsafe partial struct Win32WindowSystem
         {
             window->CursorVisible = cursorInfo.flags != CURSOR_STATE.CURSOR_HIDDEN;
         }
+
+        window->KeepCursorInWindow(config.KeepCursorInside);
     }
 
     [System(SystemStage.Shutdown)]
@@ -220,8 +223,8 @@ internal unsafe partial struct Win32WindowSystem
         }
         window->Handle = (nuint)handle.Value;
         window->Active = true;
-        ShowWindow(handle, ShowWindowCommands.SW_SHOW);
 
+        ShowWindow(handle, ShowWindowCommands.SW_SHOW);
 
         ref var active = ref window->Active;
         while (active)
@@ -248,6 +251,19 @@ internal unsafe partial struct Win32WindowSystem
                 }
 
                 window->CursorVisible = msg.WParam == 1;
+                continue;
+            }
+
+            if (msg.Message == WM_CLIP_CURSOR_TO_SCREEN)
+            {
+                var windowRect = new RECT
+                {
+                    Left = window->X,
+                    Top = window->Y,
+                    Right = window->Width + window->X,
+                    Bottom = window->Height + window->Y
+                };
+                ClipCursor(msg.WParam == 1 ? &windowRect : null);
                 continue;
             }
 

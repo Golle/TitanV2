@@ -4,6 +4,7 @@
     [X] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
         [X] Add external function to detect this, so UI doesn't trigger hover effects for example.
     [ ] Add bounds check for mouse clicks
+    [X] Lock mouse inside screen (config)
 
 # Input
     [X] Clear keystate on LostFocus
@@ -72,6 +73,7 @@
 ## Resizing/Fullscreen ( sen TitanV1 for inspiration)
     [ ] Add support for resizing and render pipeline re-creation
     [ ] Add support for Fullscreen (Alt-Enter)
+    [X] Add support for Borderless Fullscreen
 
 ## buffers
     [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)

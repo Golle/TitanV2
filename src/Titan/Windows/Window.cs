@@ -73,4 +73,7 @@ internal unsafe partial struct Window
 
     public readonly void ShowCursor(bool showCursor)
         => Functions.ShowCursor(Handle, showCursor);
+
+    public readonly void KeepCursorInWindow(bool insideWindow)
+    => Functions.ClipCursor(Handle, insideWindow);
 }

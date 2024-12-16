@@ -15,7 +15,6 @@ using Titan.Input;
 using Titan.Materials;
 using Titan.Meshes;
 using Titan.Rendering;
-using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Sandbox;
@@ -41,7 +40,10 @@ App.Create(appConfig)
     //    MaxEntities = 1_000_000,
     //    MaxCommands = 1_000_000
     //})
-    .AddPersistedConfig(new WindowConfig(1920, 1080, false))
+    .AddPersistedConfig(new WindowConfig(1920, 1080, true)
+    {
+        KeepCursorInside = false
+    })
     .AddPersistedConfig(new RenderingConfig
     {
 #if DEBUG
@@ -321,6 +323,7 @@ namespace Titan.Sandbox
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+
             frameCount++;
 
             if (_timer.Elapsed.TotalSeconds > 1f)

@@ -14,6 +14,11 @@ public record WindowConfig(uint Width, uint Height, bool Windowed) : IConfigurat
     /// <remarks>This is not supported at the moment.</remarks>
     /// </summary>
     public bool Resizable { get; init; }
+    /// <summary>
+    /// Clip the cursor to the window size
+    /// <remarks>Best used in Borderless Fullscreen mode, maybe not so good in Windowed mode.</remarks>
+    /// </summary>
+    public bool KeepCursorInside { get; init; }
     public int X { get; init; } = -1;
     public int Y { get; init; } = -1;
     public static WindowConfig Default => new(DefaultWidth, DefaultHeight, true);
