@@ -14,6 +14,7 @@ using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
+using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D;
 using Titan.Platform.Win32.D3D12;
@@ -48,6 +49,11 @@ public ref struct CreateRenderPassArgs
     public BlendStateType BlendState;
     public CullMode CullMode;
     public FillMode FillMode;
+    /// <summary>
+    /// The order to sort this render pass, only works for passes that has the same outputs.
+    /// <remarks>Higher number means LATER, so set it to a negative number if it should run before other passes.</remarks>
+    /// </summary>
+    public sbyte Order;
     //public AssetDescriptor ComputerShader;
 
     /// <summary>
@@ -60,7 +66,7 @@ public ref struct CreateRenderPassArgs
 }
 
 [UnmanagedResource]
-internal unsafe partial struct RenderGraph
+public unsafe partial struct RenderGraph
 {
     //NOTE(Jens): Make sure these are updated when we implement more.
     public enum RootSignatureIndex : uint
@@ -90,19 +96,15 @@ internal unsafe partial struct RenderGraph
     private bool _isReady;
     private int _renderPassCount;
     private uint _groupCount;
-    private uint _frameIndex;
     public readonly bool IsReady => _isReady;
-    public readonly uint FrameIndex => _frameIndex;
 
     private Handle<Texture> _backbufferHandle;
     private Handle<GPUBuffer> _frameDataConstantBuffer;
     private MappedGPUResource<FrameData> _frameDataGPU;
 
 
-
-
     [System(SystemStage.PreInit)]
-    public static void PreInit(ref RenderGraph graph, IMemoryManager memoryManager, UnmanagedResourceRegistry registry, AssetsManager assetsManager)
+    internal static void PreInit(ref RenderGraph graph, IMemoryManager memoryManager, UnmanagedResourceRegistry registry, AssetsManager assetsManager)
     {
         if (!memoryManager.TryCreateAtomicBumpAllocator(out graph._allocator, MemoryUtils.KiloBytes(512)))
         {
@@ -161,6 +163,7 @@ internal unsafe partial struct RenderGraph
         pass->BlendState = args.BlendState;
         pass->CullMode = args.CullMode;
         pass->FillMode = args.FillMode;
+        pass->Order = args.Order;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
             pass->Outputs[i] = _resourceTracker->GetOrCreateRenderTarget(args.Outputs[i]);
@@ -304,13 +307,8 @@ internal unsafe partial struct RenderGraph
     }
 
     [System(SystemStage.First)]
-    public static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window)
+    internal static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window, in InputState inputState)
     {
-#if TRIPLE_BUFFERING
-        graph._frameIndex = (graph._frameIndex + 1) % GlobalConfiguration.MaxRenderFrames; 
-#else
-        graph._frameIndex = (graph._frameIndex + 1) & 0x1;
-#endif
         if (graph._isReady)
         {
             return;
@@ -359,7 +357,7 @@ internal unsafe partial struct RenderGraph
 
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void ExeucuteCommandLists(in RenderGraph graph, in D3D12CommandQueue commandQueue, in CameraSystem cameraSystem, in Window window)
+    internal static void ExeucuteCommandLists(in RenderGraph graph, in D3D12CommandQueue commandQueue, in CameraSystem cameraSystem, in Window window)
     {
         if (!graph._isReady)
         {
@@ -474,6 +472,16 @@ internal unsafe partial struct RenderGraph
                         graph[inner].InDegree++;
                     }
 
+                    if (Contains(_renderPasses[inner].Outputs, output))
+                    {
+                        Debug.Assert(_renderPasses[inner].Order != _renderPasses[outer].Order, "Multiple render passes with the same output must have an Order set.");
+                        if (_renderPasses[inner].Order > _renderPasses[outer].Order)
+                        {
+                            graph[outer].AddDependency(inner);
+                            graph[inner].InDegree++;
+                        }
+                    }
+
                 }
             }
         }
@@ -518,7 +526,17 @@ internal unsafe partial struct RenderGraph
 
         _groupCount = groups.Count;
 
-
+#if DEBUG
+        for (var i = 0; i < _groupCount; ++i)
+        {
+            Logger.Trace<RenderGraph>($"Render Group {i}");
+            ref readonly var group = ref groups[i];
+            for (var j = 0; j < group.Count; ++j)
+            {
+                Logger.Trace<RenderGraph>($"Pass: {_sortedPasses[j+group.Offset].Get()->Name.GetString()}");
+            }
+        }
+#endif
         static bool Contains(ReadOnlySpan<Handle<Texture>> textures, in Handle<Texture> handle)
         {
             foreach (var texture in textures)

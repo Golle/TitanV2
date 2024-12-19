@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Threading;

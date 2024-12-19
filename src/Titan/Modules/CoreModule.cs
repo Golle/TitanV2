@@ -26,8 +26,7 @@ internal class CoreModule : IModule
 
         // Register app lifetime handling first.
         builder
-            .AddResource<ApplicationLifetime>()
-            .AddSystems<ApplicationLifetimeSystem>();
+            .AddSystems<EngineState>();
 
         // Platform specific modules
         builder

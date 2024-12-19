@@ -320,6 +320,27 @@ namespace Titan.Sandbox
         public static int frameCount;
         public static int fpsSize;
         private static Stopwatch _timer;
+
+
+
+        private static Inline2<UISelectBoxState> _screenStates;
+        [System]
+        public static void ScreenSize(UIManager ui)
+        {
+
+            const int offset = 900;
+            ui.SelectBox(1001, new Vector2(100, offset + 80), new(250, 33), ["Borderless Window", "Fullscreen"], ref _screenStates[0], _selectBoxStyle);
+            if (_screenStates[0].SelectedIndex == 0)
+            {
+                ui.SelectBox(1002, new Vector2(100, offset), new(250, 33), ["1024x768", "1280x720", "1920x1080", "2560x1440"], ref _screenStates[1], _selectBoxStyle);
+            }
+
+            if (ui.Button(1003, new Vector2(380, offset + 82), new SizeF(100, 30), Color.Magenta))
+            {
+                Logger.Error("Updating resolution");
+            }
+        }
+
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {

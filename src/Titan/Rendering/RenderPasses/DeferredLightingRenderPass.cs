@@ -9,6 +9,7 @@ using Titan.Resources;
 using Titan.Systems;
 using Titan.Core.Logging;
 using System.Numerics;
+using Titan.Application;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -32,6 +33,7 @@ internal unsafe partial struct DeferredLightingRenderPass
     private static Vector3[] HardcodedLights =
     [
 
+        new(1f), // 100% brightness
         new(0.4f, 0.4f, 0.4f), // Neutral gray, 40% brightness
         new(0.5f, 0.45f, 0.35f), // Slightly warm tone
         new(0.3f, 0.35f, 0.4f), // Cool tone with bluish tint
@@ -119,10 +121,10 @@ internal unsafe partial struct DeferredLightingRenderPass
             return;
         }
 
-        var lightsBuffer = resourceManager.Access(pass->LightInstanceHandles[graph.FrameIndex]);
+        var lightsBuffer = resourceManager.Access(pass->LightInstanceHandles[EngineState.FrameIndex]);
         commandList.SetGraphicsRootDescriptorTable(RootConstantLightInstanceIndex, lightsBuffer);
         //TODO(Jens): This should be set somewhere else
-        
+
         commandList.SetGraphicsRootConstant(RootConstantPassData, HardcodedLights[LightIndex]);
         pass->LightInstances = 0;
     }
@@ -174,14 +176,13 @@ internal unsafe partial struct DeferredLightingRenderPass
 
         if (pass.LightInstances > 0)
         {
-            var frameIndex = graph.FrameIndex;
             var lights = pass
                 .CPULights
                 .Slice(0, pass.LightInstances)
                 .AsReadOnlySpan();
 
             pass
-                .GPULights[frameIndex]
+                .GPULights[EngineState.FrameIndex]
                 .Write(lights);
 
             commandList.DrawInstanced(3, pass.LightInstances);
@@ -189,7 +190,7 @@ internal unsafe partial struct DeferredLightingRenderPass
         else
         {
             pass
-                .GPULights[graph.FrameIndex]
+                .GPULights[EngineState.FrameIndex]
                 .WriteSingle(DefaultLight);
             commandList.DrawInstanced(3, 1);
         }

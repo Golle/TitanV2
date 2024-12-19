@@ -27,4 +27,5 @@ public struct RenderPass
     public FillMode FillMode;
     public Viewport Viewport;
     public Rect ScissorRect;
+    public sbyte Order;
 }

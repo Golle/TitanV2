@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Titan.Application;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -25,10 +26,10 @@ internal unsafe partial struct DXGISwapchain
     public ComPtr<ID3D12Fence> Fence;
 
     public HANDLE FenceEvent;
-    public uint FrameIndex;
+    public uint BackbufferFrameIndex;
 
     public ulong GPUFrame;
-    public ulong CPUFrame;
+    //public ulong CPUFrame;
 
     public uint SyncInterval;
     public uint PresentFlags;
@@ -121,7 +122,7 @@ internal unsafe partial struct DXGISwapchain
         swapchain->SyncInterval = config.VSync ? 1u : 0u;
         swapchain->PresentFlags = (uint)(tearingSupport && !config.VSync /*&& !Fullscreen*/ ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0);
 
-        swapchain->FrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
+        swapchain->BackbufferFrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
     private bool InitBackbuffers(in D3D12Device device, in D3D12Allocator allocator, bool createDescriptor)
@@ -165,25 +166,33 @@ internal unsafe partial struct DXGISwapchain
     {
         var texture = resourceManager.Access(swapchain.CurrentBackbuffer);
         texture->Format = DefaultFormat;
-        texture->RTV = swapchain.RenderTargetViews[swapchain.FrameIndex];
-        texture->Resource = swapchain.Resources[swapchain.FrameIndex];
+        texture->RTV = swapchain.RenderTargetViews[swapchain.BackbufferFrameIndex];
+        texture->Resource = swapchain.Resources[swapchain.BackbufferFrameIndex];
         texture->Height = (uint)window.Height;
         texture->Width = (uint)window.Width;
     }
 
     [System(SystemStage.Last)]
     public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue)
-        => swapchain->Present(queue);
+    {
+
+        swapchain->Present(queue);
+        if (!EngineState.Active)
+        {
+            swapchain->FlushGPU(queue);
+        }
+    }
+
     private void Present(in D3D12CommandQueue queue)
     {
-        CPUFrame++;
         //var flags = TearingSupport && !Vsync && !Fullscreen ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0;
         var hr = Swapchain.Get()->Present(SyncInterval, PresentFlags);
-        
 
+
+        var frameCount = EngineState.FrameCount;
         var fence = Fence.Get();
-        queue.Signal(fence, CPUFrame);
-        var diff = CPUFrame - GPUFrame;
+        queue.Signal(fence, frameCount);
+        var diff = frameCount - GPUFrame;
         if (diff >= BufferCount)
         {
             var waitFrame = GPUFrame + 1;
@@ -196,29 +205,31 @@ internal unsafe partial struct DXGISwapchain
         }
 #if DEBUG
         if (FAILED(hr))
-        { 
+        {
             Logger.Error<DXGISwapchain>($"Swapchain FAiled. HRESULT = {hr}");
             Debugger.Launch();
         }
 #endif
         //Debug.Assert(SUCCEEDED(hr));
-        FrameIndex = (FrameIndex + 1) % BufferCount;
+        BackbufferFrameIndex = (BackbufferFrameIndex + 1) % BufferCount;
     }
 
     private void FlushGPU(in D3D12CommandQueue queue)
     {
         //NOTE(Jens): this method can be used for resizing the buffers as well. 
+
+        var frameCount = EngineState.FrameCount;
         for (var i = 0u; i < BufferCount; ++i)
         {
-            CPUFrame++;
-            queue.Signal(Fence, CPUFrame);
-            if (Fence.Get()->GetCompletedValue() < CPUFrame)
+            //CPUFrame++;
+            queue.Signal(Fence, frameCount);
+            if (Fence.Get()->GetCompletedValue() < frameCount)
             {
-                Fence.Get()->SetEventOnCompletion(CPUFrame, FenceEvent);
+                Fence.Get()->SetEventOnCompletion(frameCount, FenceEvent);
                 Kernel32.WaitForSingleObject(FenceEvent, INFINITE);
             }
         }
-        FrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
+        BackbufferFrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
     [System(SystemStage.Shutdown)]
