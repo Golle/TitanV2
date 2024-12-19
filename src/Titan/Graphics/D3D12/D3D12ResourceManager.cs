@@ -699,7 +699,7 @@ public unsafe partial struct D3D12ResourceManager
 
         pipelineState->Resource = _device->CreatePipelineStateObject(psoStream.AsStreamDesc());
 
-        if (pipelineState == null)
+        if (!pipelineState->Resource.IsValid)
         {
             Logger.Error<D3D12ResourceManager>($"Failed to create the {nameof(ID3D12PipelineState)}.");
             _pipelineStates.SafeFree(handle);
