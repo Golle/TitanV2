@@ -12,6 +12,9 @@ internal sealed class DeferredRenderingModule : IModule
             .AddSystemsAndResource<DeferredLightingRenderPass>()
             .AddSystemsAndResource<BackbufferRenderPass>()
             .AddSystemsAndResource<UIRenderPass>()
+
+            // add behind compile flag.
+            .AddSystemsAndResource<DebugRenderPass>()
             ;
         return true;
     }

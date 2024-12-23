@@ -1,10 +1,24 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace Titan.Core.Maths;
 
+public record struct Vector3Int(int X, int Y, int Z)
+{
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static explicit operator Vector3(in Vector3Int vector) => new(vector.X, vector.Y, vector.Z);
+}
+
+
+
+
 public static class MathUtils
 {
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector3Int Floor(in Vector3 vector) => new Vector3Int((int)MathF.Floor(vector.X), (int)MathF.Floor(vector.Y), (int)MathF.Floor(vector.Z));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPowerOf2(uint value)
@@ -59,4 +73,14 @@ public static class MathUtils
         return true;
 
     }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static Vector4 Multiply(in Matrix4x4 matrix, in Vector4 vector) =>
+        new(
+            matrix.M11 * vector.X + matrix.M12 * vector.Y + matrix.M13 * vector.Z + matrix.M14 * vector.W,
+            matrix.M21 * vector.X + matrix.M22 * vector.Y + matrix.M23 * vector.Z + matrix.M24 * vector.W,
+            matrix.M31 * vector.X + matrix.M32 * vector.Y + matrix.M33 * vector.Z + matrix.M34 * vector.W,
+            matrix.M41 * vector.X + matrix.M42 * vector.Y + matrix.M43 * vector.Z + matrix.M44 * vector.W
+        );
 }

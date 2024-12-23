@@ -10,27 +10,25 @@ using Titan.Windows.Win32;
 namespace Titan.Windows;
 
 [UnmanagedResource]
-internal unsafe partial struct Window
+public unsafe partial struct Window
 {
     public const int MaxTitleSize = 128;
 
-    public WindowFunctions Functions;
+    internal WindowFunctions Functions;
 
-    public nuint Handle;
+    internal nuint Handle;
+    internal void* Queue;
+    internal NativeThreadHandle WindowThread;
+    internal HDEVNOTIFY DeviceNotificationHandle;
+    internal int TitleLength;
+    internal fixed char Title[MaxTitleSize];
+
+
     public int Width, Height;
     public int X, Y;
-
     public int ScreenWidth, ScreenHeight;
-
-    public int TitleLength;
-    public fixed char Title[MaxTitleSize];
-
-    public void* Queue;
-    public NativeThreadHandle WindowThread;
-    public HDEVNOTIFY DeviceNotificationHandle;
     public bool Windowed;
     public bool Active;
-
     public bool CursorVisible;
 
     private bool IsTopMost;

@@ -1,4 +1,11 @@
 
+
+# Builds/compilation
+    Read about these, can they do anything for performance or binary size?
+    [ ] <IlcInvariantGlobalization>true</IlcInvariantGlobalization>
+    [ ] <IlcDisableReflection>true</IlcDisableReflection>
+    [ ] <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+
 # Windowing
     [X] Implement hide cursor
     [X] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
@@ -75,7 +82,7 @@
     [ ] Add support for Fullscreen (Alt-Enter)
     [X] Add support for Borderless Fullscreen
 
-## buffers
+## Buffers
     [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
         [X] Add double buffering for buffers that are updated each frame
         
@@ -113,3 +120,7 @@ The long term goal is to have a hot reload system, that can detect changes and c
 
 ## Widgets
     [ ] Add widget for Lights and other Entities, render them as squares in window space.
+
+## Debug Draw
+    [X] Simple Line drawing
+    [ ] Add a DebugDrawer class that we can use to draw different things like AABB, lines, spheres etc.

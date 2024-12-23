@@ -181,7 +181,7 @@ public unsafe struct GeneralAllocator : IAllocator
             }
         } while (newSize < _memoryBlock.MaxSize);
 
-        Debug.Assert(true, "ran out of memory.");
+        Debug.Fail("ran out of memory.");
     }
 
 

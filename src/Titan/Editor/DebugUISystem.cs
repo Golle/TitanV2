@@ -57,10 +57,11 @@ internal partial struct DebugUISystem
     }
 
     private static float _rand;
+
+    private static readonly Stopwatch _timer = Stopwatch.StartNew();
     [System]
     public static void PrintStats(UIManager ui, in InputState inputState)
     {
-
         if (inputState.MouseVisible)
         {
             ui.Text(new(800, 200), "Mouse Visible"u8, _font, Color.Magenta);
@@ -75,6 +76,12 @@ internal partial struct DebugUISystem
             inputState.MousePositionDelta.Y.TryFormat(text, out size);
             ui.Text(new(870, 400), text[..size], _font, Color.Magenta);
         }
+
+        var fps = MathF.Round((float)(1.0f / _timer.Elapsed.TotalSeconds));
+        _timer.Restart();
+        Inline32<byte> fpsText = default;
+        fps.TryFormat(fpsText, out var bytes);
+        ui.Text(new Vector2(0,100), fpsText[..bytes], _font, Color.Red);
 
         //NOTE(Jens): disable this for now
         return;

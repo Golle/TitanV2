@@ -66,6 +66,11 @@ public readonly unsafe struct TitanArray<T>(T* ptr, uint length)
         }
     }
 
+    public TitanArray<T> Slice(uint offset)
+    {
+        Debug.Assert(offset < Length);
+        return new(ptr + offset, Length - offset);
+    }
     public TitanArray<T> Slice(uint offset, uint count)
     {
         if (count == 0)

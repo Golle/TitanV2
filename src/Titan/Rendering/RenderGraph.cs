@@ -49,6 +49,7 @@ public ref struct CreateRenderPassArgs
     public BlendStateType BlendState;
     public CullMode CullMode;
     public FillMode FillMode;
+    public PrimitiveTopology Topology;
     /// <summary>
     /// The order to sort this render pass, only works for passes that has the same outputs.
     /// <remarks>Higher number means LATER, so set it to a negative number if it should run before other passes.</remarks>
@@ -163,6 +164,7 @@ public unsafe partial struct RenderGraph
         pass->BlendState = args.BlendState;
         pass->CullMode = args.CullMode;
         pass->FillMode = args.FillMode;
+        pass->Topology = args.Topology;
         pass->Order = args.Order;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
@@ -206,7 +208,12 @@ public unsafe partial struct RenderGraph
 
         pass->CommandList = commandList = _commandQueue->GetCommandList(pass->PipelineState);
         pass->CommandList.SetGraphicsRootSignature(_resourceManager->Access(pass->RootSignature)->Resource);
-        pass->CommandList.SetTopology(D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        pass->CommandList.SetTopology(pass->Topology switch
+        {
+            PrimitiveTopology.Line => D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_LINELIST,
+            PrimitiveTopology.TriangleStrip => D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
+            _ => D3D_PRIMITIVE_TOPOLOGY.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+        });
         pass->CommandList.SetDescriptorHeap(_d3d12Allocator->SRV.Heap);
         pass->CommandList.SetGraphicsRootDescriptorTable((uint)RootSignatureIndex.Texture2D, _d3d12Allocator->SRV.GPUStart);
         pass->CommandList.SetViewport(&pass->Viewport);
@@ -367,7 +374,7 @@ public unsafe partial struct RenderGraph
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
         graph._frameDataGPU.WriteSingle(new FrameData
         {
-            ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrix,
+            ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrixTransposed,
             CameraPosition = cameraSystem.DefaultCamera.Position,
             WindowHeight = (uint)window.Height,
             WindowWidth = (uint)window.Width
@@ -419,7 +426,11 @@ public unsafe partial struct RenderGraph
                 RootSignature = pass.RootSignature,
                 VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
                 PixelShader = _assetsManager.Get(pass.PixelShader).ShaderByteCode,
-                Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+                Topology = pass.Topology switch
+                {
+                    PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
+                    _ => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+                },
                 CullMode = pass.CullMode,
                 FillMode = pass.FillMode
             });
@@ -533,7 +544,7 @@ public unsafe partial struct RenderGraph
             ref readonly var group = ref groups[i];
             for (var j = 0; j < group.Count; ++j)
             {
-                Logger.Trace<RenderGraph>($"Pass: {_sortedPasses[j+group.Offset].Get()->Name.GetString()}");
+                Logger.Trace<RenderGraph>($"Pass: {_sortedPasses[j + group.Offset].Get()->Name.GetString()}");
             }
         }
 #endif
