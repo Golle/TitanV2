@@ -65,6 +65,15 @@ internal sealed unsafe class UnmanagedResourceRegistry : IService
         return (T*)ptr;
     }
 
+    /// <summary>
+    /// Check if the resource ID is within the range of the registered resources.
+    /// <remarks>Might be inaccurate</remarks>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns>True if ID is within the range</returns>
+    public bool HasResource<T>() where T : unmanaged, IResource 
+        => T.Id < _offsets.Length;
+
     public UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource
         => new(GetResourcePointer<T>());
 

@@ -246,6 +246,8 @@ namespace Titan.Sandbox
         public static UIID SliderID3 = UIID.Create();
         private static bool _playing = false;
 
+        private static string[] Modes = [];
+
         [System(SystemStage.Init)]
         public static void Init(AssetsManager assetsManager)
         {
@@ -313,6 +315,13 @@ namespace Titan.Sandbox
             };
 
             _timer = Stopwatch.StartNew();
+
+            var modes = EngineSettings.GraphicAdapters[0].Outputs[0].GetModes();
+            Modes = new string[modes.Length];
+            for (var i = 0; i < modes.Length; ++i)
+            {
+                Modes[i] = new string(modes[i].GetDescription());
+            }
         }
 
 
@@ -332,7 +341,7 @@ namespace Titan.Sandbox
             ui.SelectBox(1001, new Vector2(100, offset + 80), new(250, 33), ["Borderless Window", "Fullscreen"], ref _screenStates[0], _selectBoxStyle);
             if (_screenStates[0].SelectedIndex == 0)
             {
-                ui.SelectBox(1002, new Vector2(100, offset), new(250, 33), ["1024x768", "1280x720", "1920x1080", "2560x1440"], ref _screenStates[1], _selectBoxStyle);
+                ui.SelectBox(1002, new Vector2(100, offset), new(250, 33), Modes, ref _screenStates[1], _selectBoxStyle);
             }
 
             if (ui.Button(1003, new Vector2(380, offset + 82), new SizeF(100, 30), Color.Magenta))

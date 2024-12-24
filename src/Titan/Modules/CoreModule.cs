@@ -24,8 +24,9 @@ internal class CoreModule : IModule
             throw new PlatformNotSupportedException($"Support for platform {GlobalConfiguration.Platform} has not been implemented yet.");
         }
 
-        // Register app lifetime handling first.
+        // Register engine lifetime and settings first.
         builder
+            .AddSystems<EngineSettings>()
             .AddSystems<EngineState>();
 
         // Platform specific modules

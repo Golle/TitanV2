@@ -345,16 +345,17 @@ internal unsafe partial struct Win32WindowSystem
                 queue->Push(new Win32GainedFocusEvent());
                 break;
 
-            case WM_SIZE:
-                Logger.Warning("Size!");
-                break;
+            //NOTE(Jens): We'll not allow resizing through this at this time.
+            //case WM_SIZE:
+            //    Logger.Warning("Size!");
+            //    break;
 
-            case WM_SIZING:
-                Logger.Warning("Sizing!");
-                break;
-            case WM_EXITSIZEMOVE:
-                Logger.Warning("Exit size!");
-                break;
+            //case WM_SIZING:
+            //    Logger.Warning("Sizing!");
+            //    break;
+            //case WM_EXITSIZEMOVE:
+            //    Logger.Warning("Exit size!");
+            //    break;
 
             case WM_DEVICECHANGE:
                 var devinterface = (DEV_BROADCAST_DEVICEINTERFACE_W*)lParam; // This is also the DEV_BROADCAST_HDR struct

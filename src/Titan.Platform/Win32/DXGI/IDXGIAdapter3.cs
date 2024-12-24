@@ -50,14 +50,15 @@ public unsafe struct IDXGIAdapter3 : INativeGuid
     // /* [annotation][retval][out] */
     // _COM_Outptr_  void** ppParent);
 
-    //HRESULT(STDMETHODCALLTYPE* EnumOutputs)(
-    // IDXGIAdapter1* This,
-    // /* [in] */ UINT Output,
-    // /* [annotation][out][in] */
-    // _COM_Outptr_ IDXGIOutput ** ppOutput);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public HRESULT GetDesc(DXGI_ADAPTER_DESC* pDesc) => ((delegate* unmanaged[Stdcall]<void*, DXGI_ADAPTER_DESC*, HRESULT>)_vtbl[8])(Unsafe.AsPointer(ref this), pDesc);
+    public HRESULT EnumOutputs(uint Output, IDXGIOutput** ppOutput)
+        => ((delegate* unmanaged[Stdcall]<void*, uint, IDXGIOutput**, HRESULT>)_vtbl[7])(Unsafe.AsPointer(ref this), Output, ppOutput);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HRESULT GetDesc(DXGI_ADAPTER_DESC* pDesc) 
+        => ((delegate* unmanaged[Stdcall]<void*, DXGI_ADAPTER_DESC*, HRESULT>)_vtbl[8])(Unsafe.AsPointer(ref this), pDesc);
 
     //HRESULT(STDMETHODCALLTYPE* CheckInterfaceSupport)(
     // IDXGIAdapter1* This,
@@ -67,7 +68,8 @@ public unsafe struct IDXGIAdapter3 : INativeGuid
     // _Out_  LARGE_INTEGER* pUMDVersion);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public HRESULT GetDesc1(DXGI_ADAPTER_DESC1* pDesc) => ((delegate* unmanaged[Stdcall]<void*, DXGI_ADAPTER_DESC1*, HRESULT>)_vtbl[10])(Unsafe.AsPointer(ref this), pDesc);
+    public HRESULT GetDesc1(DXGI_ADAPTER_DESC1* pDesc) 
+        => ((delegate* unmanaged[Stdcall]<void*, DXGI_ADAPTER_DESC1*, HRESULT>)_vtbl[10])(Unsafe.AsPointer(ref this), pDesc);
 
     //DECLSPEC_XFGVIRT(IDXGIAdapter2, GetDesc2)
     //    HRESULT(STDMETHODCALLTYPE* GetDesc2)(
@@ -115,5 +117,5 @@ public unsafe struct IDXGIAdapter3 : INativeGuid
     //        IDXGIAdapter3* This,
     //        /* [annotation][in] */
     //        _In_ DWORD dwCookie);
-    
+
 }
