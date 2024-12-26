@@ -22,7 +22,7 @@ internal class AsepriteReader
         }
         TitanList<AsepriteLayerChunk> layerChunks = stackalloc AsepriteLayerChunk[256];
         var pixels = new byte[header.Width * header.Height * header.ColorDepth / 8];
-        var mergedPixels = MemoryMarshal.Cast<byte, Pixel>(pixels);
+        var mergedPixels = MemoryMarshal.Cast<byte, Pixel>(pixels.AsSpan());
 
         using var memoryStream = new MemoryStream();
         for (var i = 0; i < header.Frames; ++i)

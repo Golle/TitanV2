@@ -337,6 +337,23 @@ public unsafe partial struct D3D12ResourceManager
         buffer->Resource.Get()->Unmap(0, null);
     }
 
+    public readonly bool RecreateDepthBuffer(in Handle<Texture> handle, in CreateDepthBufferArgs args)
+    {
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>("Depth Buffer handle is invalid");
+            return false;
+        }
+
+        var texture = _textures.AsPtr(handle);
+        texture->Resource.Dispose();
+        texture->Resource = default;
+        Debug.Assert(!texture->RTV.IsValid, "Not supported");
+        Debug.Assert(!texture->SRV.IsValid, "Not supported");
+
+        return InitDepthBuffer(texture, args);
+
+    }
     public readonly Handle<Texture> CreateDepthBuffer(in CreateDepthBufferArgs args)
     {
         var handle = _textures.SafeAlloc();
@@ -347,31 +364,45 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var texture = _textures.AsPtr(handle);
+        if (!InitDepthBuffer(texture, args))
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to create the Depth Buffer.");
+            _textures.SafeFree(handle);
+            return Handle<Texture>.Invalid;
+        }
+
+        return handle;
+    }
+
+    public readonly bool InitDepthBuffer(Texture* texture, in CreateDepthBufferArgs args)
+    {
         *texture = default;
 
         texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height, args.Format);
-        texture->Width = args.Width;
-        texture->Height = args.Height;
-        texture->Format = args.Format;
+
         if (!texture->Resource.IsValid)
         {
             Logger.Error<D3D12ResourceManager>("Failed to create the DepthBuffer.");
-            _textures.SafeFree(handle);
-            return Handle<Texture>.Invalid;
+            return false;
         }
 
-        texture->DSV = _allocator->Allocate(DescriptorHeapType.DepthStencilView);
         if (!texture->DSV.IsValid)
         {
-            Logger.Error<D3D12ResourceManager>("Failed to allocate a Depth Stencil descriptor.");
-            texture->Resource.Dispose();
-            _textures.SafeFree(handle);
-            return Handle<Texture>.Invalid;
+            texture->DSV = _allocator->Allocate(DescriptorHeapType.DepthStencilView);
+            if (!texture->DSV.IsValid)
+            {
+                Logger.Error<D3D12ResourceManager>("Failed to allocate a Depth Stencil descriptor.");
+                texture->Resource.Dispose();
+                return false;
+            }
         }
-
+        
         _device->CreateDepthStencilView(texture->Resource, texture->DSV.CPU);
 
-        return handle;
+        texture->Width = args.Width;
+        texture->Height = args.Height;
+        texture->Format = args.Format;
+        return true;
     }
 
     public readonly Handle<Texture> CreateTextureHandle()
@@ -386,13 +417,21 @@ public unsafe partial struct D3D12ResourceManager
         return handle;
     }
 
-    public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
-        => CreateTexture(args, null);
+    public readonly bool RecreateTexture(in Handle<Texture> handle, in CreateTextureArgs args)
+    {
+        if (handle.IsInvalid)
+        {
+            Logger.Error<D3D12ResourceManager>("Handle is invalid, can't recreate texture.");
+            return false;
+        }
 
-    /// <summary>
-    /// Internal texture creation used for the Backbuffer
-    /// </summary>
-    internal readonly Handle<Texture> CreateTexture(in CreateTextureArgs args, ID3D12Resource* backbuffer)
+        var texture = _textures.AsPtr(handle);
+        texture->Resource.Dispose();
+        texture->Resource = default;
+        return InitTexture(texture, args);
+    }
+
+    public readonly Handle<Texture> CreateTexture(in CreateTextureArgs args)
     {
         var handle = _textures.SafeAlloc();
         if (handle.IsInvalid)
@@ -402,67 +441,76 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var texture = _textures.AsPtr(handle);
-        *texture = default;
-        if (backbuffer == null)
+
+        if (!InitTexture(texture, args))
         {
-            if (args.RenderTargetView)
-            {
-                var clearValue = D3D12Helpers.ClearColor(args.Format, args.OptimizedClearColor);
-                texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format, D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, &clearValue);
-            }
-            else
-            {
-                texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format);
-            }
+            _textures.SafeFree(handle);
+            return Handle<Texture>.Invalid;
+        }
 
-            if (!texture->Resource.IsValid)
-            {
-                Logger.Error<D3D12ResourceManager>("Failed to create the underlying resource for the texture.");
-                _textures.SafeFree(handle);
-                return Handle<Texture>.Invalid;
-            }
+        return handle;
+    }
 
-            if (args.InitialData.IsValid && !_uploadQueue->Upload(texture->Resource, args.InitialData))
-            {
-                Logger.Error<D3D12ResourceManager>("Upload data to the texture failed, destroying the resource.");
-                texture->Resource.Dispose();
-                return Handle<Texture>.Invalid;
-            }
+    private readonly bool InitTexture(Texture* texture, in CreateTextureArgs args)
+    {
+        *texture = default;
+        if (args.RenderTargetView)
+        {
+            var clearValue = D3D12Helpers.ClearColor(args.Format, args.OptimizedClearColor);
+            texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format, D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, &clearValue);
+        }
+        else
+        {
+            texture->Resource = _device->CreateTexture(args.Width, args.Height, args.Format);
+        }
 
-            if (args.ShaderVisible)
+        if (!texture->Resource.IsValid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to create the underlying resource for the texture.");
+            return false;
+        }
+
+        if (args.InitialData.IsValid && !_uploadQueue->Upload(texture->Resource, args.InitialData))
+        {
+            Logger.Error<D3D12ResourceManager>("Upload data to the texture failed, destroying the resource.");
+            texture->Resource.Dispose();
+            return false;
+        }
+
+        if (args.ShaderVisible)
+        {
+            // only create if we need to.
+            if (!texture->SRV.IsValid)
             {
                 texture->SRV = _allocator->Allocate(DescriptorHeapType.ShaderResourceView);
                 if (!texture->SRV.IsValid)
                 {
                     Logger.Error<D3D12ResourceManager>("Failed to allocate a SRV descriptor handle");
                     texture->Resource.Dispose();
-                    _textures.SafeFree(handle);
-                    return Handle<Texture>.Invalid;
+                    return false;
                 }
-                _device->CreateShaderResourceView(texture->Resource, args.Format, texture->SRV.CPU);
             }
-        }
-        else
-        {
-            texture->Resource = backbuffer;
+
+            _device->CreateShaderResourceView(texture->Resource, args.Format, texture->SRV.CPU);
         }
 
 
         if (args.RenderTargetView)
         {
-            texture->RTV = _allocator->Allocate(DescriptorHeapType.RenderTargetView);
             if (!texture->RTV.IsValid)
             {
-                Logger.Error<D3D12ResourceManager>("Failed to allocate a RTV descriptor handle");
-                if (texture->RTV.IsValid)
+                texture->RTV = _allocator->Allocate(DescriptorHeapType.RenderTargetView);
+                if (!texture->RTV.IsValid)
                 {
-                    _allocator->Free(texture->RTV);
+                    Logger.Error<D3D12ResourceManager>("Failed to allocate a RTV descriptor handle");
+                    if (texture->RTV.IsValid)
+                    {
+                        _allocator->Free(texture->RTV);
+                    }
+                    texture->Resource.Dispose();
+                    return false;
                 }
-                texture->Resource.Dispose();
-                _textures.SafeFree(handle);
-                return Handle<Texture>.Invalid;
             }
-
             _device->CreateRenderTargetView(texture->Resource, null, texture->RTV.CPU);
         }
 
@@ -474,7 +522,8 @@ public unsafe partial struct D3D12ResourceManager
         {
             D3D12Helpers.SetName(texture->Resource, args.DebugName);
         }
-        return handle;
+
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

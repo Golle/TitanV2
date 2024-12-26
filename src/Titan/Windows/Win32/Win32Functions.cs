@@ -57,6 +57,9 @@ internal static unsafe class Win32Functions
     private static void PostClipCursor(nuint handle, bool insideWindow)
         => User32.PostMessageW(handle, Win32WindowSystem.WM_CLIP_CURSOR_TO_SCREEN, (nuint)(insideWindow ? 1 : 0), 0);
 
+    private static void Resize(nuint handle, uint width, uint height) 
+        => User32.PostMessageW(handle, Win32WindowSystem.WM_WINDOW_RESIZE, width, height);
+
     public static WindowFunctions GetFunctionPointers() => new(
         &GetRelativeCursorPosition,
         &GetAbsoluteCursorPosition,
@@ -66,6 +69,7 @@ internal static unsafe class Win32Functions
         &Close,
         &ToggleTopMost,
         &PostShowCursor,
-        &PostClipCursor
+        &PostClipCursor,
+        &Resize
     );
 }

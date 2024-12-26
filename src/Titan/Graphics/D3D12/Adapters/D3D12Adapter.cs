@@ -133,10 +133,10 @@ internal unsafe partial struct D3D12Adapter
 
                     // Formats the value to WIDTHxHEIGHT
                     var description = mode.Description.AsSpan();
-                    mode.Height.TryFormat(mode.Description, out var heightLength);
-                    mode.Width.TryFormat(description[(heightLength + 1)..], out var widthLength);
-                    description[heightLength] = 'x';
-                    mode.DescriptionLength = heightLength + widthLength + 1;
+                    mode.Width.TryFormat(mode.Description, out var widthLength);
+                    mode.Height.TryFormat(description[(widthLength + 1)..], out var heightLength);
+                    description[widthLength] = 'x';
+                    mode.DescriptionLength = widthLength + heightLength + 1;
                 }
             }
         }

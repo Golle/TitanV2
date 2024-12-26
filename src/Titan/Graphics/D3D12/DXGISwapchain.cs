@@ -3,8 +3,11 @@ using Titan.Application;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
+using Titan.Events;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
+using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
@@ -121,8 +124,6 @@ internal unsafe partial struct DXGISwapchain
 
         swapchain->SyncInterval = config.VSync ? 1u : 0u;
         swapchain->PresentFlags = (uint)(tearingSupport && !config.VSync /*&& !Fullscreen*/ ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0);
-
-        swapchain->BackbufferFrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
     private bool InitBackbuffers(in D3D12Device device, in D3D12Allocator allocator, bool createDescriptor)
@@ -142,6 +143,34 @@ internal unsafe partial struct DXGISwapchain
                 var rtvDescriptor = RenderTargetViews[i] = allocator.Allocate(DescriptorHeapType.RenderTargetView);
                 device.CreateRenderTargetView(Resources[i], null, rtvDescriptor.CPU);
             }
+        }
+        BackbufferFrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
+        return true;
+    }
+
+    private bool ResizeBuffers(in Size size, in D3D12Device device, in D3D12CommandQueue commandQueue, in D3D12Allocator allocator)
+    {
+        // Start by flushing the GPU so no resources are in use.
+        FlushGPU(commandQueue);
+
+        // Release current buffers
+        for (var i = 0; i < BufferCount; ++i)
+        {
+            Resources[i].Dispose();
+            allocator.Free(RenderTargetViews[i]);
+        }
+
+        var hr = Swapchain.Get()->ResizeBuffers(BufferCount, (uint)size.Width, (uint)size.Height, DefaultFormat, 0);
+        if (FAILED(hr))
+        {
+            Logger.Error<DXGISwapchain>($"Failed to resize the buffers. Width = {size.Width} Height = {size.Height} Format = {DefaultFormat} HRESULT = {hr}");
+            return false;
+        }
+
+        if (!InitBackbuffers(device, allocator, true))
+        {
+            Logger.Error<DXGISwapchain>("Failed to init the buffers after resize.");
+            return false;
         }
 
         return true;
@@ -173,13 +202,23 @@ internal unsafe partial struct DXGISwapchain
     }
 
     [System(SystemStage.Last)]
-    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue)
+    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue, in D3D12Allocator allocator, in D3D12Device device, EventReader<WindowResizeEvent> resizeEvent)
     {
-
         swapchain->Present(queue);
         if (!EngineState.Active)
         {
             swapchain->FlushGPU(queue);
+            return;
+        }
+
+        // we check for resize events after we've completed the draw. If a resize event happened we recreate the swapchain.
+        if (resizeEvent.HasEvents)
+        {
+            foreach (ref readonly var @event in resizeEvent)
+            {
+                swapchain->ResizeBuffers(@event.Size, device, queue, allocator);
+                break;
+            }
         }
     }
 

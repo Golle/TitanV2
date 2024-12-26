@@ -5,6 +5,7 @@ using Titan.Core.Threading;
 using Titan.Input;
 using Titan.Platform.Win32.DBT;
 using Titan.Resources;
+using Titan.UI.Widgets;
 using Titan.Windows.Win32;
 
 namespace Titan.Windows;
@@ -25,6 +26,7 @@ public unsafe partial struct Window
 
 
     public int Width, Height;
+    public int WidthWithFrame, HeightWithFrame;
     public int X, Y;
     public int ScreenWidth, ScreenHeight;
     public bool Windowed;
@@ -73,4 +75,14 @@ public unsafe partial struct Window
 
     public readonly void KeepCursorInWindow(bool insideWindow)
     => Functions.ClipCursor(Handle, insideWindow);
+
+    /// <summary>
+    /// Resize the window.
+    /// <remarks>This endpoint will move the window so it's centered</remarks>
+    /// <remarks>The size provided should be compatible with the modes returned my the GPU</remarks>
+    /// </summary>
+    /// <param name="width">Window width without border</param>
+    /// <param name="height">Window height without border</param>
+    public readonly void Resize(uint width, uint height)
+        => Functions.Resize(Handle, width, height);
 }

@@ -98,7 +98,7 @@ internal unsafe partial struct D3D12Allocator
 
     public readonly void Free(in D3D12DescriptorHandle handle)
     {
-        //NOTE(Jens): There's a race condition with Alloc and Free. Can it ever happen?
+        //NOTE(Jens): There's a race condition with Alloc and Free. Can it ever happen? YES
         var heap = _heaps.GetPointer((int)handle.Type);
         var index = Interlocked.Decrement(ref heap->Count);
         heap->FreeList[index] = handle.Index;

@@ -10,6 +10,7 @@ using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Core.Strings;
 using Titan.ECS.Systems;
+using Titan.Events;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.D3D12.Memory;
@@ -314,7 +315,7 @@ public unsafe partial struct RenderGraph
     }
 
     [System(SystemStage.First)]
-    internal static void PreUpdate(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window, in InputState inputState)
+    internal static void OnNewFrame(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window, in InputState inputState)
     {
         if (graph._isReady)
         {
@@ -395,7 +396,6 @@ public unsafe partial struct RenderGraph
         }
     }
 
-
     private bool AreAssetsLoaded()
     {
         foreach (ref readonly var pass in _renderPasses.AsReadOnlySpan()[.._renderPassCount])
@@ -412,6 +412,21 @@ public unsafe partial struct RenderGraph
         }
 
         return true;
+    }
+
+    [System(SystemStage.Last, SystemExecutionType.Inline)]
+    internal static void Last(ref RenderGraph graph, in Window window, EventReader<WindowResizeEvent> resizeEvent)
+    {
+        if (!resizeEvent.HasEvents)
+        {
+            return;
+        }
+        foreach (var _ in resizeEvent)
+        {
+            Logger.Warning<RenderGraph>("This is a hack, rethink this solution. Function = Last");
+            graph.SetDefaultViewPorts(window);
+            break;
+        }
     }
 
     private bool CreatePipelineStates()

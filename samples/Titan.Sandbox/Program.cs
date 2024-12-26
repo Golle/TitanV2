@@ -249,7 +249,7 @@ namespace Titan.Sandbox
         private static string[] Modes = [];
 
         [System(SystemStage.Init)]
-        public static void Init(AssetsManager assetsManager)
+        public static void Init(AssetsManager assetsManager, in Window window)
         {
             UIID.Create(RadioIds);
 
@@ -321,6 +321,11 @@ namespace Titan.Sandbox
             for (var i = 0; i < modes.Length; ++i)
             {
                 Modes[i] = new string(modes[i].GetDescription());
+
+                if (modes[i].Width == window.Width && modes[i].Height == window.Height)
+                {
+                    _screenStates[1].SelectedIndex = (byte)i;
+                }
             }
         }
 
@@ -333,12 +338,12 @@ namespace Titan.Sandbox
 
 
         private static Inline2<UISelectBoxState> _screenStates;
+        
         [System]
-        public static void ScreenSize(UIManager ui)
+        public static void ScreenSize(UIManager ui, in Window window)
         {
-
             const int offset = 900;
-            ui.SelectBox(1001, new Vector2(100, offset + 80), new(250, 33), ["Borderless Window", "Fullscreen"], ref _screenStates[0], _selectBoxStyle);
+            ui.SelectBox(1001, new Vector2(100, offset + 80), new(250, 33), ["Window", "Borderless Fullscreen"], ref _screenStates[0], _selectBoxStyle);
             if (_screenStates[0].SelectedIndex == 0)
             {
                 ui.SelectBox(1002, new Vector2(100, offset), new(250, 33), Modes, ref _screenStates[1], _selectBoxStyle);
@@ -346,7 +351,8 @@ namespace Titan.Sandbox
 
             if (ui.Button(1003, new Vector2(380, offset + 82), new SizeF(100, 30), Color.Magenta))
             {
-                Logger.Error("Updating resolution");
+                ref readonly var mode = ref EngineSettings.GraphicAdapters[0].Outputs[0].Modes[_screenStates[1].SelectedIndex];
+                window.Resize(mode.Width, mode.Height);
             }
         }
 
