@@ -13,7 +13,8 @@ internal readonly unsafe struct WindowFunctions(
     delegate*<nuint, ref bool, void> toggleTopMost,
     delegate*<nuint, bool, void> showCursor,
     delegate*<nuint, bool, void> clipCursor,
-    delegate*<nuint, uint, uint, void> resize
+    delegate*<nuint, uint, uint, void> resize,
+    delegate*<nuint, bool> isInFocus
 )
 {
     public readonly delegate*<nuint, Point> GetRelativeCursorPosition = getRelativeCursorPosition;
@@ -26,4 +27,5 @@ internal readonly unsafe struct WindowFunctions(
     public readonly delegate*<nuint, bool, void> ShowCursor = showCursor;
     public readonly delegate*<nuint, bool, void> ClipCursor = clipCursor;
     public readonly delegate*<nuint, uint, uint, void> Resize = resize;
+    public readonly delegate*<nuint, bool> IsInFocus = isInFocus;
 }

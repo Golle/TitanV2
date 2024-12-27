@@ -20,8 +20,11 @@ internal unsafe partial struct InputSystem
         if (lostFocus)
         {
             Logger.Trace<InputSystem>("Window lost focus, clearing key states");
-            MemoryUtils.Init(state->Current, (int)KeyCode.NumberOfKeys);
+            MemoryUtils.Init(state->Current, KeyStateSize);
+            MemoryUtils.Init(state->MouseState, MouseStateSize);
         }
+
+        var isWindowInFocus = window.IsFocused();
 
         MemoryUtils.Copy(state->Previous, state->Current, KeyStateSize);
         MemoryUtils.Copy(state->PreviousMouseState, state->MouseState, MouseStateSize);
@@ -40,11 +43,15 @@ internal unsafe partial struct InputSystem
             // save state
         }
 
-        state->MouseState[(int)MouseButton.Left] = window.IsButtonDown(MouseButton.Left);
-        state->MouseState[(int)MouseButton.Right] = window.IsButtonDown(MouseButton.Right);
-        state->MouseState[(int)MouseButton.Middle] = window.IsButtonDown(MouseButton.Middle);
-        state->MouseState[(int)MouseButton.XButton1] = window.IsButtonDown(MouseButton.XButton1);
-        state->MouseState[(int)MouseButton.XButton2] = window.IsButtonDown(MouseButton.XButton2);
+        if (isWindowInFocus)
+        {
+            state->MouseState[(int)MouseButton.Left] = window.IsButtonDown(MouseButton.Left);
+            state->MouseState[(int)MouseButton.Right] = window.IsButtonDown(MouseButton.Right);
+            state->MouseState[(int)MouseButton.Middle] = window.IsButtonDown(MouseButton.Middle);
+            state->MouseState[(int)MouseButton.XButton1] = window.IsButtonDown(MouseButton.XButton1);
+            state->MouseState[(int)MouseButton.XButton2] = window.IsButtonDown(MouseButton.XButton2);
+        }
+        
 
         state->MouseHidden = !window.CursorVisible;
 
@@ -90,7 +97,5 @@ internal unsafe partial struct InputSystem
         {
             state->Current[(int)keyUp.Code] = false;
         }
-
-        //TODO(Jens): Implement lost focus, we need to clear the buffer in that case.
     }
 }

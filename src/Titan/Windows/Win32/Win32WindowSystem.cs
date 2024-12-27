@@ -362,6 +362,12 @@ internal unsafe partial struct Win32WindowSystem
                 break;
 
             case WM_KILLFOCUS:
+                // If we loose focux and the cursor is hidden we show it again. 
+                if (!window->CursorVisible)
+                {
+                    ShowCursor(1);
+                    window->CursorVisible = true;
+                }
                 queue->Push(new Win32LostFocusEvent());
                 break;
 

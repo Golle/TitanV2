@@ -85,4 +85,7 @@ public unsafe partial struct Window
     /// <param name="height">Window height without border</param>
     public readonly void Resize(uint width, uint height)
         => Functions.Resize(Handle, width, height);
+
+    public readonly bool IsFocused() 
+        => Functions.IsInFocus(Handle);
 }

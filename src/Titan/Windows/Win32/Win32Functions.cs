@@ -51,13 +51,19 @@ internal static unsafe class Win32Functions
         );
     }
 
+    private static bool IsInFocus(nuint handle)
+    {
+        var focusHandle = (nuint)User32.GetForegroundWindow().Value;
+        return handle == focusHandle;
+    }
+
     private static void PostShowCursor(nuint handle, bool showCursor)
         => User32.PostMessageW(handle, Win32WindowSystem.WM_TOGGLE_CURSOR, (nuint)(showCursor ? 1 : 0), 0);
 
     private static void PostClipCursor(nuint handle, bool insideWindow)
         => User32.PostMessageW(handle, Win32WindowSystem.WM_CLIP_CURSOR_TO_SCREEN, (nuint)(insideWindow ? 1 : 0), 0);
 
-    private static void Resize(nuint handle, uint width, uint height) 
+    private static void Resize(nuint handle, uint width, uint height)
         => User32.PostMessageW(handle, Win32WindowSystem.WM_WINDOW_RESIZE, width, height);
 
     public static WindowFunctions GetFunctionPointers() => new(
@@ -70,6 +76,7 @@ internal static unsafe class Win32Functions
         &ToggleTopMost,
         &PostShowCursor,
         &PostClipCursor,
-        &Resize
+        &Resize,
+        &IsInFocus
     );
 }
