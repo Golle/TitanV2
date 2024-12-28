@@ -19,6 +19,13 @@ using Titan.Systems;
 
 namespace Titan.Graphics.D3D12;
 
+
+public record struct CreateCommandSignatureArgs(Handle<RootSignature> RootSignature, uint Stride, uint RootParameterIndex, uint DestinatinOffset, uint NumberOfValues)
+{
+    public static unsafe CreateCommandSignatureArgs Create<T>(Handle<RootSignature> rootSignature, uint rootParameterIndex, uint destinationOffset = 0, uint numberOfValues = 1) where T : unmanaged
+        => new(rootSignature, (uint)sizeof(T), rootParameterIndex, destinationOffset, numberOfValues);
+}
+
 public record struct CreateBufferArgs(uint Count, int Stride, BufferType Type, TitanBuffer InitialData = default)
 {
     public bool CpuVisible { get; init; }
@@ -153,6 +160,7 @@ public unsafe partial struct D3D12ResourceManager
     private ResourcePool<Texture> _textures;
     private ResourcePool<RootSignature> _rootSignatures;
     private ResourcePool<PipelineState> _pipelineStates;
+    private ResourcePool<CommandSignature> _commandSignatures;
     private D3D12Device* _device;
     private D3D12UploadQueue* _uploadQueue;
     private D3D12Allocator* _allocator;
@@ -185,6 +193,11 @@ public unsafe partial struct D3D12ResourceManager
             return;
         }
 
+        if (!memoryManager.TryCreateResourcePool(out manager->_commandSignatures, 8))
+        {
+            Logger.Error<D3D12ResourceManager>($"Failed to create the resource pool. Resource = {nameof(CommandSignature)} Count = {8}.");
+            return;
+        }
 
         manager->_device = registry.GetResourcePointer<D3D12Device>();
         manager->_uploadQueue = registry.GetResourcePointer<D3D12UploadQueue>();
@@ -198,6 +211,7 @@ public unsafe partial struct D3D12ResourceManager
         memoryManager.FreeResourcePool(ref manager->_textures);
         memoryManager.FreeResourcePool(ref manager->_rootSignatures);
         memoryManager.FreeResourcePool(ref manager->_pipelineStates);
+        memoryManager.FreeResourcePool(ref manager->_commandSignatures);
     }
 
     public readonly Handle<GPUBuffer> CreateBuffer(in CreateBufferArgs args)
@@ -233,7 +247,10 @@ public unsafe partial struct D3D12ResourceManager
         //{
 
         //}
-        var resourceState = D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
+        var resourceState = args.Type is BufferType.IndirectArguments
+            ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON
+            : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+
         var size = (uint)args.Stride * args.Count;
         var flags = args.ShaderVisible
             ? D3D12_RESOURCE_FLAGS.D3D12_RESOURCE_FLAG_NONE
@@ -396,7 +413,7 @@ public unsafe partial struct D3D12ResourceManager
                 return false;
             }
         }
-        
+
         _device->CreateDepthStencilView(texture->Resource, texture->DSV.CPU);
 
         texture->Width = args.Width;
@@ -555,6 +572,33 @@ public unsafe partial struct D3D12ResourceManager
         }
     }
 
+    public readonly Handle<CommandSignature> CreateCommandSignature(in CreateCommandSignatureArgs args)
+    {
+        var handle = _commandSignatures.SafeAlloc();
+        var signature = _commandSignatures.AsPtr(handle);
+        var rootSignature = Access(args.RootSignature);
+        signature->Resource = _device->CreateCommandSignature(rootSignature->Resource, args.Stride, args.RootParameterIndex, args.DestinatinOffset, args.NumberOfValues);
+        if (!signature->Resource.IsValid)
+        {
+            Logger.Error<D3D12ResourceManager>("Failed to create the Command Signature");
+            _commandSignatures.SafeFree(handle);
+            return Handle<CommandSignature>.Invalid;
+        }
+
+        return handle;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly CommandSignature* Access(Handle<CommandSignature> handle)
+        => _commandSignatures.AsPtr(handle);
+
+    public readonly void DestroyCommandSignature(Handle<CommandSignature> handle)
+    {
+        Debug.Assert(handle.IsValid);
+        var signature = _commandSignatures.AsPtr(handle);
+        signature->Resource.Dispose();
+        _commandSignatures.SafeFree(handle);
+    }
 
     public readonly bool Upload(Handle<Texture> handle, TitanBuffer buffer)
     {

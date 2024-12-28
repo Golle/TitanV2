@@ -4,10 +4,12 @@ using System.Runtime.InteropServices;
 namespace Titan.Platform.Win32.D3D12;
 
 [Guid("c36a797c-ec80-4f0a-8985-a7b2475082d1")]
-public unsafe struct ID3D12CommandSignature
+public unsafe struct ID3D12CommandSignature : INativeGuid
 {
+    public static Guid* Guid => IID.IID_ID3D12CommandSignature;
     private void** _vtbl;
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public HRESULT QueryInterface(Guid* riid, void** ppvObject)
         => ((delegate* unmanaged[Stdcall]<void*, Guid*, void**, HRESULT>)_vtbl[0])(Unsafe.AsPointer(ref this), riid, ppvObject);
 
@@ -42,4 +44,5 @@ public unsafe struct ID3D12CommandSignature
     //ID3D12CommandSignature* This,
     //REFIID riid,
     //_COM_Outptr_opt_  void** ppvDevice);
+    
 }

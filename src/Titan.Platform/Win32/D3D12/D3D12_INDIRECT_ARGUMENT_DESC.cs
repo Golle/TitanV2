@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Platform.Win32.D3D12;
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Explicit, Pack = 1)]
 public struct D3D12_INDIRECT_ARGUMENT_DESC
 {
     [FieldOffset(0)] public D3D12_INDIRECT_ARGUMENT_TYPE Type;

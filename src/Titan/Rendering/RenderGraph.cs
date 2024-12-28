@@ -283,6 +283,12 @@ public unsafe partial struct RenderGraph
         return _renderPasses[index].CommandList;
     }
 
+    public readonly Handle<RootSignature> GetRootSignature(in Handle<RenderPass> handle)
+    {
+        var index = handle.Value - HandleOffset;
+        return _renderPasses[index].RootSignature;
+    }
+
     public readonly void End(in Handle<RenderPass> handle)
     {
         if (!IsReady || handle.IsInvalid)

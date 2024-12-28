@@ -77,8 +77,12 @@
         [ ] Swapchain fails, returns none 0 HRESULT. Does not happen when debugger is attached.
         [ ] CommandList.Close() fails. Does not happen when debugger is attached.
 
+## Draw Indirect
+    [X] Implement the DrawIndirect APIs.
+    [ ] implement a Indirect Draw Command builder, similar to the root signature builder. 
+
 ## Resizing/Fullscreen ( sen TitanV1 for inspiration)
-    [ ] Add support for resizing and render pipeline re-creation
+    [X] Add support for resizing and render pipeline re-creation
     [ ] Add support for Fullscreen (Alt-Enter)
     [X] Add support for Borderless Fullscreen
 

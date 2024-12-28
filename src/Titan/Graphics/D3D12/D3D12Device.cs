@@ -406,4 +406,43 @@ internal unsafe partial struct D3D12Device
         };
         Device.Get()->CreateDepthStencilView(resource, &desc, cpuHandle);
     }
+
+
+    public readonly ID3D12CommandSignature* CreateCommandSignature(ID3D12RootSignature* rootSignature, uint stride, uint rootParameterIndex, uint destinationOffset = 0, uint numberOfValues = 1)
+    {
+        Logger.Warning<D3D12Device>($"{nameof(CreateCommandSignature)} has hardcoded value at the moment. Fix this when we need a better implementation.");
+        // TODO: implement better support for these when needed. currently we've hardcoded a single constant and an Draw indexed command.
+        Inline2<D3D12_INDIRECT_ARGUMENT_DESC> descs = default;
+        descs[0] = new()
+        {
+            Type = D3D12_INDIRECT_ARGUMENT_TYPE.D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT,
+            Constant =
+            {
+                RootParameterIndex = rootParameterIndex,
+                DestOffsetIn32BitValues = destinationOffset,
+                Num32BitValuesToSet = numberOfValues
+            }
+        };
+        descs[1] = new()
+        {
+            Type = D3D12_INDIRECT_ARGUMENT_TYPE.D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED
+        };
+
+        D3D12_COMMAND_SIGNATURE_DESC desc = new()
+        {
+            ByteStride = stride,
+            NodeMask = 0,
+            NumArgumentDescs = (uint)descs.Size,
+            pArgumentDescs = descs.AsPointer()
+        };
+        ID3D12CommandSignature* commandSignature;
+        var hr = Device.Get()->CreateCommandSignature(&desc, rootSignature, ID3D12CommandSignature.Guid, (void**)&commandSignature);
+        if (FAILED(hr))
+        {
+            Logger.Error<D3D12Device>($"Failed to create the {nameof(ID3D12CommandSignature)}. HRESULT = {hr}");
+            return null;
+        }
+
+        return commandSignature;
+    }
 }
