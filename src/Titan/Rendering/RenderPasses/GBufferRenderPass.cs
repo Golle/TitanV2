@@ -1,6 +1,8 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Titan.Application;
 using Titan.Assets;
+using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory;
@@ -29,6 +31,21 @@ internal struct MeshInstanceData
     private unsafe fixed float _padding[3];
 }
 
+public record GBufferConfig : IConfiguration, IDefault<GBufferConfig>
+{
+    public bool ClearRenderTargets { get; init; }
+    public BlendStateType BlendState { get; init; }
+    public CullMode CullMode { get; init; }
+    public FillMode FillMode { get; init; }
+
+    public static GBufferConfig Default => new()
+    {
+        BlendState = BlendStateType.AlphaBlend,
+        CullMode = CullMode.Back,
+        FillMode = FillMode.Solid,
+        ClearRenderTargets = true
+    };
+}
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
 {
@@ -45,9 +62,11 @@ internal unsafe partial struct GBufferRenderPass
     private Inline2<MappedGPUResource<MeshInstanceData>> GPUMeshIntances;
 
     [System(SystemStage.Init)]
-    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager)
+    public static void Init(GBufferRenderPass* renderPass, in RenderGraph renderGraph, in AssetsManager assetsManager, in D3D12ResourceManager resourceManager, IMemoryManager memoryManager, IConfigurationManager configurationManager)
     {
         const uint MaxStagedMeshes = 20 * 1024;
+
+        var config = configurationManager.GetConfigOrDefault<GBufferConfig>();
 
         var passArgs = new CreateRenderPassArgs
         {
@@ -58,9 +77,9 @@ internal unsafe partial struct GBufferRenderPass
                 .WithDecriptorRange(1, space: 2) // MeshInstance
                 .WithDecriptorRange(1, space: 3) // MaterialsInstance
             ,
-            BlendState = BlendStateType.AlphaBlend, //NOTE(Jens): maybe it should be disabled?
-            CullMode = CullMode.Back,
-            FillMode = FillMode.Solid,
+            BlendState = config.BlendState,
+            CullMode = config.CullMode,
+            FillMode = config.FillMode,
             Outputs =
             [
                 BuiltInRenderTargets.GBufferPosition,
@@ -70,7 +89,7 @@ internal unsafe partial struct GBufferRenderPass
             ],
             Inputs = [],
             DepthBuffer = BuiltInDepthsBuffers.GbufferDepthBuffer,
-            ClearFunction = &ClearFunction,
+            ClearFunction = config.ClearRenderTargets ? &ClearFunction : null,
             VertexShader = ShaderGBufferVertex,
             PixelShader = ShaderGBufferPixel
         };
@@ -125,8 +144,10 @@ internal unsafe partial struct GBufferRenderPass
 
         pass->MeshInstances = 0;
 
-        var meshBuffer = resourceManager.Access(pass->MeshInstancesHandles[graph.FrameIndex]);
-        var materialBuffer = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle(graph.FrameIndex));
+        var frameIndex = EngineState.FrameIndex;
+
+        var meshBuffer = resourceManager.Access(pass->MeshInstancesHandles[frameIndex]);
+        var materialBuffer = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle(frameIndex));
         var indexBuffer = resourceManager.Access(meshSystem.GetIndexBufferHandle());
         var vertexBuffer = resourceManager.Access(meshSystem.GetVertexBufferHandle());
 
@@ -188,7 +209,7 @@ internal unsafe partial struct GBufferRenderPass
     [System]
     public static void EndPass(in GBufferRenderPass pass, in RenderGraph graph)
     {
-        pass.GPUMeshIntances[graph.FrameIndex].Write(pass.StagingBuffer.Slice(0, pass.MeshInstances));
+        pass.GPUMeshIntances[EngineState.FrameIndex].Write(pass.StagingBuffer.Slice(0, pass.MeshInstances));
 
         graph.End(pass.PassHandle);
     }

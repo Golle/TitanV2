@@ -1,9 +1,13 @@
 using System.Diagnostics;
+using Titan.Application;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
+using Titan.Events;
 using Titan.Graphics.D3D12.Memory;
 using Titan.Graphics.D3D12.Utils;
+using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
@@ -25,10 +29,10 @@ internal unsafe partial struct DXGISwapchain
     public ComPtr<ID3D12Fence> Fence;
 
     public HANDLE FenceEvent;
-    public uint FrameIndex;
+    public uint BackbufferFrameIndex;
 
     public ulong GPUFrame;
-    public ulong CPUFrame;
+    //public ulong CPUFrame;
 
     public uint SyncInterval;
     public uint PresentFlags;
@@ -120,8 +124,6 @@ internal unsafe partial struct DXGISwapchain
 
         swapchain->SyncInterval = config.VSync ? 1u : 0u;
         swapchain->PresentFlags = (uint)(tearingSupport && !config.VSync /*&& !Fullscreen*/ ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0);
-
-        swapchain->FrameIndex = swapchain->Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
     private bool InitBackbuffers(in D3D12Device device, in D3D12Allocator allocator, bool createDescriptor)
@@ -141,6 +143,34 @@ internal unsafe partial struct DXGISwapchain
                 var rtvDescriptor = RenderTargetViews[i] = allocator.Allocate(DescriptorHeapType.RenderTargetView);
                 device.CreateRenderTargetView(Resources[i], null, rtvDescriptor.CPU);
             }
+        }
+        BackbufferFrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
+        return true;
+    }
+
+    private bool ResizeBuffers(in Size size, in D3D12Device device, in D3D12CommandQueue commandQueue, in D3D12Allocator allocator)
+    {
+        // Start by flushing the GPU so no resources are in use.
+        FlushGPU(commandQueue);
+
+        // Release current buffers
+        for (var i = 0; i < BufferCount; ++i)
+        {
+            Resources[i].Dispose();
+            allocator.Free(RenderTargetViews[i]);
+        }
+
+        var hr = Swapchain.Get()->ResizeBuffers(BufferCount, (uint)size.Width, (uint)size.Height, DefaultFormat, 0);
+        if (FAILED(hr))
+        {
+            Logger.Error<DXGISwapchain>($"Failed to resize the buffers. Width = {size.Width} Height = {size.Height} Format = {DefaultFormat} HRESULT = {hr}");
+            return false;
+        }
+
+        if (!InitBackbuffers(device, allocator, true))
+        {
+            Logger.Error<DXGISwapchain>("Failed to init the buffers after resize.");
+            return false;
         }
 
         return true;
@@ -165,25 +195,43 @@ internal unsafe partial struct DXGISwapchain
     {
         var texture = resourceManager.Access(swapchain.CurrentBackbuffer);
         texture->Format = DefaultFormat;
-        texture->RTV = swapchain.RenderTargetViews[swapchain.FrameIndex];
-        texture->Resource = swapchain.Resources[swapchain.FrameIndex];
+        texture->RTV = swapchain.RenderTargetViews[swapchain.BackbufferFrameIndex];
+        texture->Resource = swapchain.Resources[swapchain.BackbufferFrameIndex];
         texture->Height = (uint)window.Height;
         texture->Width = (uint)window.Width;
     }
 
     [System(SystemStage.Last)]
-    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue)
-        => swapchain->Present(queue);
+    public static void Update(DXGISwapchain* swapchain, in D3D12CommandQueue queue, in D3D12Allocator allocator, in D3D12Device device, EventReader<WindowResizeEvent> resizeEvent)
+    {
+        swapchain->Present(queue);
+        if (!EngineState.Active)
+        {
+            swapchain->FlushGPU(queue);
+            return;
+        }
+
+        // we check for resize events after we've completed the draw. If a resize event happened we recreate the swapchain.
+        if (resizeEvent.HasEvents)
+        {
+            foreach (ref readonly var @event in resizeEvent)
+            {
+                swapchain->ResizeBuffers(@event.Size, device, queue, allocator);
+                break;
+            }
+        }
+    }
+
     private void Present(in D3D12CommandQueue queue)
     {
-        CPUFrame++;
         //var flags = TearingSupport && !Vsync && !Fullscreen ? DXGI_PRESENT.DXGI_PRESENT_ALLOW_TEARING : 0;
         var hr = Swapchain.Get()->Present(SyncInterval, PresentFlags);
-        
 
+
+        var frameCount = EngineState.FrameCount;
         var fence = Fence.Get();
-        queue.Signal(fence, CPUFrame);
-        var diff = CPUFrame - GPUFrame;
+        queue.Signal(fence, frameCount);
+        var diff = frameCount - GPUFrame;
         if (diff >= BufferCount)
         {
             var waitFrame = GPUFrame + 1;
@@ -196,29 +244,31 @@ internal unsafe partial struct DXGISwapchain
         }
 #if DEBUG
         if (FAILED(hr))
-        { 
+        {
             Logger.Error<DXGISwapchain>($"Swapchain FAiled. HRESULT = {hr}");
             Debugger.Launch();
         }
 #endif
         //Debug.Assert(SUCCEEDED(hr));
-        FrameIndex = (FrameIndex + 1) % BufferCount;
+        BackbufferFrameIndex = (BackbufferFrameIndex + 1) % BufferCount;
     }
 
     private void FlushGPU(in D3D12CommandQueue queue)
     {
         //NOTE(Jens): this method can be used for resizing the buffers as well. 
+
+        var frameCount = EngineState.FrameCount;
         for (var i = 0u; i < BufferCount; ++i)
         {
-            CPUFrame++;
-            queue.Signal(Fence, CPUFrame);
-            if (Fence.Get()->GetCompletedValue() < CPUFrame)
+            //CPUFrame++;
+            queue.Signal(Fence, frameCount);
+            if (Fence.Get()->GetCompletedValue() < frameCount)
             {
-                Fence.Get()->SetEventOnCompletion(CPUFrame, FenceEvent);
+                Fence.Get()->SetEventOnCompletion(frameCount, FenceEvent);
                 Kernel32.WaitForSingleObject(FenceEvent, INFINITE);
             }
         }
-        FrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
+        BackbufferFrameIndex = Swapchain.Get()->GetCurrentBackBufferIndex();
     }
 
     [System(SystemStage.Shutdown)]

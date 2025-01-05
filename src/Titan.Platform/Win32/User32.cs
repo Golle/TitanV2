@@ -79,6 +79,10 @@ public static unsafe partial class User32
     );
 
     [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])] 
+    public static partial HWND GetForegroundWindow();
+
+    [LibraryImport(DllName, SetLastError = true)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool AdjustWindowRect(
@@ -285,4 +289,9 @@ public static unsafe partial class User32
         nuint wParam,
         nuint lParam
     );
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ClipCursor(RECT* rect);
 }

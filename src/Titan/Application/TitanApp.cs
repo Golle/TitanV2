@@ -68,7 +68,7 @@ internal sealed class TitanApp : IApp, IRunnable
             Logger.Error<AppBuilder>($"Failed to register the cached queries in {nameof(QueryRegistry)}.");
             throw new InvalidOperationException($"{nameof(QueryRegistry)} failed.");
         }
-        
+
         ref var assetSystem = ref unmanagedResourceRegistry.GetResource<AssetSystem>();
         if (!assetSystem.SetRegisterAndLoaders(assetRegistries, assetLoaders))
         {
@@ -113,8 +113,6 @@ internal sealed class TitanApp : IApp, IRunnable
 
     private void RunInternal()
     {
-        ref readonly var lifetime = ref GetResourceHandle<ApplicationLifetime>().AsReadOnlyRef;
-
         var jobSystem = GetService<IJobSystem>();
         ref var scheduler = ref GetResourceHandle<SystemsScheduler>().AsRef;
 
@@ -124,7 +122,7 @@ internal sealed class TitanApp : IApp, IRunnable
         var frameCount = 0;
         var timer = Stopwatch.StartNew();
         Logger.Trace<TitanApp>("Starting main game loop");
-        while (lifetime.Active)
+        while (EngineState.Active)
         {
             scheduler.UpdateSystems(jobSystem);
 

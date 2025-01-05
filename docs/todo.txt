@@ -1,9 +1,17 @@
 
+
+# Builds/compilation
+    Read about these, can they do anything for performance or binary size?
+    [ ] <IlcInvariantGlobalization>true</IlcInvariantGlobalization>
+    [ ] <IlcDisableReflection>true</IlcDisableReflection>
+    [ ] <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+
 # Windowing
     [X] Implement hide cursor
     [X] Implement lock cursor in place during hidden cursor. Should return to original spot when not hidden anymore.
         [X] Add external function to detect this, so UI doesn't trigger hover effects for example.
     [ ] Add bounds check for mouse clicks
+    [X] Lock mouse inside screen (config)
 
 # Input
     [X] Clear keystate on LostFocus
@@ -69,11 +77,16 @@
         [ ] Swapchain fails, returns none 0 HRESULT. Does not happen when debugger is attached.
         [ ] CommandList.Close() fails. Does not happen when debugger is attached.
 
-## Resizing/Fullscreen ( sen TitanV1 for inspiration)
-    [ ] Add support for resizing and render pipeline re-creation
-    [ ] Add support for Fullscreen (Alt-Enter)
+## Draw Indirect
+    [X] Implement the DrawIndirect APIs.
+    [ ] implement a Indirect Draw Command builder, similar to the root signature builder. 
 
-## buffers
+## Resizing/Fullscreen ( sen TitanV1 for inspiration)
+    [X] Add support for resizing and render pipeline re-creation
+    [ ] Add support for Fullscreen (Alt-Enter)
+    [X] Add support for Borderless Fullscreen
+
+## Buffers
     [X] We're using Double buffering but treating it as single buffer, this causes flickering and other issues due to data being written when GPU is reading it. (Very visible in UI.)
         [X] Add double buffering for buffers that are updated each frame
         
@@ -111,3 +124,7 @@ The long term goal is to have a hot reload system, that can detect changes and c
 
 ## Widgets
     [ ] Add widget for Lights and other Entities, render them as squares in window space.
+
+## Debug Draw
+    [X] Simple Line drawing
+    [ ] Add a DebugDrawer class that we can use to draw different things like AABB, lines, spheres etc.

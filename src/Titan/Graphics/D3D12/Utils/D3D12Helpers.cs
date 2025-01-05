@@ -13,7 +13,7 @@ using static Titan.Platform.Win32.D3D12.D3D12Constants;
 
 namespace Titan.Graphics.D3D12.Utils;
 
-internal static class D3D12Helpers
+public static class D3D12Helpers
 {
     private static readonly D3D12_BLEND_DESC[] BlendStateDescs = new D3D12_BLEND_DESC[(int)BlendStateType.Count];
     private static readonly Inline4<D3D12_HEAP_PROPERTIES> _heaps;

@@ -15,7 +15,6 @@ using Titan.Input;
 using Titan.Materials;
 using Titan.Meshes;
 using Titan.Rendering;
-using Titan.Rendering.D3D12.Renderers;
 using Titan.Rendering.Resources;
 using Titan.Resources;
 using Titan.Sandbox;
@@ -41,7 +40,10 @@ App.Create(appConfig)
     //    MaxEntities = 1_000_000,
     //    MaxCommands = 1_000_000
     //})
-    .AddPersistedConfig(new WindowConfig(1920, 1080, true, true))
+    .AddPersistedConfig(new WindowConfig(1920, 1080, true)
+    {
+        KeepCursorInside = false
+    })
     .AddPersistedConfig(new RenderingConfig
     {
 #if DEBUG
@@ -70,9 +72,23 @@ namespace Titan.Sandbox
                 //.AddSystems<TheGameLightSystem>()
                 .AddSystemsAndResource<EntityTestSystem>()
                 .AddSystems<TheAudioThing>()
+                .AddSystems<InputStuff>()
                 ;
 
             return true;
+        }
+    }
+
+    internal unsafe partial struct InputStuff
+    {
+
+        [System]
+        public static void Update(in Window window, in InputState state)
+        {
+            if (state.IsKeyReleased(KeyCode.Escape))
+            {
+                window.Close();
+            }
         }
     }
 
@@ -230,8 +246,10 @@ namespace Titan.Sandbox
         public static UIID SliderID3 = UIID.Create();
         private static bool _playing = false;
 
+        private static string[] Modes = [];
+
         [System(SystemStage.Init)]
-        public static void Init(AssetsManager assetsManager)
+        public static void Init(AssetsManager assetsManager, in Window window)
         {
             UIID.Create(RadioIds);
 
@@ -297,6 +315,18 @@ namespace Titan.Sandbox
             };
 
             _timer = Stopwatch.StartNew();
+
+            var modes = EngineSettings.GraphicAdapters[0].Outputs[0].GetModes();
+            Modes = new string[modes.Length];
+            for (var i = 0; i < modes.Length; ++i)
+            {
+                Modes[i] = new string(modes[i].GetDescription());
+
+                if (modes[i].Width == window.Width && modes[i].Height == window.Height)
+                {
+                    _screenStates[1].SelectedIndex = (byte)i;
+                }
+            }
         }
 
 
@@ -304,9 +334,32 @@ namespace Titan.Sandbox
         public static int frameCount;
         public static int fpsSize;
         private static Stopwatch _timer;
+
+
+
+        private static Inline2<UISelectBoxState> _screenStates;
+        
+        [System]
+        public static void ScreenSize(UIManager ui, in Window window)
+        {
+            const int offset = 900;
+            ui.SelectBox(1001, new Vector2(100, offset + 80), new(250, 33), ["Window", "Borderless Fullscreen"], ref _screenStates[0], _selectBoxStyle);
+            if (_screenStates[0].SelectedIndex == 0)
+            {
+                ui.SelectBox(1002, new Vector2(100, offset), new(250, 33), Modes, ref _screenStates[1], _selectBoxStyle);
+            }
+
+            if (ui.Button(1003, new Vector2(380, offset + 82), new SizeF(100, 30), Color.Magenta))
+            {
+                ref readonly var mode = ref EngineSettings.GraphicAdapters[0].Outputs[0].Modes[_screenStates[1].SelectedIndex];
+                window.Resize(mode.Width, mode.Height);
+            }
+        }
+
         [System]
         public static void Update(AssetsManager assetsManager, AudioManager audioManager, in InputState inputState, in UIManager ui)
         {
+
             frameCount++;
 
             if (_timer.Elapsed.TotalSeconds > 1f)

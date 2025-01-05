@@ -2,8 +2,11 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Strings;
+using Titan.Events;
 using Titan.Graphics.D3D12;
+using Titan.Input;
 using Titan.Platform.Win32.DXGI;
 using Titan.Resources;
 using Titan.Systems;
@@ -22,6 +25,7 @@ internal unsafe partial struct RenderTargetCache
     private Inline16<CachedResource> _resources;
     private uint _count;
 
+    private bool IsDirty;
 
     [System(SystemStage.PreInit)]
     public static void PreInit(ref RenderTargetCache tracker, UnmanagedResourceRegistry registry)
@@ -32,6 +36,15 @@ internal unsafe partial struct RenderTargetCache
         tracker._resources = default;
     }
 
+    [System(SystemStage.First)]
+    public static void First(ref RenderTargetCache cache, in Window window)
+    {
+        if (cache.IsDirty)
+        {
+            cache.RecreateResources((uint)window.Width, (uint)window.Height);
+            cache.IsDirty = false;
+        }
+    }
     public Handle<Texture> GetOrCreateDepthBuffer(in DepthBufferConfig depthConfig)
     {
         var gotLock = false;
@@ -66,6 +79,8 @@ internal unsafe partial struct RenderTargetCache
                 Resource = handle,
                 Format = format,
                 Identifier = depthConfig.Name,
+                IsDepthBuffer = true,
+                ClearValue = depthConfig.ClearValue
             };
 
             return handle;
@@ -122,6 +137,9 @@ internal unsafe partial struct RenderTargetCache
                 Resource = handle,
                 Format = format,
                 Identifier = targetConfig.Name,
+                ClearValue = targetConfig.ClearValue,
+                OptimizedClearColor = targetConfig.OptimizedClearColor,
+                IsDepthBuffer = false
             };
 
             return handle;
@@ -150,6 +168,72 @@ internal unsafe partial struct RenderTargetCache
         return false;
     }
 
+
+    private void RecreateResources(uint width, uint height)
+    {
+        var gotLock = false;
+        _lock.Enter(ref gotLock);
+        Debug.Assert(gotLock);
+        try
+        {
+            // release all resources
+            for (var i = 0; i < _count; ++i)
+            {
+                ref var resource = ref _resources[i];
+                if (resource.IsDepthBuffer)
+                {
+                    var depthBufferResult = _resourceManager->RecreateDepthBuffer(resource.Resource, new CreateDepthBufferArgs
+                    {
+                        Width = width,
+                        Height = height,
+                        Format = resource.Format,
+                        ClearValue = resource.ClearValue
+                    });
+                    if (!depthBufferResult)
+                    {
+                        Logger.Error<RenderTargetCache>($"Failed to recreate Depth Buffer. Name = {resource.Identifier.GetString()}");
+
+                    }
+                    continue;
+                }
+                var renderTargetResult = _resourceManager->RecreateTexture(resource.Resource, new CreateTextureArgs
+                {
+                    Format = resource.Format,
+                    Height = height,
+                    Width = width,
+                    OptimizedClearColor = resource.OptimizedClearColor,
+                    DebugName = resource.Identifier.GetString(),
+                    InitialData = default,
+                    RenderTargetView = true,
+                    ShaderVisible = true
+                });
+                if (!renderTargetResult)
+                {
+                    Logger.Error<RenderTargetCache>($"Failed to recreate Render Target. Name = {resource.Identifier.GetString()}");
+                }
+            }
+        }
+        finally
+        {
+            _lock.Exit();
+        }
+
+    }
+
+    [System(SystemStage.Last)]
+    internal static void Last(ref RenderTargetCache cache, EventReader<WindowResizeEvent> resizeEvent)
+    {
+        if (resizeEvent.HasEvents)
+        {
+            foreach (var _ in resizeEvent)
+            {
+                cache.IsDirty = true;
+                break;
+            }
+        }
+    }
+
+
     [System(SystemStage.Shutdown)]
     public static void Shutdown(RenderTargetCache* cache, in D3D12ResourceManager resourceManager, in DXGISwapchain _)
     {
@@ -166,5 +250,10 @@ internal unsafe partial struct RenderTargetCache
         public StringRef Identifier;
         public DXGI_FORMAT Format;
         public Handle<Texture> Resource;
+
+        public bool IsDepthBuffer;
+        public Color OptimizedClearColor;
+        public float ClearValue;
     }
 }
+

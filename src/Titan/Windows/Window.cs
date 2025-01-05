@@ -1,37 +1,36 @@
 using System.Runtime.CompilerServices;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Threading;
 using Titan.Input;
 using Titan.Platform.Win32.DBT;
 using Titan.Resources;
+using Titan.UI.Widgets;
 using Titan.Windows.Win32;
 
 namespace Titan.Windows;
 
 [UnmanagedResource]
-internal unsafe partial struct Window
+public unsafe partial struct Window
 {
     public const int MaxTitleSize = 128;
 
-    public WindowFunctions Functions;
+    internal WindowFunctions Functions;
 
-    public nuint Handle;
+    internal nuint Handle;
+    internal void* Queue;
+    internal NativeThreadHandle WindowThread;
+    internal HDEVNOTIFY DeviceNotificationHandle;
+    internal int TitleLength;
+    internal fixed char Title[MaxTitleSize];
+
+
     public int Width, Height;
+    public int WidthWithFrame, HeightWithFrame;
     public int X, Y;
-
     public int ScreenWidth, ScreenHeight;
-
-    public int TitleLength;
-    public fixed char Title[MaxTitleSize];
-
-    public void* Queue;
-    public NativeThreadHandle WindowThread;
-    public HDEVNOTIFY DeviceNotificationHandle;
     public bool Windowed;
     public bool Active;
-
     public bool CursorVisible;
 
     private bool IsTopMost;
@@ -65,7 +64,7 @@ internal unsafe partial struct Window
     public readonly void SetCursorPosition(Point point)
         => Functions.SetCursorPosition(Handle, point);
 
-    public void Close()
+    public readonly void Close()
         => Functions.Close(Handle);
 
     public readonly void ToggleTopMost()
@@ -73,4 +72,20 @@ internal unsafe partial struct Window
 
     public readonly void ShowCursor(bool showCursor)
         => Functions.ShowCursor(Handle, showCursor);
+
+    public readonly void KeepCursorInWindow(bool insideWindow)
+    => Functions.ClipCursor(Handle, insideWindow);
+
+    /// <summary>
+    /// Resize the window.
+    /// <remarks>This endpoint will move the window so it's centered</remarks>
+    /// <remarks>The size provided should be compatible with the modes returned my the GPU</remarks>
+    /// </summary>
+    /// <param name="width">Window width without border</param>
+    /// <param name="height">Window height without border</param>
+    public readonly void Resize(uint width, uint height)
+        => Functions.Resize(Handle, width, height);
+
+    public readonly bool IsFocused() 
+        => Functions.IsInFocus(Handle);
 }

@@ -1,10 +1,9 @@
-using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Core.Maths;
+using Titan.Core.Strings;
 using Titan.Input;
 using Titan.UI.Resources;
 using Titan.UI.Widgets;
@@ -123,7 +122,7 @@ public readonly unsafe struct UIManager
                 var isHighligthed = MathUtils.IsWithin(offset, size, _inputState->MousePositionUI);
                 elements[index++] = backgroundElement with { Offset = offset, TextureCoordinates = sprite.Coordinates[isHighligthed ? style.HoverIndex : style.BackgroundIndex] };
 
-                var textPosition = offset with { X = offset.X + 7 };
+                var textPosition = offset with { X = offset.X + 14 };
                 InitTextW(elements[index..], textPosition, item, font, Color.White, 0.6f);
                 index += item.Length;
                 offset.Y -= (size.Height - 2);
@@ -143,7 +142,7 @@ public readonly unsafe struct UIManager
             Span<UIElement> elements = stackalloc UIElement[item.Length + 1];
 
             elements[0] = backgroundElement;
-            var textPosition = new Vector2(position.X + 7, position.Y);
+            var textPosition = new Vector2(position.X + 15, position.Y);
             InitTextW(elements[1..], textPosition, item, font, Color.White, 0.6f);
             _system->Add(elements);
         }

@@ -1,3 +1,4 @@
+using Titan.Core.Maths;
 using Titan.Events;
 
 namespace Titan.Input;
@@ -16,3 +17,10 @@ public partial record struct WindowLostFocusEvent;
 
 [Event]
 public partial record struct WindowGainedFocusEvent;
+
+[Event]
+public partial record struct WindowResizeEvent(uint Width, uint Height)
+{
+    public Size Size => new((int)Width, (int)Height);
+    public SizeF SizeF => new(Width, Height);
+}

@@ -1,0 +1,14 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "cca9247f-935f-40b1-a369-655915607ddd",
+  "name": "ShaderDebugPixel",
+  "fileSize": 0,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

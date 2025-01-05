@@ -4,6 +4,7 @@ using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Threading;
+using Titan.ECS.Components;
 using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DBT;
@@ -11,13 +12,22 @@ using Titan.Systems;
 using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
 using static Titan.Platform.Win32.WindowMessage;
+using SetWindowPos = Titan.Platform.Win32.SetWindowPos;
 
 namespace Titan.Windows.Win32;
 
 internal unsafe partial struct Win32WindowSystem
 {
+
+    private const WindowStyles BorderlessFullscreen = WindowStyles.WS_POPUP | WindowStyles.WS_VISIBLE;
+
+    //NOTE(Jens): We remove ths posibility to resize by pulling the edges. Doesn't really make sense for a game anyway. Cool feature, but not practical at this stage.
+    private const WindowStyles Windowed = (WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE) & ~WindowStyles.WS_MAXIMIZEBOX & ~WindowStyles.WS_THICKFRAME;
+
     // keep track of the cursor so we can change it.
     public const WindowMessage WM_TOGGLE_CURSOR = WM_USER + 1;
+    public const WindowMessage WM_CLIP_CURSOR_TO_SCREEN = WM_TOGGLE_CURSOR + 1;
+    public const WindowMessage WM_WINDOW_RESIZE = WM_CLIP_CURSOR_TO_SCREEN + 1;
 
     public static readonly Size ScreenSize = new
     (
@@ -33,6 +43,12 @@ internal unsafe partial struct Win32WindowSystem
         *queue = default;
 
         var config = configurationManager.GetConfigOrDefault<WindowConfig>();
+        if (config.Resizable)
+        {
+            Logger.Warning<Win32WindowSystem>("Resizable is set to true, this is currently not supported.");
+        }
+
+
         window->Functions = Win32Functions.GetFunctionPointers();
         window->SetTitle(config.Title ?? "Win32 Window");
         window->Height = (int)config.Height;
@@ -57,6 +73,8 @@ internal unsafe partial struct Win32WindowSystem
         {
             window->CursorVisible = cursorInfo.flags != CURSOR_STATE.CURSOR_HIDDEN;
         }
+
+        window->KeepCursorInWindow(config.KeepCursorInside);
     }
 
     [System(SystemStage.Shutdown)]
@@ -119,9 +137,9 @@ internal unsafe partial struct Win32WindowSystem
             {
                 CbSize = (uint)sizeof(WNDCLASSEXW),
                 HCursor = default,
-                HIcon = default,
-                HIconSm = default,
-                HbrBackground = default,
+                HIcon = 0,
+                HIconSm = 0,
+                HbrBackground = 0,
                 LpFnWndProc = &WindowProc,
                 HInstance = instance,
                 LpszClassName = pClassName,
@@ -142,30 +160,7 @@ internal unsafe partial struct Win32WindowSystem
         HWND parent = default;
         WindowStylesEx windowStyleEx = 0;//WindowStylesEx.WS_EX_TOPMOST;
 
-        var windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
-        //if (!config.Resizable)
-        //{
-        //    windowStyle ^= WindowStyles.WS_THICKFRAME;
-        //}
-        const int windowOffset = 100;
-        var windowRect = new RECT
-        {
-            Left = windowOffset,
-            Top = windowOffset,
-            Right = window->Width + windowOffset,
-            Bottom = window->Height + windowOffset
-        };
-        if (!AdjustWindowRect(&windowRect, windowStyle, false))
-        {
-            Logger.Warning<Win32WindowSystem>($"Failed to {nameof(AdjustWindowRect)}.");
-        }
-
-        if (window->X < 0 || window->Y < 0)
-        {
-            //NOTE(Jens): This will use the primary monitor. 
-            window->X = (ScreenSize.Width - window->Width) / 2;
-            window->Y = (ScreenSize.Height - window->Height) / 2;
-        }
+        UpdateWindowSize(window);
 
         HWND handle;
         fixed (char* pClassName = ClassName)
@@ -174,11 +169,11 @@ internal unsafe partial struct Win32WindowSystem
                 windowStyleEx,
                 pClassName,
                 window->Title,
-                windowStyle,
+                window->Windowed ? Windowed : BorderlessFullscreen,
                 window->X,
                 window->Y,
-                windowRect.Right - windowRect.Left,
-                windowRect.Bottom - windowRect.Top,
+                window->WidthWithFrame,
+                window->HeightWithFrame,
                 parent,
                 hMenu: 0,
                 instance,
@@ -196,8 +191,9 @@ internal unsafe partial struct Win32WindowSystem
         }
         window->Handle = (nuint)handle.Value;
         window->Active = true;
-        ShowWindow(handle, ShowWindowCommands.SW_SHOW);
+        var queue = (Win32MessageQueue*)window->Queue;
 
+        ShowWindow(handle, ShowWindowCommands.SW_SHOW);
 
         ref var active = ref window->Active;
         while (active)
@@ -227,12 +223,80 @@ internal unsafe partial struct Win32WindowSystem
                 continue;
             }
 
+            if (msg.Message == WM_CLIP_CURSOR_TO_SCREEN)
+            {
+                var windowRect = new RECT
+                {
+                    Left = window->X,
+                    Top = window->Y,
+                    Right = window->Width + window->X,
+                    Bottom = window->Height + window->Y
+                };
+                ClipCursor(msg.WParam == 1 ? &windowRect : null);
+                continue;
+            }
+
+            if (msg.Message == WM_WINDOW_RESIZE)
+            {
+                window->Height = (int)msg.LParam;
+                window->Width = (int)msg.WParam;
+                window->Y = window->X = -1;
+                UpdateWindowSize(window);
+                var windowResult = SetWindowPos(handle, 0, window->X, window->Y, window->WidthWithFrame, window->HeightWithFrame, SetWindowPos.SWP_ASYNCWINDOWPOS);
+                if (windowResult)
+                {
+                    queue->Push(new Win32ResizeEvent((uint)window->Width, (uint)window->Height));
+                }
+                else
+                {
+                    Logger.Error<Win32WindowSystem>("Failed to update the size and position of the Window.");
+                }
+            }
+
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
 
         Logger.Trace<Win32WindowSystem>("Window Message loop ended");
         return 1;
+    }
+
+    private static void UpdateWindowSize(Window* window)
+    {
+        if (window->Windowed)
+        {
+            const int windowOffset = 100;
+            var rect = new RECT
+            {
+                Left = windowOffset,
+                Top = windowOffset,
+                Right = window->Width + windowOffset,
+                Bottom = window->Height + windowOffset
+            };
+
+            // We'll have a border, so we have to calculate the screen size properly.
+            var windowStyle = window->Windowed ? Windowed : BorderlessFullscreen;
+            if (!AdjustWindowRect(&rect, windowStyle, false))
+            {
+                Logger.Warning<Win32WindowSystem>($"Failed to {nameof(AdjustWindowRect)}.");
+            }
+
+            if (window->X < 0 || window->Y < 0)
+            {
+                //NOTE(Jens): This will use the primary monitor. 
+                window->X = (ScreenSize.Width - window->Width) / 2;
+                window->Y = (ScreenSize.Height - window->Height) / 2;
+            }
+
+            window->WidthWithFrame = rect.Right - rect.Left;
+            window->HeightWithFrame = rect.Bottom - rect.Top;
+            return;
+        }
+
+        // Default full screen size and position.
+        window->X = window->Y = 0;
+        window->WidthWithFrame = window->Width = ScreenSize.Width;
+        window->HeightWithFrame = window->Height = ScreenSize.Height;
     }
 
     [UnmanagedCallersOnly]
@@ -298,12 +362,24 @@ internal unsafe partial struct Win32WindowSystem
                 break;
 
             case WM_KILLFOCUS:
+                // If we loose focux and the cursor is hidden we show it again. 
+                if (!window->CursorVisible)
+                {
+                    ShowCursor(1);
+                    window->CursorVisible = true;
+                }
                 queue->Push(new Win32LostFocusEvent());
                 break;
 
             case WM_SETFOCUS:
                 queue->Push(new Win32GainedFocusEvent());
                 break;
+
+            //case WM_SIZE:
+            //    var width = lParam & 0xffff;
+            //    var height = (lParam >> 16) & 0xffff;
+            //    queue->Push(new Win32ResizeEvent((uint)width, (uint)height));
+            //    break;
 
             case WM_DEVICECHANGE:
                 var devinterface = (DEV_BROADCAST_DEVICEINTERFACE_W*)lParam; // This is also the DEV_BROADCAST_HDR struct

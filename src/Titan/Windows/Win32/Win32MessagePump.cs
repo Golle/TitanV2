@@ -60,6 +60,11 @@ internal unsafe partial struct Win32MessagePump
                     // Maybe we need a more granular approach later, but for now this will do.
                     writer.Send(new AudioDeviceChangedEvent());
                     break;
+
+                case EventTypes.Resize:
+                    ref readonly var resizeEvent = ref @event.As<Win32ResizeEvent>();
+                    writer.Send(new WindowResizeEvent(resizeEvent.Width, resizeEvent.Height));
+                    break;
                 default:
                     Logger.Warning<Win32WindowSystem>($"Win32 Message not handled. Id = {@event.Id}");
                     break;

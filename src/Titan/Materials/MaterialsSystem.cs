@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Titan.Application;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
@@ -85,7 +86,7 @@ internal unsafe partial struct MaterialsSystem
             //TODO(Jens): Check for dirty materials. Right now we keep it simple.
             //NOTE(Jens): Implement dirty flag as a byte, start with value 2 and decrease for each update. This will ensure that all buffers have the same value.
             var updatedMaterials = storage->Materials.AsReadOnlySpan()[..storage->MaterialCount];
-            storage->GPUMaterialData[graph.FrameIndex].Write(updatedMaterials);
+            storage->GPUMaterialData[EngineState.FrameIndex].Write(updatedMaterials);
         }
     }
 

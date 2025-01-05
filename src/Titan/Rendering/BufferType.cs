@@ -5,5 +5,6 @@ public enum BufferType
     Vertex,
     Index,
     Constant,
-    Structured
+    Structured,
+    IndirectArguments
 }

@@ -37,7 +37,7 @@ public unsafe partial struct Kernel32
         SYSTEM_INFO* lpSystemInfo
     );
 
-    [LibraryImport(DllName, SetLastError = true)]
+    [LibraryImport(DllName, SetLastError = false)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #if !DEBUG

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Titan.Configurations;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -19,7 +20,6 @@ internal unsafe partial struct D3D12Adapter
     public Inline10<AdapterInfo> Adapters;
     public readonly ref readonly AdapterInfo PrimaryAdapter => ref Adapters[PrimaryAdapterIndex];
 
-
     [System(SystemStage.PreInit)]
     public static void Init(D3D12Adapter* adapter, IConfigurationManager configurationManager)
     {
@@ -39,6 +39,8 @@ internal unsafe partial struct D3D12Adapter
         //NOTE(Jens): We use the first device we find if there's no stored config. We enumerate them by GPU preference so we expect to get the best one first.
         adapter->PrimaryAdapterIndex = 0;
 
+        const int MaxModes = 256;
+        var modeDesc = stackalloc DXGI_MODE_DESC[MaxModes];
         for (var index = 0u; index < MaxAdapters; ++index)
         {
             IDXGIAdapter3* dxgiAdapter;
@@ -68,8 +70,75 @@ internal unsafe partial struct D3D12Adapter
             info.DeviceId = desc.DeviceId;
             info.VendorId = desc.VendorId;
             info.IsHardware = (desc.Flags & DXGI_ADAPTER_FLAG.DXGI_ADAPTER_FLAG_SOFTWARE) == 0;
-
             Logger.Trace<D3D12Adapter>($"Found adapter {info.DebugString}");
+
+            IDXGIOutput* output;
+            for (var outputIndex = 0u; dxgiAdapter->EnumOutputs(outputIndex, &output) != DXGI_ERROR.DXGI_ERROR_NOT_FOUND; ++outputIndex)
+            {
+                uint numberOfModes = 0;
+                hr = output->GetDisplayModeList(DXGISwapchain.DefaultFormat, 0, &numberOfModes, null);
+                if (FAILED(hr))
+                {
+                    Logger.Error<D3D12Adapter>($"Failed to get the dísplay modes. Index = {outputIndex}. HRESULT = {hr}");
+                    output->Release();
+                    break;
+                }
+
+                hr = output->GetDisplayModeList(DXGISwapchain.DefaultFormat, 0, &numberOfModes, modeDesc);
+                if (FAILED(hr))
+                {
+                    Logger.Error<D3D12Adapter>($"Failed to get the dísplay modes. Index = {outputIndex}. HRESULT = {hr}");
+                    output->Release();
+                    break;
+                }
+
+                if (numberOfModes > MaxModes)
+                {
+                    Logger.Error<D3D12Adapter>($"There are more modes available than slots. MaxModes = {MaxModes}, Number of Modes = {numberOfModes}");
+                    output->Release();
+                    break;
+                }
+
+                ref var outputInfo = ref info.Outputs[outputIndex];
+                for (var i = 0; i < numberOfModes; ++i)
+                {
+                    ref readonly var dxgiModeDesc = ref modeDesc[i];
+                    // only add unique modes, there are duplicate modes for each format. but we only support a single format today.
+                    if (Exists(outputInfo, dxgiModeDesc))
+                    {
+                        continue;
+                    }
+                    CreateMode(ref outputInfo.Modes[outputInfo.ModeCount++], dxgiModeDesc);
+                }
+                info.OutputCount++;
+                output->Release();
+
+                static bool Exists(in AdapterOutput output, in DXGI_MODE_DESC desc)
+                {
+                    foreach (ref readonly var mode in output.GetModes())
+                    {
+                        if (mode.Height == desc.Height && mode.Width == desc.Width)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                static void CreateMode(ref AdapterMode mode, in DXGI_MODE_DESC desc)
+                {
+                    mode.Height = desc.Height;
+                    mode.Width = desc.Width;
+
+                    // Formats the value to WIDTHxHEIGHT
+                    var description = mode.Description.AsSpan();
+                    mode.Width.TryFormat(mode.Description, out var widthLength);
+                    mode.Height.TryFormat(description[(widthLength + 1)..], out var heightLength);
+                    description[widthLength] = 'x';
+                    mode.DescriptionLength = widthLength + heightLength + 1;
+                }
+            }
         }
 
         if (config.Adapter != null)
