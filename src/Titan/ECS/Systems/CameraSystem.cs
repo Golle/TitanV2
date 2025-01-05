@@ -10,6 +10,8 @@ using Titan.Windows;
 
 namespace Titan.ECS.Systems;
 
+
+
 public record CameraStateConfig : IConfiguration, IDefault<CameraStateConfig>, IPersistable<CameraStateConfig>
 {
     public Vector3 Position { get; init; }
@@ -26,12 +28,14 @@ public record CameraStateConfig : IConfiguration, IDefault<CameraStateConfig>, I
     public static string Filename => "camera.conf";
 }
 
+
+public record struct Ray(Vector3 Origin, Vector3 Direction);
 public struct Camera
 {
     /// <summary>
     /// Clamp value to avoid camera flipping
     /// </summary>
-    public const float PitchClampValue = 89.9f* (MathF.PI / 180.0f);
+    public const float PitchClampValue = 89.9f * (MathF.PI / 180.0f);
     public static readonly Vector3 DefaultForward = -Vector3.UnitZ;
     public static readonly Vector3 DefaultUp = Vector3.UnitY;
     public static readonly Vector3 DefaultRight = Vector3.UnitX;
@@ -73,6 +77,40 @@ public struct Camera
             WorldMatrix = Matrix4x4.Identity,
         };
     }
+
+
+    /// <summary>
+    /// Create a Ray from the specified screen coordinates. Default is in the center of the screen.
+    /// <remarks>Use NDC to create the ray.</remarks>
+    /// </summary>
+    /// <param name="screenCoordinates">Screen coordinates in NDC, 0,0 is the default.</param>
+    /// <returns>A <see cref="Ray"/> with Origin and a Direction</returns>
+    public readonly Ray CreateRay(in Vector2 screenCoordinates = default)
+    {
+        var x = screenCoordinates.X;
+        var y = screenCoordinates.Y;
+
+        // Clip-space coordinates for near and far planes
+        var clipSpaceNear = new Vector4(x, y, -1.0f, 1.0f);
+        var clipSpaceFar = new Vector4(x, y, 1000.0f, 1.0f);
+        // Transform clip-space to world-space
+        //var inverseViewProjection = Matrix4x4.Invert(camera.ViewProjectionMatrix, out var result) ? result : Matrix4x4.Identity;
+        var worldSpaceNear = Vector4.Transform(clipSpaceNear, InverseViewProjectionMatrix);
+        var worldSpaceFar = Vector4.Transform(clipSpaceFar, InverseViewProjectionMatrix);
+
+        // Convert to homogeneous coordinates
+        worldSpaceNear /= worldSpaceNear.W;
+        worldSpaceFar /= worldSpaceFar.W;
+
+        // Calculate ray origin and direction
+        var origin = new Vector3(worldSpaceNear.X, worldSpaceNear.Y, worldSpaceNear.Z);
+        var direction = -Vector3.Normalize(new Vector3(
+            worldSpaceFar.X - worldSpaceNear.X,
+            worldSpaceFar.Y - worldSpaceNear.Y,
+            worldSpaceFar.Z - worldSpaceNear.Z));
+
+        return new(origin, direction);
+    }
 }
 
 [UnmanagedResource]
@@ -85,14 +123,14 @@ public partial struct CameraSystem
     {
         ref var camera = ref system.DefaultCamera;
         camera = Camera.Create();
-        
+
         var config = configurationManager.GetConfigOrDefault<CameraStateConfig>();
 
         camera.Position = config.Position;
         camera.Target = config.Target;
         camera.Pitch = config.Pitch;
         camera.Yaw = config.Yaw;
-        
+
         //camera.Position = Vector3.UnitZ * -10 + Vector3.UnitY * 10;
         camera.AspectRatio = window.Width / (float)window.Height;
         //camera.ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.Fov, camera.AspectRatio, camera.NearPlane, camera.FarPlane);
@@ -180,7 +218,7 @@ public partial struct CameraSystem
 
         camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
         camera.ViewProjectionMatrixTransposed = Matrix4x4.Transpose(camera.ViewProjectionMatrix);
-        
+
         var inverseResult = Matrix4x4.Invert(camera.ViewProjectionMatrix, out camera.InverseViewProjectionMatrix);
         Debug.Assert(inverseResult, "Failed to invert the View Projection Matrix. Why?");
     }

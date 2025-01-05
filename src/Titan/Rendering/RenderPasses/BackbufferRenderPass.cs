@@ -25,7 +25,13 @@ internal unsafe partial struct BackbufferRenderPass
             RootSignatureBuilder = static builder => builder.WithRootConstant<uint>(register: 1, space: 7),
             BlendState = BlendStateType.AlphaBlend,
             CullMode = CullMode.Back,
-            Inputs = [BuiltInRenderTargets.DeferredLighting, BuiltInRenderTargets.UI, BuiltInRenderTargets.Debug],
+            Inputs =
+            [
+                BuiltInRenderTargets.DeferredLighting,
+                BuiltInRenderTargets.PostProcessing,
+                BuiltInRenderTargets.UI,
+                BuiltInRenderTargets.Debug
+            ],
             Outputs = [BuiltInRenderTargets.Backbuffer],
             PixelShader = ShaderFullscreenPixel,
             VertexShader = ShaderFullscreenVertex,
@@ -49,12 +55,16 @@ internal unsafe partial struct BackbufferRenderPass
         commandList.SetGraphicsRootConstant(DataIndex, 0u);
         commandList.DrawInstanced(3, 1);
 
-        // draw UI
+        // draw Debug UI
         commandList.SetGraphicsRootConstant(DataIndex, 1u);
         commandList.DrawInstanced(3, 1);
 
         // draw UI
         commandList.SetGraphicsRootConstant(DataIndex, 2u);
+        commandList.DrawInstanced(3, 1);
+
+        // draw Debug UI
+        commandList.SetGraphicsRootConstant(DataIndex, 3u);
         commandList.DrawInstanced(3, 1);
 
         graph.End(pass.PassHandle);
