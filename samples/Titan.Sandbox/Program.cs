@@ -73,6 +73,7 @@ namespace Titan.Sandbox
                 .AddSystemsAndResource<EntityTestSystem>()
                 .AddSystems<TheAudioThing>()
                 .AddSystems<InputStuff>()
+                .AddSystems<UIVersion2>()
                 ;
 
             return true;

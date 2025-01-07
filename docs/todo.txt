@@ -1,4 +1,9 @@
 
+## Error Handling (rework current approach)
+    [ ] Rework error handling in Init code to Assert and terminate the application. These are all "fatal" and we can not recover from them.
+    [ ] Add asserts to interna engine functions, with context (caller?). It's unlikely that we can recover from a failure anyway, detect, log and crash to avoid corruption in memory.
+    [ ] Non engine code should ASSUME everything works. For example allocating a GPU buffer should not require the caller to check if its valid or not. Let the internals crash the game if it fails.
+        - The idea behind this is to reduce error checking code and increase throughput of writing code. Also reduces the amount of code in the game. 
 
 # Builds/compilation
     Read about these, can they do anything for performance or binary size?
@@ -23,6 +28,17 @@
 
 
 # UI 
+
+## Architecture
+    [ ] Bump allocators, used per call. Add a Begin/End to the UIManager that will get an allocator, and return it.
+        - We do this so we can create things in parallel, and at the end we return the allocators. If systems are executed after eachother they will be able to use the same allocator. 
+        - Slight risk of creating a lot of allocators that use a lot of memory. Might be able to have a top limit.
+    [ ] Begin/End
+        * Calling Begin creates an allocator, commands record what we want to do, and end will submit it to the UI system to be rendered.
+
+## Text Rendering
+    [ ] Figure out what kind of text we want to support. Would be nice to only support UTF-8 and a single color (no effects at this time).
+
 ## Layouts
     [ ] Add panels, similar to Stack and Horizontal panels in WPF. 
 

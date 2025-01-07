@@ -13,6 +13,7 @@ using Titan.Meshes;
 using Titan.Resources;
 using Titan.Services;
 using Titan.UI;
+using Titan.UI2;
 
 namespace Titan.Systems;
 
@@ -81,6 +82,7 @@ public unsafe ref struct SystemInitializer
     public UIManager CreateUIManager()
         => new(
             _unmanagedResources.GetResourcePointer<UISystem>(),
+            _unmanagedResources.GetResourcePointer<UISystem2>(),
             _unmanagedResources.GetResourcePointer<InputState>(),
             CreateAssetsManager()
             );

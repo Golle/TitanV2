@@ -332,6 +332,13 @@ public unsafe partial struct D3D12ResourceManager
         _buffers.SafeFree(handle);
     }
 
+
+    public readonly void MapBuffer<T>(out MappedGPUResource<T> resource, Handle<GPUBuffer> handle) where T : unmanaged
+    {
+        var result = TryMapBuffer(handle, out resource);
+        Debug.Assert(result);
+    }
+
     public readonly bool TryMapBuffer<T>(in Handle<GPUBuffer> handle, out MappedGPUResource<T> resource) where T : unmanaged
     {
         var buffer = Access(handle);

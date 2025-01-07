@@ -3,10 +3,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Core.Maths;
-using Titan.Core.Strings;
 using Titan.Input;
 using Titan.UI.Resources;
 using Titan.UI.Widgets;
+using Titan.UI2;
 
 namespace Titan.UI;
 
@@ -16,16 +16,18 @@ namespace Titan.UI;
 public readonly unsafe struct UIManager
 {
     private readonly UISystem* _system;
+    private readonly UISystem2* _system2;
     private readonly InputState* _inputState;
     private readonly AssetsManager _assetsManager;
-
-    internal UIManager(UISystem* system, InputState* inputState, in AssetsManager assetsManager)
+    internal UIManager(UISystem* system, UISystem2 * system2, InputState* inputState, in AssetsManager assetsManager)
     {
         _system = system;
+        _system2 = system2;
         _inputState = inputState;
         _assetsManager = assetsManager;
     }
 
+    public UIContext GiveMe() => new UIContext(_assetsManager, _inputState, _system2);
 
     public void HideUI() => SetUIVisibility(false);
     public void ShowUI() => SetUIVisibility(true);

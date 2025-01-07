@@ -57,6 +57,17 @@
       "name" :"Slider_Blob",
       "bottomLeft": [31,31],
       "topRight": [63,0]
+    },
+    {
+      "name" :"Button_01",
+      "bottomLeft": [0,47],
+      "topRight": [15,32],
+      "ninePatch": {
+        "left": 4,
+        "top": 4,
+        "right" :4,
+        "bottom":4
+      }
     }
   ],
   "ninePatch": [],

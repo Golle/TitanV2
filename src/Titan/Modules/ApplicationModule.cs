@@ -6,6 +6,7 @@ using Titan.Materials;
 using Titan.Meshes;
 using Titan.Rendering;
 using Titan.UI;
+using Titan.UI2;
 using Titan.Windows;
 
 namespace Titan.Modules;
@@ -23,6 +24,7 @@ public class ApplicationModule : IModule
                 .AddModule<MaterialsModule>()
                 .AddModule<MeshModule>()
                 .AddModule<UIModule>()
+                .AddModule<UIModule2>()
                 .AddModule<InputModule>()
                 .AddModule<AudioModule>()
                 ;
