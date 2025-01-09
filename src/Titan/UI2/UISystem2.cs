@@ -101,7 +101,7 @@ internal unsafe partial struct UISystem2
     public readonly uint GetCount() => (uint)Count;
 
 
-    private static readonly Comparison<UIWidget> WidgetComparison = (x, y) => x.Layer.CompareTo(y.Layer);
+    private static readonly Comparison<UIWidget> WidgetComparison = (x, y) => x.Id.CompareTo(y.Id);
 
     [System(SystemStage.Init)]
     public static void Init(ref UISystem2 system, IMemoryManager memoryManager, in D3D12ResourceManager resourceManager, AssetsManager assetsManager)
@@ -117,13 +117,38 @@ internal unsafe partial struct UISystem2
             resourceManager.MapBuffer(out system.WidgetBuffers[i], buffer);
         }
 
+        var defaultSprite = assetsManager.Load<SpriteAsset>(EngineAssetsRegistry.Sprites.DebugUiStyle.Asset);
+        var defaultFont = assetsManager.Load<FontAsset>(EngineAssetsRegistry.Fonts.SyneMonoRegular);
         system.DefaultStyle = new()
         {
-            ButtonStyle =
+            Button =
             {
-                Asset = assetsManager.Load<SpriteAsset>(EngineAssetsRegistry.Sprites.DebugUiStyle.Asset),
-                Font = assetsManager.Load<FontAsset>(EngineAssetsRegistry.Fonts.SyneMonoRegular),
-                ButtonIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button01
+                Asset = defaultSprite,
+                Font = defaultFont,
+                ButtonIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02,
+                ButtonSelectedIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02Selected,
+                ButtonDownIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02Pressed,
+                IsNinePatch = true
+            },
+            Slider =
+            {
+                Asset = defaultSprite,
+                BackgroundIndexLeft = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderLeft,
+                BackgroundIndexCenter = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderCenter,
+                BackgroundIndexRight = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderRight,
+                BackgroundIndexEmptyCenter = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderEmptyCenter,
+                BackgroundIndexEmptyLeft = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderEmptyLeft,
+                BackgroundIndexEmptyRight = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderEmptyRight,
+                SliderIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderBlob,
+                SliderSize = new(32),
+                SliderSelectedIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SliderBlobSelected
+            },
+            Checkbox =
+            {
+                Asset = defaultSprite,
+                Index = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Checkbox,
+                SelectedIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxSelected,
+                CheckmarkIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxCheckmark
             }
         };
     }

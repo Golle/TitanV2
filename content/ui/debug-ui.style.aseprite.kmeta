@@ -55,8 +55,13 @@
     },
     {
       "name" :"Slider_Blob",
-      "bottomLeft": [31,31],
+      "bottomLeft": [32,31],
       "topRight": [63,0]
+    },
+    {
+      "name" :"Slider_Blob_Selected",
+      "bottomLeft": [64,31],
+      "topRight": [95,0]
     },
     {
       "name" :"Button_01",
@@ -67,6 +72,59 @@
         "top": 4,
         "right" :4,
         "bottom":4
+      }
+    },
+    {
+      "name" : "Checkbox",
+      "bottomLeft" :[0,79],
+      "topRight": [31,48]
+    },
+    {
+      "name" : "Checkbox_Selected",
+      "bottomLeft" :[32,79],
+      "topRight": [63,48]
+    },
+    {
+      "name" : "Checkbox_Checkmark",
+      "bottomLeft" :[64,79],
+      "topRight": [95,48]
+    },
+    {
+      "name" : "Checkbox_Cross",
+      "bottomLeft" :[96,79],
+      "topRight": [127,48]
+    },
+    {
+      "name" : "Button_02",
+      "bottomLeft": [0,111],
+      "topRight": [31,80],
+      "ninePatch": {
+        "left": 5,
+        "top": 5,
+        "right" :5,
+        "bottom":5
+      }
+    },
+    {
+      "name" : "Button_02_Selected",
+      "bottomLeft": [32,111],
+      "topRight": [63,80],
+      "ninePatch": {
+        "left": 5,
+        "top": 5,
+        "right" :5,
+        "bottom":5
+      }
+    },
+    {
+      "name" : "Button_02_Pressed",
+      "bottomLeft": [64,111],
+      "topRight": [95,80],
+      "ninePatch": {
+        "left": 5,
+        "top": 5,
+        "right" :5,
+        "bottom":5
       }
     }
   ],

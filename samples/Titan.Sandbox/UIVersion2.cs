@@ -5,6 +5,8 @@ using Titan.Core.Maths;
 using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
+using Titan.UI.Widgets;
+using Titan.UI2;
 
 namespace Titan.Sandbox;
 internal partial struct UIVersion2
@@ -17,7 +19,8 @@ internal partial struct UIVersion2
         Sprite = assetsManager.Load<SpriteAsset>(EngineAssetsRegistry.Sprites.DebugUiStyle.Asset);
     }
 
-
+    private static UISliderState2 _state;
+    private static UICheckboxState2 _checkboxState;
     [System]
     public static void Update1(UIManager uiManager)
     {
@@ -34,6 +37,8 @@ internal partial struct UIVersion2
             }
 
 
+            context.Slider(23, new(600, 200), new(220, 50), Color.White, ref _state);
+
             context.End();
         }
     }
@@ -49,6 +54,11 @@ internal partial struct UIVersion2
                 Logger.Error<UIVersion2>("Rolf!");
             }
 
+            context.Checkbox(1212, new(100, 500), new(64, 64), Color.White, ref _checkboxState, context.Style.Checkbox with
+            {
+                CheckmarkIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxCross
+            });
+
             context.End();
         }
     }
@@ -56,18 +66,15 @@ internal partial struct UIVersion2
     [System]
     public static void Update(UIManager uiManager)
     {
+        var context = uiManager.GiveMe();
         {
-
-            var context = uiManager.GiveMe();
             context.Begin(3);
-            if (context.Button(3, "My button"u8, new(470,400), new(100, 100), Color.White))
+            if (context.Button(3, "My button"u8, new(470, 400), new(100, 100), Color.White))
             {
                 Logger.Error<UIVersion2>("Rolf!");
             }
 
             context.End();
         }
-
-
     }
 }

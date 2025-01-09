@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets;
-using Titan.Assets.Types;
 using Titan.Core;
 using Titan.Core.Logging;
+using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
@@ -29,6 +29,7 @@ public partial struct SpriteAsset
     public Handle<Texture> Texture;
     public int TextureId;
     public TitanArray<TextureCoordinate> Coordinates;
+    public TitanArray<Size> Sizes;
 }
 
 [AssetLoader<SpriteAsset>]
@@ -81,8 +82,10 @@ internal unsafe partial struct SpriteLoader
         }
 
         // 1 slot for sprite, 10 slots for NinePatch
-        asset->Coordinates = SafeAllocArray((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
-        if (!asset->Coordinates.IsValid)
+        //TODO(Jens): merge these into a single alloc when we know how it should work.
+        asset->Coordinates = SafeAllocArray<TextureCoordinate>((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
+        asset->Sizes = SafeAllocArray<Size>((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
+        if (!asset->Coordinates.IsValid || !asset->Sizes.IsValid)
         {
             Logger.Error<SpriteLoader>("Failed to allocate memory for texture coordinates.");
             return null;
@@ -95,15 +98,25 @@ internal unsafe partial struct SpriteLoader
         {
             var isNinePatch = reader.Read<bool>();
             ref readonly var sprite = ref reader.Read<SpriteInfo>();
-            asset->Coordinates[coordinateOffset++] = new()
+            asset->Sizes[coordinateOffset] = new(sprite.MaxX - sprite.MinX, sprite.MinY - sprite.MaxY);
+            asset->Coordinates[coordinateOffset] = new()
             {
                 UVMin = new Vector2(sprite.MinX, sprite.MinY) / image,
                 UVMax = new Vector2(sprite.MaxX, sprite.MaxY) / image
             };
+
+            coordinateOffset++;
+
             if (isNinePatch)
             {
                 ref readonly var ninePatch = ref reader.Read<NinePatchSpriteInfo>();
-                InitNinePatch(asset->Coordinates.Slice(coordinateOffset, 9), image, sprite, ninePatch);
+                InitNinePatch(
+                    asset->Coordinates.Slice(coordinateOffset, 9),
+                    asset->Sizes.Slice(coordinateOffset, 9),
+                    image,
+                    sprite,
+                    ninePatch
+                );
                 coordinateOffset += 9;
             }
         }
@@ -127,7 +140,7 @@ internal unsafe partial struct SpriteLoader
         return asset;
     }
 
-    private static void InitNinePatch(TitanArray<TextureCoordinate> slice, in Vector2 imageSize, in SpriteInfo sprite, in NinePatchSpriteInfo ninePatch)
+    private static void InitNinePatch(TitanArray<TextureCoordinate> slice, TitanArray<Size> sizes, in Vector2 imageSize, in SpriteInfo sprite, in NinePatchSpriteInfo ninePatch)
     {
         Debug.Assert(slice.Length == 9);
 
@@ -153,43 +166,35 @@ internal unsafe partial struct SpriteLoader
         slice[7] = new(new(x2, y3), new(x3, y4));
         slice[8] = new(new(x3, y3), new(x4, y4));
 
+        sizes[0] = new(x2 - x1, y1 - y2);
+        sizes[1] = new(x3 - x2, y1 - y2);
+        sizes[2] = new(x4 - x3, y1 - y2);
+
+        sizes[3] = new(x2 - x1, y2 - y3);
+        sizes[4] = new(x3 - x2, y2 - y3);
+        sizes[5] = new(x4 - x3, y2 - y3);
+
+        sizes[6] = new(x2 - x1, y3 - y4);
+        sizes[7] = new(x3 - x2, y3 - y4);
+        sizes[8] = new(x4 - x3, y3 - y4);
+
         var vector = (Vector2*)slice.AsPointer();
         for (var i = 0; i < 18; ++i)
         {
             vector[i] /= imageSize;
         }
-
-        //var minU = sprite.MinX / (float)texture.Width;
-        //var maxU = sprite.MaxX / (float)texture.Width;
-        //var minV = sprite.MinY / (float)texture.Height;
-        //var maxV = sprite.MaxY / (float)texture.Height;
-
-        //var innerLeftU = innerLeft / (float)texture.Width;
-        //var innerRightU = innerRight / (float)texture.Width;
-        //var innerTopV = innerTop / (float)texture.Height;
-        //var innerBottomV = innerBottom / (float)texture.Height;
-
-        //slice[0] = new(new(sprite.MinX, sprite.MinY), new(innerLeftU, innerTopV)); // Top-left corner
-        //slice[1] = new(new(innerLeftU, minV), new(innerRightU, innerTopV)); // Top edge
-        //slice[2] = new(new(innerRightU, minV), new(maxU, innerTopV)); // Top-right corner
-        //slice[3] = new(new(minU, innerTopV), new(innerLeftU, innerBottomV)); // Left edge
-        //slice[4] = new(new(innerLeftU, innerTopV), new(innerRightU, innerBottomV)); // Center
-        //slice[5] = new(new(innerRightU, innerTopV), new(maxU, innerBottomV)); // Right edge
-        //slice[6] = new(new(minU, innerBottomV), new(innerLeftU, maxV)); // Bottom-left corner
-        //slice[7] = new(new(innerLeftU, innerBottomV), new(innerRightU, maxV)); // Bottom edge
-        //slice[8] = new(new(innerRightU, innerBottomV), new(maxU, maxV)); // Bottom-right corner
     }
 
-    private TitanArray<TextureCoordinate> SafeAllocArray(uint length)
+    private TitanArray<T> SafeAllocArray<T>(uint length) where T : unmanaged
     {
         //NOTE(Jens): Replace with some other synchronization later. spinlock?
         lock (_lock)
         {
-            return _allocator.AllocArray<TextureCoordinate>(length);
+            return _allocator.AllocArray<T>(length);
         }
     }
 
-    private void SafeFreeArray(ref TitanArray<TextureCoordinate> array)
+    private void SafeFreeArray<T>(ref TitanArray<T> array) where T : unmanaged
     {
         //NOTE(Jens): Replace with some other synchronization later.
         lock (_lock)

@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -12,11 +14,47 @@ using Titan.UI.Resources;
 
 namespace Titan.UI2;
 
+public struct UISliderState2
+{
+    public float Value;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct UICheckboxState2
+{
+    public bool Checked;
+}
 
 public struct UIStyle
 {
-    public UIButtonStyle ButtonStyle;
+    public UIButtonStyle Button;
+    public UISliderStyle2 Slider;
+    public UICheckboxStyle2 Checkbox;
+}
 
+public struct UICheckboxStyle2
+{
+    public AssetHandle<SpriteAsset> Asset;
+    public byte Index;
+    public byte SelectedIndex;
+    public byte CheckmarkIndex;
+}
+
+public struct UISliderStyle2
+{
+    public AssetHandle<SpriteAsset> Asset;
+    public byte BackgroundIndexLeft;
+    public byte BackgroundIndexCenter;
+    public byte BackgroundIndexRight;
+    public byte BackgroundIndexEmptyLeft;
+    public byte BackgroundIndexEmptyCenter;
+    public byte BackgroundIndexEmptyRight;
+
+    public byte SliderIndex;
+    public byte SliderSelectedIndex;
+    public SizeF SliderSize;
+
+    public bool FillLeft;
 }
 
 public struct UIButtonStyle
@@ -24,6 +62,9 @@ public struct UIButtonStyle
     public AssetHandle<SpriteAsset> Asset;
     public AssetHandle<FontAsset> Font;
     public byte ButtonIndexStart;
+    public byte ButtonSelectedIndexStart;
+    public byte ButtonDownIndexStart;
+    public bool IsNinePatch;
 }
 
 /// <summary>
@@ -41,7 +82,12 @@ public unsafe struct UIContext
     private Inline32<UIWidget> _widgets;
     private int _count;
     private UIStyle* _style;
+
     private byte _layer;
+    private ushort _nextId;
+
+
+    public ref readonly UIStyle Style => ref *_style;
 
     internal UIContext(AssetsManager assetsManager, InputState* inputState, UISystem2* system)
     {
@@ -57,6 +103,7 @@ public unsafe struct UIContext
     public void Begin(in UIStyle style, byte layer)
     {
         _style = MemoryUtils.AsPointer(in style);
+        _nextId = (ushort)(layer << 8);
         _layer = layer;
     }
 
@@ -77,12 +124,11 @@ public unsafe struct UIContext
         _widgets[_count++] = widget;
     }
 
-
     public bool Button(int id, ReadOnlySpan<byte> text, in Vector2 offset, in SizeF size, in Color color)
     {
         Debug.Assert(_style != null);
 
-        return Button(id, text, offset, size, color, _style->ButtonStyle);
+        return Button(id, text, offset, size, color, _style->Button);
     }
 
     public bool Button(int id, ReadOnlySpan<byte> text, in Vector2 offset, in SizeF size, in Color color, in UIButtonStyle style)
@@ -93,17 +139,14 @@ public unsafe struct UIContext
         }
         ref readonly var sprite = ref _assetsManager.Get(style.Asset);
 
-        var isOver = MathUtils.IsWithin(offset, size, _state->CursorPosition);
-        var c = color;
+        var isOver = IsOver(offset, size);
         var isClicked = false;
         var isDown = false;
+        var isHighlighted = false;
         if (isOver)
         {
             SetHighlighted(id);
-            if (IsHighlighted(id))
-            {
-                c = Color.Magenta;
-            }
+            isHighlighted = IsHighlighted(id);
 
             //NOTE(Jens): This will check if the current element is highlighted, so if someone manages to click on the same frame as we highlight a button it wont register the click.
             if (ButtonPressed)
@@ -118,12 +161,17 @@ public unsafe struct UIContext
             }
         }
 
+        var index = style.ButtonIndexStart;
         if (isDown)
         {
-            c = Color.Blue with { A = color.A };
+            index = style.ButtonDownIndexStart;
+        }
+        else if (isHighlighted)
+        {
+            index = style.ButtonSelectedIndexStart;
         }
 
-        AddWidget(UIWidget.Sprite(_layer, offset, size, sprite, c, style.ButtonIndexStart));
+        DrawNinePatch(offset, size, color, sprite, index);
 
         return isClicked;
     }
@@ -135,8 +183,7 @@ public unsafe struct UIContext
             return;
         }
         ref readonly var sprite = ref _assetsManager.Get(handle);
-        var widget = UIWidget.Sprite(_layer, offset, size, sprite, Color.White, index);
-        AddWidget(widget);
+        AddWidget(UIWidget.Sprite(NextId(), offset, size, sprite, Color.White, index));
     }
 
     public void Image(in Vector2 offset, in SizeF scale, AssetHandle<TextureAsset> image)
@@ -149,13 +196,157 @@ public unsafe struct UIContext
     {
         var widget = new UIWidget
         {
-            Layer = _layer,
+            Id = NextId(),
             Size = size,
             Color = color,
             Offset = offset,
             Type = UIElementType.None,
         };
         AddWidget(widget);
+    }
+
+    public void Slider(int id, in Vector2 offset, in SizeF size, in Color color, ref UISliderState2 state)
+    {
+        if (!_assetsManager.IsLoaded(_style->Slider.Asset))
+        {
+            return;
+        }
+
+        ref readonly var style = ref _style->Slider;
+        ref readonly var sprite = ref _assetsManager.Get(_style->Slider.Asset);
+
+        var clampedStateValue = Math.Clamp(state.Value, 0.0f, 1.0f);
+        var blobCenter = size.Width * clampedStateValue;
+
+        var leftIndex = style.FillLeft ? style.BackgroundIndexEmptyLeft : style.BackgroundIndexLeft;
+        var rightIndex = style.FillLeft ? style.BackgroundIndexRight : style.BackgroundIndexEmptyRight;
+        var centerFilledIndex = style.FillLeft ? style.BackgroundIndexEmptyCenter : style.BackgroundIndexCenter;
+        var centerEmptyIndex = style.FillLeft ? style.BackgroundIndexCenter : style.BackgroundIndexEmptyCenter;
+
+        var sizes = sprite.Sizes;
+        // Background
+        {
+            var height = sizes[centerEmptyIndex].Height;
+            var heightOffset = ((int)size.Height - height) >> 1;
+            var minWidth = sizes[leftIndex].Width + sizes[rightIndex].Width;
+            var middleBarWidth = (int)size.Width - minWidth;
+            var off = offset;
+            off.Y += heightOffset;
+
+            AddWidget(UIWidget.Sprite(NextId(), off, sizes[leftIndex], sprite, color, leftIndex));
+            off.X += sizes[style.BackgroundIndexEmptyLeft].X;
+            if (middleBarWidth > 0)
+            {
+                //NOTE(Jens): We could check for 0 and 1 and discard the part of the bar that is not drawn
+                var barDiff = middleBarWidth * clampedStateValue;
+                AddWidget(UIWidget.Sprite(NextId(), off, new(barDiff, height), sprite, color, centerFilledIndex));
+                AddWidget(UIWidget.Sprite(NextId(), off with { X = off.X + barDiff }, new(middleBarWidth - barDiff, height), sprite, color, centerEmptyIndex));
+
+                off.X += middleBarWidth;
+            }
+            AddWidget(UIWidget.Sprite(NextId(), off, sizes[rightIndex], sprite, color, rightIndex));
+        }
+
+        // Foreground (the blob)
+        {
+            var blobSize = sizes[style.SliderIndex];
+            var off = offset;
+            off.X += blobCenter - (blobSize.Width >> 1);
+            off.Y += ((int)size.Height - blobSize.Height) >> 1;
+
+            var isOver = IsOver(off, blobSize);
+            if (isOver)
+            {
+                SetHighlighted(id);
+                if (ButtonPressed)
+                {
+                    SetActive(id);
+                }
+            }
+
+            // If it's active, update the state based on cursor position
+            var isActive = IsActive(id);
+            if (isActive)
+            {
+                var posX = CursorPosition.X;
+                var diffX = Math.Clamp(posX - offset.X, 0, size.Width);
+
+                state.Value = diffX / size.Width;
+            }
+
+            var selected = isActive || IsHighlighted(id);
+
+            AddWidget(UIWidget.Sprite(NextId(), off, blobSize, sprite, color, selected ? style.SliderSelectedIndex : style.SliderIndex));
+        }
+    }
+
+    private void DrawNinePatch(in Vector2 offset, in SizeF size, in Color color, in SpriteAsset sprite, byte startIndex)
+    {
+        Unsafe.SkipInit(out Inline3<float> widths);
+        Unsafe.SkipInit(out Inline3<float> heights);
+
+        widths[0] = sprite.Sizes[startIndex + 1].Width;
+        widths[2] = sprite.Sizes[startIndex + 3].Width;
+        widths[1] = (int)size.Width - (widths[0] + widths[2]);
+
+        heights[0] = sprite.Sizes[startIndex + 1].Height;
+        heights[2] = sprite.Sizes[startIndex + 7].Height;
+        heights[1] = size.Height - (heights[0] + heights[2]);
+        var index = (byte)(startIndex + 1);
+        var off = offset;
+        for (var y = 0; y < 3; ++y)
+        {
+            for (var x = 0; x < 3; ++x)
+            {
+                AddWidget(UIWidget.Sprite(NextId(), off, new(widths[x], heights[y]), sprite, color, index++));
+                off.X += widths[x];
+            }
+            off.X = offset.X;
+            off.Y += heights[y];
+        }
+    }
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref UICheckboxState2 state)
+        => Checkbox(id, in offset, in size, color, ref state, _style->Checkbox);
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref UICheckboxState2 state, in UICheckboxStyle2 style)
+    {
+        if (!_assetsManager.IsLoaded(style.Asset))
+        {
+            return;
+        }
+
+        ref readonly var sprite = ref _assetsManager.Get(style.Asset);
+        var checkboxSize = sprite.Sizes[style.Index];
+        var offsetX = ((int)size.Width - checkboxSize.Width) >> 1;
+        var offsetY = ((int)size.Height - checkboxSize.Height) >> 1;
+        var off = new Vector2(offset.X + offsetX, offset.Y + offsetY);
+
+        if (IsOver(off, checkboxSize))
+        {
+            SetHighlighted(id);
+            if (ButtonPressed)
+            {
+                SetActive(id);
+            }
+
+            if (IsActive(id) && ButtonReleaed)
+            {
+                state.Checked = !state.Checked;
+            }
+
+            AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.SelectedIndex));
+        }
+        else
+        {
+            AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.Index));
+        }
+
+
+        if (state.Checked)
+        {
+            AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.CheckmarkIndex));
+        }
     }
 
 
@@ -168,4 +359,11 @@ public unsafe struct UIContext
     private bool ButtonPressed => _state->ButtonPressed;
     private bool ButtonReleaed => _state->ButtonReleased;
     private bool ButtonDown => _state->ButtonDown;
+
+    private ref readonly Point CursorPosition => ref _state->CursorPosition;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsOver(in Vector2 offset, in SizeF size) => MathUtils.IsWithin(offset, size, _state->CursorPosition);
+
+    private ushort NextId() => _nextId++;
 }

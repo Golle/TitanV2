@@ -391,7 +391,6 @@ public readonly unsafe struct UIManager
 
         ref readonly var sprite = ref _assetsManager.Get(style.Sprite);
 
-
         if (style.IsNinePatch)
         {
             ref readonly var ninePatch = ref style.NinePatch;

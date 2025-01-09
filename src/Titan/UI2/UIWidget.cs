@@ -18,15 +18,15 @@ internal unsafe struct UIWidget
     public UIElementType Type;
     public float Repeat;
 
-    public byte Layer;
-    private fixed byte Padding[3];
+    public ushort Id;
+    private fixed byte Padding[2];
 
-    public static UIWidget Sprite(byte layer, in Vector2 offset, in SizeF size, in SpriteAsset sprite, in Color color, byte index = 0)
+    public static UIWidget Sprite(ushort id, in Vector2 offset, in SizeF size, in SpriteAsset sprite, in Color color, byte index = 0)
     {
         Debug.Assert(index < sprite.Coordinates.Length);
         return new()
         {
-            Layer = layer,
+            Id = id,
             TextureId = sprite.TextureId,
             Color = color,
             Type = UIElementType.Sprite,
@@ -35,4 +35,5 @@ internal unsafe struct UIWidget
             TextureCoordinates = sprite.Coordinates[index]
         };
     }
+
 }
