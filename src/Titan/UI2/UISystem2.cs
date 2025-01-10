@@ -118,13 +118,12 @@ internal unsafe partial struct UISystem2
         }
 
         var defaultSprite = assetsManager.Load<SpriteAsset>(EngineAssetsRegistry.Sprites.DebugUiStyle.Asset);
-        var defaultFont = assetsManager.Load<FontAsset>(EngineAssetsRegistry.Fonts.SyneMonoRegular);
+        var defaultFont = assetsManager.Load<FontAsset>(EngineAssetsRegistry.Fonts.RobotoMonoRegular);
         system.DefaultStyle = new()
         {
             Button =
             {
                 Asset = defaultSprite,
-                Font = defaultFont,
                 ButtonIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02,
                 ButtonSelectedIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02Selected,
                 ButtonDownIndexStart = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Button02Pressed,
@@ -149,6 +148,10 @@ internal unsafe partial struct UISystem2
                 Index = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Checkbox,
                 SelectedIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxSelected,
                 CheckmarkIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxCheckmark
+            },
+            Font =
+            {
+                Asset = defaultFont
             }
         };
     }

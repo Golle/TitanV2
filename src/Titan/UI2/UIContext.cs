@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -27,11 +26,18 @@ public struct UICheckboxState2
 
 public struct UIStyle
 {
+    public UIFontStyle Font;
     public UIButtonStyle Button;
     public UISliderStyle2 Slider;
     public UICheckboxStyle2 Checkbox;
 }
 
+public struct UIFontStyle
+{
+    public AssetHandle<FontAsset> Asset;
+    public byte FontSize;
+    public bool MonoFont;
+}
 public struct UICheckboxStyle2
 {
     public AssetHandle<SpriteAsset> Asset;
@@ -60,7 +66,6 @@ public struct UISliderStyle2
 public struct UIButtonStyle
 {
     public AssetHandle<SpriteAsset> Asset;
-    public AssetHandle<FontAsset> Font;
     public byte ButtonIndexStart;
     public byte ButtonSelectedIndexStart;
     public byte ButtonDownIndexStart;
@@ -124,16 +129,26 @@ public unsafe struct UIContext
         _widgets[_count++] = widget;
     }
 
-    public bool Button(int id, ReadOnlySpan<byte> text, in Vector2 offset, in SizeF size, in Color color)
+
+    public bool Button(int id, ReadOnlySpan<char> text, in Vector2 offset, in SizeF size, in Color color, in Color textColor)
+    {
+        var clicked = Button(id, offset, size, color, _style->Button);
+        var centerHeight = (int)size.Height >> 1;
+
+        Label(new(offset.X + 10, offset.Y + centerHeight), size, text, in textColor);
+        return clicked;
+    }
+
+    public bool Button(int id, in Vector2 offset, in SizeF size, in Color color)
     {
         Debug.Assert(_style != null);
 
-        return Button(id, text, offset, size, color, _style->Button);
+        return Button(id, offset, size, color, _style->Button);
     }
 
-    public bool Button(int id, ReadOnlySpan<byte> text, in Vector2 offset, in SizeF size, in Color color, in UIButtonStyle style)
+    public bool Button(int id, in Vector2 offset, in SizeF size, in Color color, in UIButtonStyle style)
     {
-        if (!_assetsManager.IsLoaded(style.Asset) || !_assetsManager.IsLoaded(style.Font))
+        if (!_assetsManager.IsLoaded(style.Asset))
         {
             return false;
         }
@@ -171,7 +186,15 @@ public unsafe struct UIContext
             index = style.ButtonSelectedIndexStart;
         }
 
-        DrawNinePatch(offset, size, color, sprite, index);
+        if (style.IsNinePatch)
+        {
+            DrawNinePatch(offset, size, color, sprite, index);
+        }
+        else
+        {
+            AddWidget(UIWidget.Sprite(NextId(), offset, size, sprite, in color, index));
+        }
+
 
         return isClicked;
     }
@@ -203,6 +226,17 @@ public unsafe struct UIContext
             Type = UIElementType.None,
         };
         AddWidget(widget);
+    }
+
+    public void Label(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, in Color color)
+    {
+        if (!_assetsManager.IsLoaded(_style->Font.Asset))
+        {
+            return;
+        }
+
+        ref readonly var font = ref _assetsManager.Get(_style->Font.Asset);
+        DrawText16(offset, in size, text, in color, font);
     }
 
     public void Slider(int id, in Vector2 offset, in SizeF size, in Color color, ref UISliderState2 state)
@@ -303,6 +337,33 @@ public unsafe struct UIContext
             }
             off.X = offset.X;
             off.Y += heights[y];
+        }
+    }
+
+    private void DrawText16(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, in Color color, in FontAsset font)
+    {
+        var endX = offset.X + size.Width;
+        var widget = new UIWidget
+        {
+            Id = NextId(),
+            TextureId = font.TextureId,
+            Color = color,
+            Type = UIElementType.Text,
+            Offset = offset
+        };
+        foreach (var character in text)
+        {
+            ref readonly var glyph = ref font.Glyphs[(byte)character];
+            widget.Size = new(glyph.Width, glyph.Height);
+            if (widget.Offset.X + glyph.Width > endX)
+            {
+                // cut of the text if outside the bounds
+                break;
+            }
+            widget.TextureCoordinates = glyph.Coords;
+            AddWidget(widget);
+
+            widget.Offset.X += glyph.Advance;
         }
     }
 
