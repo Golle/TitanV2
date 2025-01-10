@@ -24,6 +24,13 @@ public static class MathUtils
     public static bool IsPowerOf2(uint value)
         => value > 0 && (value & (value - 1u)) == 0;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Lerp(float end, float t)
+        => end * t;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Lerp(float start, float end, float t)
+        => start + (end - start) * t;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void CalculateWorldMatrix(ref Matrix4x4 matrix, in Vector3 position, in Vector3 scale, in Quaternion rotation)

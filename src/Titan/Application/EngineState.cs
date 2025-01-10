@@ -1,8 +1,18 @@
+using System.Diagnostics;
 using Titan.Application.Events;
 using Titan.Events;
 using Titan.Systems;
 
 namespace Titan.Application;
+
+
+public static class GameTime
+{
+    public static long LastTimestamp { get; internal set; }
+    public static float DeltaTimeSeconds => (float)DeltaTime.TotalSeconds;
+    public static float DeltaTimeMillis => (float)DeltaTime.TotalMilliseconds;
+    public static TimeSpan DeltaTime { get; internal set; }
+}
 
 /// <summary>
 /// State is updated in system state First, do not use these values in system that is in state First or Last. 
@@ -28,6 +38,7 @@ internal partial struct EngineState
         Active = true;
         FrameCount = 0;
         FrameIndex = 0;
+        GameTime.LastTimestamp = Stopwatch.GetTimestamp();
     }
 
     [System(SystemStage.First, SystemExecutionType.Inline)]
@@ -41,6 +52,9 @@ internal partial struct EngineState
 #else
         FrameIndex = (FrameIndex + 1) & 0x1;
 #endif
+        var current = Stopwatch.GetTimestamp();
+        GameTime.DeltaTime = Stopwatch.GetElapsedTime(GameTime.LastTimestamp, current);
+        GameTime.LastTimestamp = current;
     }
 
     [System(SystemStage.Last, SystemExecutionType.Inline)]
