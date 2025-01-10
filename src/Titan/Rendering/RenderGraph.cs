@@ -378,11 +378,13 @@ public unsafe partial struct RenderGraph
             return;
         }
 
+        ref readonly var camera = ref cameraSystem.GetCurrentCamera();
+
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
         graph._frameDataGPU.WriteSingle(new FrameData
         {
-            ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrixTransposed,
-            CameraPosition = cameraSystem.DefaultCamera.Position,
+            ViewProjection = camera.ViewProjectionMatrixTransposed,
+            CameraPosition = camera.Position,
             WindowHeight = (uint)window.Height,
             WindowWidth = (uint)window.Width
         });
