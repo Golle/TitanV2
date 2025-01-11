@@ -91,7 +91,6 @@ public unsafe struct UIContext
     private byte _layer;
     private ushort _nextId;
 
-
     public ref readonly UIStyle Style => ref *_style;
 
     internal UIContext(AssetsManager assetsManager, InputState* inputState, UISystem2* system)
@@ -101,7 +100,8 @@ public unsafe struct UIContext
         _system = system;
         _state = &_system->State;
     }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool CursorInUI() => _state->HighlightedId != 0;
     public void Begin(byte layer)
         => Begin(_system->DefaultStyle, layer);
 

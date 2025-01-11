@@ -136,7 +136,7 @@ internal unsafe partial struct Win32WindowSystem
             WNDCLASSEXW windowClass = new()
             {
                 CbSize = (uint)sizeof(WNDCLASSEXW),
-                HCursor = default,
+                HCursor = LoadCursorA(default, StandardCursorIDs.IDC_ARROW),
                 HIcon = 0,
                 HIconSm = 0,
                 HbrBackground = 0,

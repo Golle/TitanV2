@@ -57,18 +57,21 @@ internal unsafe partial struct InputSystem
 
         if (state->MouseVisible)
         {
-            var mousePosition = window.GetRelativeCursorPosition();
+            var cursorPosition = window.GetRelativeCursorPosition();
             state->PreviousMousePosition = state->MousePosition;
-            state->MousePosition = mousePosition;
+            state->MousePosition = cursorPosition;
             state->PreviousMousePositionUI = state->MousePositionUI;
-            state->MousePositionUI = mousePosition with { Y = window.Height - mousePosition.Y };
+            state->MousePositionUI = cursorPosition with { Y = window.Height - cursorPosition.Y };
             state->MousePositionDelta = (Vector2)(state->MousePosition - state->PreviousMousePosition);
+            state->CursorPositionNDC = new((cursorPosition.X / (float)window.Width) * 2.0f - 1.0f, 1.0f - (cursorPosition.Y / (float)window.Height) * 2.0f);
+            state->OutsideWindow = cursorPosition.Y < 0 || cursorPosition.X < 0 || cursorPosition.X > window.Width || cursorPosition.Y > window.Height;
         }
         else
         {
             // When the cursor is hidden, we use the absolute position.
             var mousePosition = window.GetAbsoluteCursorPosition();
             state->MousePositionUI = new Point(-1, -1);
+            state->CursorPositionNDC = default; // center screen
             // always put the mouse in the center of the screen.
             state->PreviousMousePosition = state->MousePosition = new(window.ScreenWidth / 2, window.ScreenHeight / 2);
             // calculate the delta in the movement.

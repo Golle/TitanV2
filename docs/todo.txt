@@ -66,6 +66,8 @@
     [ ] Create a base set of debug UI controls that can easily be used to create menues etc for an in-game editor.
     [ ] Implement pre-loaded designes/styles used in Debug mode
 
+# Detect Hover
+    [ ] Add a way to detect if the cursor is within a UI element. This is to be able to prevent interaction with game world if the player clicks in the UI
 
 # Meshes
 ## Mesh Storage

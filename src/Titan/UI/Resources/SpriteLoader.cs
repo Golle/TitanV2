@@ -83,8 +83,14 @@ internal unsafe partial struct SpriteLoader
 
         // 1 slot for sprite, 10 slots for NinePatch
         //TODO(Jens): merge these into a single alloc when we know how it should work.
-        asset->Coordinates = SafeAllocArray<TextureCoordinate>((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
-        asset->Sizes = SafeAllocArray<Size>((uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9));
+        var spriteCount = (uint)(spriteDescriptor.NumberOfSprites + spriteDescriptor.NumberOfNinePatchSprites * 9);
+        if (spriteCount == 0)
+        {
+            Logger.Warning<SpriteLoader>("The Sprite that is loaded does not contain any sprite definitions.");
+            return asset;
+        }
+        asset->Coordinates = SafeAllocArray<TextureCoordinate>(spriteCount);
+        asset->Sizes = SafeAllocArray<Size>(spriteCount);
         if (!asset->Coordinates.IsValid || !asset->Sizes.IsValid)
         {
             Logger.Error<SpriteLoader>("Failed to allocate memory for texture coordinates.");
