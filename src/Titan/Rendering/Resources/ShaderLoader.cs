@@ -5,6 +5,7 @@ using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
+using Titan.Windows;
 
 namespace Titan.Rendering.Resources;
 
@@ -21,7 +22,6 @@ internal unsafe partial struct ShaderLoader
 {
     private PoolAllocator<ShaderAsset> _pool;
     private ManagedResource<IMemoryManager> _memoryManager;
-
     public bool Init(in AssetLoaderInitializer init)
     {
         var config = init.ConfigurationManager.GetConfigOrDefault<D3D12Config>();
@@ -78,7 +78,12 @@ internal unsafe partial struct ShaderLoader
 
     public bool Reload(ShaderAsset* asset, in AssetDescriptor descriptor, TitanBuffer buffer)
     {
-        Logger.Warning<ShaderLoader>("Reload not implemented");
+        //NOTE(Jens): We alloc before free so we get a new pointer, if we get the same pointer with same size the reload will not work.
+        var oldAlloc = asset->ShaderByteCode;
+        _memoryManager.Get().TryAllocBuffer(out asset->ShaderByteCode, buffer.Size);
+        _memoryManager.Get().FreeBuffer(ref oldAlloc);
+        MemoryUtils.Copy(asset->ShaderByteCode, buffer, buffer.Size);
+
         return true;
     }
 }

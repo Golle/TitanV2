@@ -29,4 +29,10 @@ public struct RenderPass
     public Viewport Viewport;
     public Rect ScissorRect;
     public sbyte Order;
+
+
+#if HOT_RELOAD_ASSETS
+    // to support hot reload
+    internal ulong ShaderHash;
+#endif
 }

@@ -8,7 +8,7 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
 {
     private const string MetadataFileExtension = ".kmeta";
     private const string BinaryFileExtension = ".kbin";
-    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".mtl"];
+    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".mtl", ".blend", ".blend1"];
 
     public async Task<bool> VerifyMetadataFiles()
     {

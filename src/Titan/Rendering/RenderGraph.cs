@@ -203,7 +203,6 @@ public unsafe partial struct RenderGraph
         {
             return false;
         }
-
         var index = handle.Value - HandleOffset;
         var pass = _renderPasses.AsPointer() + index;
 
@@ -422,6 +421,7 @@ public unsafe partial struct RenderGraph
         return true;
     }
 
+
     [System(SystemStage.Last, SystemExecutionType.Inline)]
     internal static void Last(ref RenderGraph graph, in Window window, EventReader<WindowResizeEvent> resizeEvent)
     {
@@ -437,32 +437,43 @@ public unsafe partial struct RenderGraph
         }
     }
 
+
     private bool CreatePipelineStates()
     {
         foreach (ref var pass in _renderPasses.AsSpan()[.._renderPassCount])
         {
-            pass.PipelineState = _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
-            {
-                BlendState = pass.BlendState,
-                Depth = GetDeptStencilArgs(pass, _resourceManager),
-                RenderTargets = pass.Outputs,
-                RootSignature = pass.RootSignature,
-                VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
-                PixelShader = _assetsManager.Get(pass.PixelShader).ShaderByteCode,
-                Topology = pass.Topology switch
-                {
-                    PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
-                    _ => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-                },
-                CullMode = pass.CullMode,
-                FillMode = pass.FillMode
-            });
+            pass.PipelineState = CreatePipelineState(pass);
             if (pass.PipelineState.IsInvalid)
             {
                 Logger.Error<RenderGraph>($"Failed to create the pipeline state for render pass. Name = {pass.Name.GetString()}");
                 return false;
             }
+#if HOT_RELOAD_ASSETS
+            pass.ShaderHash = HashFromShaders(pass.VertexShader, pass.PixelShader);
+#endif
         }
+
+        return true;
+    }
+
+    private Handle<PipelineState> CreatePipelineState(in RenderPass renderPass)
+    {
+        return _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
+        {
+            BlendState = renderPass.BlendState,
+            Depth = GetDeptStencilArgs(renderPass, _resourceManager),
+            RenderTargets = renderPass.Outputs,
+            RootSignature = renderPass.RootSignature,
+            VertexShader = _assetsManager.Get(renderPass.VertexShader).ShaderByteCode,
+            PixelShader = _assetsManager.Get(renderPass.PixelShader).ShaderByteCode,
+            Topology = renderPass.Topology switch
+            {
+                PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
+                _ => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+            },
+            CullMode = renderPass.CullMode,
+            FillMode = renderPass.FillMode
+        });
 
         static DepthStencilArgs GetDeptStencilArgs(in RenderPass pass, D3D12ResourceManager* resourceManager)
         {
@@ -478,8 +489,6 @@ public unsafe partial struct RenderGraph
                 StencilEnabled = false, //TODO(Jens): Add support for stencil tests
             };
         }
-
-        return true;
     }
 
     private void SortRenderGraph()
@@ -620,4 +629,39 @@ public unsafe partial struct RenderGraph
 
         graph = default;
     }
+
+
+
+#if HOT_RELOAD_ASSETS
+    [System(SystemStage.Last)]
+    internal static void CheckForDirtyShaders(ref RenderGraph graph)
+    {
+        if (graph._isReady == false)
+        {
+            return;
+        }
+
+        foreach (ref var pass in graph._renderPasses.AsSpan()[..graph._renderPassCount])
+        {
+            var hash = graph.HashFromShaders(pass.VertexShader, pass.PixelShader);
+            if (hash != pass.ShaderHash)
+            {
+                Logger.Warning($"Hash is different, recreating pipeline state. Pass = {pass.Name.GetString()}");
+                //graph._isReady = false;
+
+                pass.PipelineState = graph.CreatePipelineState(pass);
+                pass.ShaderHash = hash;
+            }
+        }
+    }
+
+    private ulong HashFromShaders(AssetHandle<ShaderAsset> shader1, AssetHandle<ShaderAsset> shader2)
+    {
+        var a = _assetsManager.Get(shader1).ShaderByteCode;
+        var b = _assetsManager.Get(shader2).ShaderByteCode;
+        var c = (ulong)a.Size + (ulong)a.AsPointer();
+        var d = (ulong)b.Size + (ulong)b.AsPointer();
+        return unchecked(c + d);
+    }
+#endif
 }
