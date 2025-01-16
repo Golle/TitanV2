@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Titan.Application;
 using Titan.Assets;
 using Titan.Core;
@@ -19,7 +18,6 @@ internal struct UIState
 {
     public const int InvalidId = 0;
     public int ActiveId;
-
     public int FocusId;
 
     /// <summary>
@@ -69,6 +67,12 @@ internal struct UIState
     {
         Logger.Trace<UIState>($"Focus Widget: {id}");
         FocusId = id;
+    }
+
+    public void ClearFocus(int id)
+    {
+        Logger.Trace<UIState>($"Clear Focus Widget: {id}");
+        Interlocked.CompareExchange(ref FocusId, 0, id);
     }
 
     /// <summary>
@@ -148,6 +152,22 @@ internal unsafe partial struct UISystem2
                 Index = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.Checkbox,
                 SelectedIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxSelected,
                 CheckmarkIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxCheckmark
+            },
+            Textbox =
+            {
+              Asset = defaultSprite,
+              Font = defaultFont,
+              CursorIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.TextBoxCursor,
+              FocusIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.TextBoxFocus,
+              Index = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.TextBox
+            },
+            SelectBox =
+            {
+                Asset = defaultSprite,
+                Font = defaultFont,
+                Index = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SelectBox,
+                FocusIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.SelectBoxFocus,
+                ItemMargin = 2
             },
             Font =
             {

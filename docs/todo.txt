@@ -44,9 +44,9 @@
 
 ## Version 2 - The Rework
     [ ] Separate interaction from rendering
-    [ ] Render in same frame, interaction happens in next frame (similar to how it's done today)
-    [ ] Store a hiearchy state and sort before rendering, to support multiple threads building the UI.
-    [ ] Rework Mouse logic so we don't have to do calculations on every single element every frame.
+    [X] Render in same frame, interaction happens in next frame (similar to how it's done today)
+    [X] Store a hiearchy state and sort before rendering, to support multiple threads building the UI.
+    [-] Rework Mouse logic so we don't have to do calculations on every single element every frame. - Wont do unless it's a problem
     [ ] Support UI Scaling
     [ ] Decide what layout system to use, constraint, anchors etc.
     [ ] Text scaling
@@ -64,10 +64,12 @@
         [ ] Look into MSDF fonts as well, might be harder to generate but will yield a better result
 # Art/Debug UI
     [ ] Create a base set of debug UI controls that can easily be used to create menues etc for an in-game editor.
-    [ ] Implement pre-loaded designes/styles used in Debug mode
+    [X] Implement pre-loaded designes/styles used in Debug mode
 
 # Detect Hover
-    [ ] Add a way to detect if the cursor is within a UI element. This is to be able to prevent interaction with game world if the player clicks in the UI
+    [X] Add a way to detect if the cursor is within a UI element. This is to be able to prevent interaction with game world if the player clicks in the UI
+        [ ] Does not work for items that have no ID.
+        [ ] Implement "clickthrough" parameter
 
 # Meshes
 ## Mesh Storage

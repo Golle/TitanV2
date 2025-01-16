@@ -13,15 +13,43 @@ using Titan.UI.Resources;
 
 namespace Titan.UI2;
 
+public struct UISelectBoxItemState
+{
+    internal SizeF Size;
+    internal Vector2 Offset;
+    internal UISelectBoxStyle2 Style;
+}
+
 public struct UISliderState2
 {
     public float Value;
 }
 
+
+
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct UICheckboxState2
 {
     public bool Checked;
+}
+
+
+public struct UITextBoxStyle2
+{
+    public AssetHandle<SpriteAsset> Asset;
+    public AssetHandle<FontAsset> Font;
+    public byte Index;
+    public byte FocusIndex;
+    public byte CursorIndex;
+}
+
+public struct UISelectBoxStyle2
+{
+    public AssetHandle<SpriteAsset> Asset;
+    public AssetHandle<FontAsset> Font;
+    public byte Index;
+    public byte FocusIndex;
+    public byte ItemMargin;
 }
 
 public struct UIStyle
@@ -30,6 +58,8 @@ public struct UIStyle
     public UIButtonStyle Button;
     public UISliderStyle2 Slider;
     public UICheckboxStyle2 Checkbox;
+    public UITextBoxStyle2 Textbox;
+    public UISelectBoxStyle2 SelectBox;
 }
 
 public struct UIFontStyle
@@ -171,7 +201,7 @@ public unsafe struct UIContext
 
             if (IsActive(id))
             {
-                isClicked = ButtonReleaed;
+                isClicked = ButtonReleased;
                 isDown = ButtonDown;
             }
         }
@@ -215,7 +245,87 @@ public unsafe struct UIContext
 
     }
 
-    public void Box(in Vector2 offset, in SizeF size, in Color color)
+    public void TextBox(int id, in Vector2 offset, in SizeF size, Span<char> text, ref int count)
+        => TextBox(id, in offset, in size, text, ref count, _style->Textbox);
+
+    public void TextBox(int id, in Vector2 offset, in SizeF size, Span<char> text, ref int count, in UITextBoxStyle2 style)
+    {
+        if (!_assetsManager.IsLoaded(style.Asset) || !_assetsManager.IsLoaded(style.Font))
+        {
+            return;
+        }
+
+        var isOver = IsOver(offset, size);
+        var isFocus = IsFocus(id);
+        if (isOver)
+        {
+            SetHighlighted(id);
+            if (ButtonPressed)
+            {
+                SetActive(id);
+            }
+        }
+
+        if (ButtonReleased && IsActive(id))
+        {
+            SetFocus(id);
+        }
+
+        if (isFocus && !isOver && ButtonPressed)
+        {
+            ClearFocus(id);
+        }
+        var isHighligted = isFocus || isOver;
+        ref readonly var sprite = ref _assetsManager.Get(style.Asset);
+        DrawNinePatch(offset, size, Color.White, sprite, isHighligted ? style.FocusIndex : style.Index);
+        if (isFocus)
+        {
+            // Cursor
+            var cursorOffset = offset + new Vector2(11, 9);
+            if (count > 0)
+            {
+                ref readonly var font = ref _assetsManager.Get(style.Font);
+                cursorOffset.X += count * font.Glyphs['A'].Advance;
+            }
+            AddWidget(UIWidget.Sprite(NextId(), cursorOffset, new(2, size.Height - 18), sprite, Color.White with { A = 0.8f }, style.CursorIndex));
+        }
+
+        if (count > 0)
+        {
+            ref readonly var font = ref _assetsManager.Get(style.Font);
+            var fontHeight = font.Glyphs['A'].Height; // would be nice to have this in the font, LineHeight or something.
+            var heightOffset = ((int)size.Height - fontHeight) >> 1;
+            var textOffset = offset + new Vector2(10, heightOffset);
+            DrawText16(textOffset, size with { Width = size.Width - 20 }, text[..count], Color.White, font);
+        }
+
+        if (isFocus)
+        {
+            foreach (var character in GetCharacters())
+            {
+                // Check for backspace
+                if (character == 0x08)
+                {
+                    if (count > 0)
+                    {
+                        count--;
+                    }
+                    continue;
+                }
+
+                if (count >= text.Length)
+                {
+                    break;
+                }
+
+                text[count++] = character;
+            }
+        }
+    }
+
+
+
+    public void Box(in Vector2 offset, in SizeF size, in Color color, bool clickThrough = false)
     {
         var widget = new UIWidget
         {
@@ -391,7 +501,7 @@ public unsafe struct UIContext
                 SetActive(id);
             }
 
-            if (IsActive(id) && ButtonReleaed)
+            if (IsActive(id) && ButtonReleased)
             {
                 state.Checked = !state.Checked;
             }
@@ -411,15 +521,79 @@ public unsafe struct UIContext
     }
 
 
+    public bool SelectBox(int id, in Vector2 offset, in SizeF size, out UISelectBoxItemState state)
+    {
+        return SelectBox(id, offset, size, out state, _style->SelectBox);
+    }
+    public bool SelectBox(int id, in Vector2 offset, in SizeF size, out UISelectBoxItemState state, in UISelectBoxStyle2 style)
+    {
+        Unsafe.SkipInit(out state);
+        if (!_assetsManager.IsLoaded(style.Asset) || !_assetsManager.IsLoaded(style.Font))
+        {
+            return false;
+        }
+
+        var isOver = IsOver(offset, size);
+        var isActive = IsActive(id);
+        if (isOver)
+        {
+            SetHighlighted(id);
+            if (ButtonPressed)
+            {
+                SetActive(id);
+            }
+        }
+
+        var isHighligted = IsHighlighted(id) || isActive;
+
+        ref readonly var sprite = ref _assetsManager.Get(style.Asset);
+        DrawNinePatch(offset, size, Color.White, sprite, isHighligted ? style.FocusIndex : style.Index);
+
+        if (isActive)
+        {
+            state = new()
+            {
+                Offset = offset with { Y = offset.Y - 10 },
+                Size = size,
+                Style = style
+            };
+        }
+        return isActive;
+    }
+
+
+    public void SelectBoxItem(ref UISelectBoxItemState state, ReadOnlySpan<char> text)
+    {
+        var isOver = IsOver(state.Offset, state.Size);
+
+        ref readonly var sprite = ref _assetsManager.Get(state.Style.Asset);
+        ref readonly var font = ref _assetsManager.Get(state.Style.Font);
+
+        //TODO(Jens): Implement LineHeight
+        var textHeight = font.Glyphs['A'].Height;
+
+        const float Margin = 6;
+        var textOffsetY = ((int)state.Size.Height - textHeight) >> 1;
+        var textOffset = new Vector2(state.Offset.X + Margin, state.Offset.Y + textOffsetY);
+        var textSize = new SizeF(state.Size.Width, textHeight);
+
+        DrawNinePatch(state.Offset, state.Size, Color.White, sprite, isOver ? state.Style.FocusIndex : state.Style.Index);
+        DrawText16(textOffset, textSize, text, Color.White, _assetsManager.Get(state.Style.Font));
+
+        state.Offset.Y -= (state.Size.Height + state.Style.ItemMargin);
+    }
 
     private bool IsHighlighted(int id) => _state->HighlightedId == id;
     private bool IsActive(int id) => _state->ActiveId == id;
     private bool IsFocus(int id) => _state->FocusId == id;
     private void SetActive(int id) => _state->SetActive(id);
     private void SetHighlighted(int id) => _state->SetHighlighted(id, _layer);
+    private void SetFocus(int id) => _state->SetFocus(id);
+    private void ClearFocus(int id) => _state->ClearFocus(id);
     private bool ButtonPressed => _state->ButtonPressed;
-    private bool ButtonReleaed => _state->ButtonReleased;
+    private bool ButtonReleased => _state->ButtonReleased;
     private bool ButtonDown => _state->ButtonDown;
+    private ReadOnlySpan<char> GetCharacters() => _inputState->GetCharacters();
 
     private ref readonly Point CursorPosition => ref _state->CursorPosition;
 

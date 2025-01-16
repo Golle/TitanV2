@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Numerics;
 using Titan.Assets;
+using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Systems;
@@ -20,6 +22,12 @@ internal partial struct UIVersion2
 
     private static UISliderState2 _state;
     private static UICheckboxState2 _checkboxState;
+
+    private static Inline32<char> Text1;
+    private static Inline32<char> Text2;
+
+    private static int Text1Count;
+    private static int Text2Count;
     [System]
     public static void Update1(UIManager uiManager)
     {
@@ -37,7 +45,7 @@ internal partial struct UIVersion2
 
             context.Label(new Vector2(600, 600), new SizeF(300, 300), "This is sparta", Color.White);
 
-            context.Slider(23, new(600, 200), new(220, 50), Color.White, ref _state);
+            context.Slider(23, new(600, 260), new(220, 50), Color.White, ref _state);
 
             context.End();
         }
@@ -58,6 +66,8 @@ internal partial struct UIVersion2
             {
                 CheckmarkIndex = EngineAssetsRegistry.Sprites.DebugUiStyle.SpriteIndex.CheckboxCross
             });
+            context.TextBox(63, new(700, 100), new(300, 40), Text1, ref Text1Count);
+            context.TextBox(64, new(700, 150), new(300, 36), Text2, ref Text2Count);
 
             context.End();
         }
@@ -74,6 +84,25 @@ internal partial struct UIVersion2
                 Logger.Error<UIVersion2>("Rolf!");
             }
 
+
+            //NOTE(Jens): I like this design, but it will be hard to create the Selected element.. not sure how to do that.
+            var timer = Stopwatch.StartNew();
+            if (context.SelectBox(543, new(800, 700), new(140, 32), out var state))
+            {
+                context.SelectBoxItem(ref state, "Item1");
+                context.SelectBoxItem(ref state, "Item2");
+                context.SelectBoxItem(ref state, "Item3");
+                context.SelectBoxItem(ref state, "Item4");
+                context.SelectBoxItem(ref state, "Item5");
+                context.SelectBoxItem(ref state, "Item6");
+                context.SelectBoxItem(ref state, "Item7");
+                context.SelectBoxItem(ref state, "Item8");
+                context.SelectBoxItem(ref state, "Item9");
+                context.SelectBoxItem(ref state, "Item10");
+            }
+
+            timer.Stop();
+            //Logger.Error($"Elapsed: {timer.Elapsed.Microseconds} microseconds");
             context.End();
         }
     }

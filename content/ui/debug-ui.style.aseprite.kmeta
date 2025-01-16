@@ -126,6 +126,55 @@
         "right" :5,
         "bottom":5
       }
+    },
+    {
+      "name" : "TextBox",
+      "bottomLeft": [0,143],
+      "topRight": [31,112],
+      "ninePatch": {
+        "left": 6,
+        "top": 6,
+        "right" : 6,
+        "bottom": 6
+      }
+    },
+    {
+      "name" : "TextBox_Focus",
+      "bottomLeft": [32,143],
+      "topRight": [63,112],
+      "ninePatch": {
+        "left": 6,
+        "top": 6,
+        "right" : 6,
+        "bottom": 6
+      }
+    },
+    {
+      "name" : "TextBox_Cursor",
+      "bottomLeft": [66,141],
+      "topRight": [67,117]
+    },
+    {
+      "name" : "SelectBox",
+      "bottomLeft": [0,175],
+      "topRight": [31,144],
+      "ninePatch": {
+        "left": 6,
+        "top": 6,
+        "right" : 6,
+        "bottom": 6
+      }
+    },
+    {
+      "name" : "SelectBox_Focus",
+      "bottomLeft": [32,175],
+      "topRight": [63,144],
+      "ninePatch": {
+        "left": 6,
+        "top": 6,
+        "right" : 6,
+        "bottom": 6
+      }
     }
   ],
   "ninePatch": [],
