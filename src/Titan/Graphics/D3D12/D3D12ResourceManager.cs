@@ -248,8 +248,8 @@ public unsafe partial struct D3D12ResourceManager
 
         //}
         var resourceState = args.Type is BufferType.IndirectArguments
-            ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON
-            : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+            ? D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT
+            : D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON;
 
         var size = (uint)args.Stride * args.Count;
         var flags = args.ShaderVisible
