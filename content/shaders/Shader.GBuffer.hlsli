@@ -4,6 +4,7 @@
 struct GBufferDrawData 
 {
     uint InstanceOffset;
+    uint VertexOffset;
 };
 
 struct MeshInstance
@@ -30,8 +31,9 @@ struct MaterialData
 };
 
 
-ConstantBuffer<GBufferDrawData> PassData : register(b0, space0);
 
+ConstantBuffer<GBufferDrawData> PassData : register(b0, space0);
+ByteAddressBuffer GBuffer1 : register(t0, space0);
 StructuredBuffer<Vertex> GBuffer : register(t0, space0);
 StructuredBuffer<uint> IndexBuffer : register(t0, space1);
 StructuredBuffer<MeshInstance> MeshInstances : register(t0, space2);

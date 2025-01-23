@@ -68,12 +68,14 @@ public unsafe partial struct CameraSystem
         }
         camera.RotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
         //var rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
-        camera.Target = Vector3.Normalize(Vector3.Transform(Camera.DefaultForward, camera.RotationMatrix));
+
+        camera.Forward = Vector3.Transform(Camera.DefaultForward, camera.RotationMatrix);
+        
         
         var rotatationYMatrix = Matrix4x4.CreateRotationY(camera.Yaw);
         camera.Right = Vector3.Transform(Camera.DefaultRight, rotatationYMatrix);
         camera.Up = Vector3.Transform(Camera.DefaultUp, rotatationYMatrix);
-        camera.Forward = Vector3.Transform(Camera.DefaultForward, camera.RotationMatrix);
+        camera.Target = Vector3.Normalize(camera.Forward);
 
         if (isInFreeLookMode)
         {

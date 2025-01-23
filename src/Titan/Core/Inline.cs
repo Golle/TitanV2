@@ -14,3 +14,4 @@ namespace Titan.Core;
 [InlineArray(128)] public partial struct Inline128<T>;
 [InlineArray(256)] public partial struct Inline256<T>;
 [InlineArray(512)] public partial struct Inline512<T>;
+[InlineArray(2048)] public partial struct Inline2048<T>;

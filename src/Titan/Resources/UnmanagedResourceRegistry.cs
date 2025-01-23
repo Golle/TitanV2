@@ -5,14 +5,15 @@ using Titan.Core.Memory;
 
 namespace Titan.Resources;
 
-internal sealed unsafe class UnmanagedResourceRegistry : IService
+public sealed unsafe class UnmanagedResourceRegistry : IService
 {
     private TitanBuffer _resources;
     private TitanArray<uint> _offsets;
 
     private IMemoryManager? _memoryManager;
     public uint HighestId { get; private set; }
-    public bool Init(IMemoryManager memoryManager, IReadOnlyList<UnmanagedResourceDescriptor> descriptors)
+
+    internal bool Init(IMemoryManager memoryManager, IReadOnlyList<UnmanagedResourceDescriptor> descriptors)
     {
         var length = descriptors.Count;
         if (length == 0)
@@ -77,7 +78,7 @@ internal sealed unsafe class UnmanagedResourceRegistry : IService
     public UnmanagedResource<T> GetResourceHandle<T>() where T : unmanaged, IResource
         => new(GetResourcePointer<T>());
 
-    public void Shutdown()
+    internal void Shutdown()
     {
         _memoryManager?.FreeArray(ref _offsets);
         _memoryManager?.FreeBuffer(ref _resources);

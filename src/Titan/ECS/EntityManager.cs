@@ -14,7 +14,12 @@ public readonly unsafe struct EntityManager
     }
 
     public Entity CreateEntity() => _entitySystem->Create();
-    public void DestroyEntity(in Entity entity) => _entitySystem->Destroy(entity);
+    public void DestroyEntity(in Entity entity)
+    {
+        _entitySystem->Destroy(entity);
+        _componentSystem->DestroyEntity(entity);
+    }
+
     public void AddComponent<T>(in Entity entity, in T data = default) where T : unmanaged, IComponent => _componentSystem->AddComponent(entity, data);
     public void RemoveComponent<T>(in Entity entity) where T : unmanaged, IComponent => _componentSystem->RemoveComponent<T>(entity);
 }

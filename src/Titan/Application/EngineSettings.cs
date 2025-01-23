@@ -20,7 +20,6 @@ public unsafe partial struct EngineSettings
         }
     }
     
-    
     public static ReadOnlySpan<AdapterInfo> GraphicAdapters
         => Adapters != null ? Adapters->Adapters.AsReadOnlySpan()[..(int)Adapters->AdapterCount] : [];
 }

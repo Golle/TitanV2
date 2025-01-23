@@ -693,7 +693,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 4804,
+                Length = 4792,
                 Offset = 69454744,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl"),
@@ -717,7 +717,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2796,
-                Offset = 69459548,
+                Offset = 69459536,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.kbin")
@@ -740,7 +740,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3084,
-                Offset = 69462344,
+                Offset = 69462332,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.kbin")
@@ -763,7 +763,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 90139,
-                Offset = 69465428,
+                Offset = 69465416,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.kbin")
@@ -790,7 +790,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 37616,
-                Offset = 69555567,
+                Offset = 69555555,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.obj"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.kbin")
@@ -816,7 +816,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 113920,
-                Offset = 69593183,
+                Offset = 69593171,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"titan.kbin")

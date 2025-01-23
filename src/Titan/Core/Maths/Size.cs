@@ -34,4 +34,11 @@ public struct Size(int width = 0, int height = 0)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator SizeF(in Size size) => new(size.Width, size.Height);
+    
+    
+    public int Area
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Width * Height;
+    }
 }

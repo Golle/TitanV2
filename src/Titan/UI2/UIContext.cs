@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -17,7 +18,9 @@ public struct UISelectBoxItemState
 {
     internal SizeF Size;
     internal Vector2 Offset;
+    internal int Index;
     internal UISelectBoxStyle2 Style;
+    public int SelectBoxIndex;
 }
 
 public struct UISliderState2
@@ -159,6 +162,9 @@ public unsafe struct UIContext
         _widgets[_count++] = widget;
     }
 
+
+    public bool Button(int id, ReadOnlySpan<char> text, in Vector2 offset, in SizeF size)
+        => Button(id, text, in offset, in size, Color.White, Color.Black);
 
     public bool Button(int id, ReadOnlySpan<char> text, in Vector2 offset, in SizeF size, in Color color, in Color textColor)
     {
@@ -349,6 +355,9 @@ public unsafe struct UIContext
         DrawText16(offset, in size, text, in color, font);
     }
 
+    public void Slider(int id, in Vector2 offset, in SizeF size, ref UISliderState2 state)
+        => Slider(id, in offset, in size, Color.White, ref state);
+
     public void Slider(int id, in Vector2 offset, in SizeF size, in Color color, ref UISliderState2 state)
     {
         if (!_assetsManager.IsLoaded(_style->Slider.Asset))
@@ -520,14 +529,12 @@ public unsafe struct UIContext
         }
     }
 
+    public bool SelectBox(int id, in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, ref UISelectBoxItemState itemState)
+        => SelectBox(id, offset, size, text, ref itemState, _style->SelectBox);
 
-    public bool SelectBox(int id, in Vector2 offset, in SizeF size, out UISelectBoxItemState state)
+    public bool SelectBox(int id, in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, ref UISelectBoxItemState itemState, in UISelectBoxStyle2 style)
     {
-        return SelectBox(id, offset, size, out state, _style->SelectBox);
-    }
-    public bool SelectBox(int id, in Vector2 offset, in SizeF size, out UISelectBoxItemState state, in UISelectBoxStyle2 style)
-    {
-        Unsafe.SkipInit(out state);
+        Unsafe.SkipInit(out itemState);
         if (!_assetsManager.IsLoaded(style.Asset) || !_assetsManager.IsLoaded(style.Font))
         {
             return false;
@@ -548,23 +555,35 @@ public unsafe struct UIContext
 
         ref readonly var sprite = ref _assetsManager.Get(style.Asset);
         DrawNinePatch(offset, size, Color.White, sprite, isHighligted ? style.FocusIndex : style.Index);
+        if (text.Length > 0)
+        {
+            ref readonly var font = ref _assetsManager.Get(style.Font);
+            ref readonly var glyph = ref font.Glyphs['A'];
+            var estimatedWidth = glyph.Advance * text.Length;
+            var offsetX = ((int)size.Width - estimatedWidth) >> 1;
+            var offsetY = ((int)size.Height - glyph.Height) >> 1;
+            DrawText16(offset + new Vector2(offsetX, offsetY), new(estimatedWidth, glyph.Height), text, Color.White, font);
+        }
 
         if (isActive)
         {
-            state = new()
-            {
-                Offset = offset with { Y = offset.Y - 10 },
-                Size = size,
-                Style = style
-            };
+            itemState.Offset = offset with { Y = offset.Y - 10 };
+            itemState.Index = 0;
+            itemState.Size = size;
+            itemState.Style = style;
         }
         return isActive;
     }
 
 
-    public void SelectBoxItem(ref UISelectBoxItemState state, ReadOnlySpan<char> text)
+    public void SelectBoxItem(ReadOnlySpan<char> text, ref UISelectBoxItemState state)
     {
         var isOver = IsOver(state.Offset, state.Size);
+        if (isOver && ButtonReleased)
+        {
+            // if the button is released and we're over this item set it as the selected one.
+            state.SelectBoxIndex = state.Index;
+        }
 
         ref readonly var sprite = ref _assetsManager.Get(state.Style.Asset);
         ref readonly var font = ref _assetsManager.Get(state.Style.Font);
@@ -581,6 +600,7 @@ public unsafe struct UIContext
         DrawText16(textOffset, textSize, text, Color.White, _assetsManager.Get(state.Style.Font));
 
         state.Offset.Y -= (state.Size.Height + state.Style.ItemMargin);
+        state.Index++;
     }
 
     private bool IsHighlighted(int id) => _state->HighlightedId == id;

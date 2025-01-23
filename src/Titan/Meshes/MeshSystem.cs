@@ -105,8 +105,9 @@ internal unsafe partial struct MeshSystem
         Debug.Assert(args.SubMeshes.Length <= data->SubMeshes.Size);
 
         data->VertexStartLocation = GetNextVertexStartLocation(vertexCount);
-        var indexStartLocation = GetNextIndicesStartLocation(indexCount);
 
+        var indexStartLocation = GetNextIndicesStartLocation(indexCount);
+        Logger.Error($"Location: Vertex {data->VertexStartLocation} Index = {indexStartLocation}");
         // We only support submeshes, so when no submeshes are available we just add a single submesh with all the indices.
         if (args.SubMeshes.IsEmpty)
         {

@@ -8,7 +8,19 @@ public record struct Vector3Int(int X, int Y, int Z)
 {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector3Int Round(in Vector3 vector)
+    {
+        var x = (int)(vector.X + 0.5f);
+        var y = (int)(vector.Y + 0.5f);
+        var z = (int)(vector.Z + 0.5f);
+        return new(x, y, z);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static explicit operator Vector3(in Vector3Int vector) => new(vector.X, vector.Y, vector.Z);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static explicit operator Vector3Int(in Vector3 vector) => new((int)vector.X, (int)vector.Y, (int)vector.Z);
 }
 
 
@@ -23,6 +35,10 @@ public static class MathUtils
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPowerOf2(uint value)
         => value > 0 && (value & (value - 1u)) == 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float InverseLerp(float start, float end, float value)
+        => (value - start) / (end - start);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Lerp(float end, float t)

@@ -87,8 +87,8 @@ public struct Camera
         Position += distance.Y * Up;
     }
 
-    public void SetTarget(in Vector3 direction)
-        => Target = Vector3.Normalize(direction);
+    public void SetTarget(in Vector3 direction) 
+        =>Forward = Target = Vector3.Normalize(direction);
 
     public void SetRotation(float yaw, float pitch, float roll)
     {

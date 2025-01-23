@@ -41,7 +41,8 @@ internal unsafe partial struct DeferredLightingRenderPass
         new(0.05f, 0.05f, 0.1f) // Minimal light with a hint of blue
     ];
 
-    private static int LightIndex = 5;
+    private static int LightIndex = 0;
+    //private static int LightIndex = 5;
 
     private Handle<RenderPass> PassHandle;
     private const uint RootConstantPassData = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;

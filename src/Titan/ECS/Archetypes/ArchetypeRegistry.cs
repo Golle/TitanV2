@@ -137,6 +137,19 @@ internal unsafe partial struct ArchetypeRegistry
         }
     }
 
+    public void DestroyEntity(in Entity entity)
+    {
+        var id = entity.IdNoVersion;
+        ref var data = ref _data[id];
+        if (data.Record.Archetype != null)
+        {
+            ref var source = ref data.Record;
+            FreeEntity(source);
+        }
+
+        data = default;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static void MoveEntityWithAdd(in ArchetypeRecord source, in ArchetypeRecord destination, in ComponentType type, void* data)
     {

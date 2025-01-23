@@ -71,6 +71,9 @@
         [ ] Does not work for items that have no ID.
         [ ] Implement "clickthrough" parameter
 
+# Select Box
+    [ ] SelectItems does not have a way set them selfes as highlighted, this means any control behind them will be highlighted.
+
 # Meshes
 ## Mesh Storage
     [ ] Implement a memory manager for meshes and their data

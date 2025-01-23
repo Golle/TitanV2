@@ -36,7 +36,7 @@ internal unsafe partial struct ComponentSystem
     {
         ref var registry = ref system->_registry;
 
-        if (inputState.IsKeyReleased(KeyCode.F1))
+        if (inputState.IsKeyReleased(KeyCode.F2))
         {
             registry->PrintArchetypeStats();
         }
@@ -58,7 +58,7 @@ internal unsafe partial struct ComponentSystem
                     registry->RemoveComponent(command.Entity, command.ComponentType);
                     break;
                 case EntityCommandType.DestroyEntity:
-                    Logger.Warning<ComponentSystem>("Destroy is not implemented.");
+                    registry->DestroyEntity(command.Entity);
                     break;
             }
         }
@@ -79,4 +79,8 @@ internal unsafe partial struct ComponentSystem
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveComponent<T>(in Entity entity) where T : unmanaged, IComponent
         => _commands.RemoveComponent<T>(entity);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void DestroyEntity(in Entity entity)
+        => _commands.DestroyEntity(entity);
 }

@@ -39,7 +39,6 @@ internal unsafe partial struct MeshLoader
         Debug.Assert(descriptor.Type == AssetType.Mesh);
         ref readonly var meshDescriptor = ref descriptor.Mesh;
 
-
         var verticesOffset = meshDescriptor.SubMeshCount * sizeof(SubMesh);
         var indicesOffset = verticesOffset + meshDescriptor.VertexCount * sizeof(Vertex);
 
