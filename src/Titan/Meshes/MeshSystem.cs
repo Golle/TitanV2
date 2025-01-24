@@ -64,8 +64,8 @@ internal unsafe partial struct MeshSystem
         var vertexCount = (uint)(vertexMemorySize / sizeof(Vertex));
         var indexCount = (uint)(indexMemorySize / sizeof(uint));
 
-        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Structured, cpuVisible: false, shaderVisible: true));
-        system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Index, cpuVisible: false, shaderVisible: false));
+        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
+        system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
 
         if (system->StaticVertexBuffer.IsInvalid)
         {
@@ -103,11 +103,8 @@ internal unsafe partial struct MeshSystem
 
         var data = MeshData.AsPtr(handle);
         Debug.Assert(args.SubMeshes.Length <= data->SubMeshes.Size);
-
         data->VertexStartLocation = GetNextVertexStartLocation(vertexCount);
-
         var indexStartLocation = GetNextIndicesStartLocation(indexCount);
-        Logger.Error($"Location: Vertex {data->VertexStartLocation} Index = {indexStartLocation}");
         // We only support submeshes, so when no submeshes are available we just add a single submesh with all the indices.
         if (args.SubMeshes.IsEmpty)
         {
@@ -137,7 +134,7 @@ internal unsafe partial struct MeshSystem
                 return Handle<MeshData>.Invalid;
             }
 
-            if (!ResourceManager->Upload(StaticIndexBuffer, new TitanBuffer(indices, (uint)(sizeof(uint) * indexCount)), data->SubMeshes[0].IndexStartLocation))
+            if (!ResourceManager->Upload(StaticIndexBuffer, new TitanBuffer(indices, sizeof(uint) * indexCount), data->SubMeshes[0].IndexStartLocation))
             {
                 Logger.Error<MeshSystem>("Failed to upload Indices.");
                 MeshData.SafeFree(handle); // TODO: slot is lost, neeeeed to fix.
@@ -161,14 +158,18 @@ internal unsafe partial struct MeshSystem
 
     private uint GetNextIndicesStartLocation(uint count)
     {
-        var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(uint) * count), 256);
-        return Interlocked.Add(ref NextIndex, alignedIncrement) - alignedIncrement;
+        var size = (uint)sizeof(uint) * count;
+        return Interlocked.Add(ref NextIndex, size) - size;
+        //var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(uint) * count), 256);
+        //return Interlocked.Add(ref NextIndex, alignedIncrement) - alignedIncrement;
     }
 
     private uint GetNextVertexStartLocation(uint count)
     {
-        var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(Vertex) * count), 256);
-        return Interlocked.Add(ref NextVertex, alignedIncrement) - alignedIncrement;
+        var size = (uint)sizeof(Vertex) * count;
+        return Interlocked.Add(ref NextVertex, size) - size;
+        //var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(Vertex) * count), 256);
+        //return Interlocked.Add(ref NextVertex, alignedIncrement) - alignedIncrement;
     }
 
     [System(SystemStage.Shutdown)]

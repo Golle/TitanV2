@@ -6,9 +6,11 @@ static const uint UVOffset = 12;
 static const uint NormalOffset = UVOffset + 8;
 static const uint VertexSize = sizeof(Vertex);
 
-Vertex LoadVertex(uint index)
+Vertex LoadVertex(uint vertexId)
 {
-    uint offset = PassData.VertexOffset + (index * VertexSize);
+    uint index = IndexBuffer.Load(PassData.IndexOffset + vertexId * 4);
+    uint offset = PassData.VertexOffset + index * VertexSize;
+
     Vertex v;
     v.Position = asfloat(GBuffer1.Load3(offset + PositionOffset));
     v.UV = asfloat(GBuffer1.Load2(offset + UVOffset));
@@ -21,7 +23,7 @@ GBufferVertexOutput main(in uint VertexIdx : SV_VertexID, in uint InstanceIdx : 
 {
     uint instanceOffset = PassData.InstanceOffset;
 
-    MeshInstance instance = MeshInstances[instanceOffset+InstanceIdx];
+    MeshInstance instance = MeshInstances[instanceOffset + InstanceIdx];
     Vertex vertex = LoadVertex(VertexIdx);
     GBufferVertexOutput output;
     output.Position = mul(float4(vertex.Position, 1.0), mul(instance.ModelMatrix, FrameDataBuffer.ViewProjection));

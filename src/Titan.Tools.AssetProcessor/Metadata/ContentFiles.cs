@@ -90,7 +90,8 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
             }
             var assetFilename = Path.GetFileNameWithoutExtension(file);
             var filename = Path.GetFileNameWithoutExtension(assetFilename);
-            var binaryFileName = $"{filename}{BinaryFileExtension}";
+            var extension = Path.GetExtension(assetFilename).ToLowerInvariant();
+            var binaryFileName = $"{filename}{extension}{BinaryFileExtension}";
             var directory = Path.GetDirectoryName(file)!;
             metadata.ContentFileFullPath = Path.Combine(directory, assetFilename);
             metadata.ContentFileRelativePath = Path.GetRelativePath(contentFolder, metadata.ContentFileFullPath);
@@ -99,7 +100,8 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
             metadata.BinaryFileRelativePath = Path.Combine(relativeFolder, binaryFileName);
             metadata.BinaryFileFullPath = Path.Combine(binaryFolder, metadata.BinaryFileRelativePath);
 
-            metadata.FileExtension = Path.GetExtension(assetFilename).ToLowerInvariant();
+
+            metadata.FileExtension = extension;
             if (!metadatas.TryAdd(metadata.Id, metadata))
             {
                 throw new InvalidOperationException("Failed to add metadata. Probably duplicate key.");

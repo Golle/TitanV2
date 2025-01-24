@@ -49,11 +49,14 @@ public record GBufferConfig : IConfiguration, IDefault<GBufferConfig>
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
 {
-    private struct Test
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct GBufferPassData
     {
         public uint InstanceId;
         public uint VertexOffset;
+        public uint IndexOffset;
     }
+
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
     private const uint VertexBufferIndex = PassDataIndex + 1;
@@ -76,7 +79,7 @@ internal unsafe partial struct GBufferRenderPass
         var passArgs = new CreateRenderPassArgs
         {
             RootSignatureBuilder = static builder => builder
-                .WithRootConstant<Test>() // the index of the Meshinstance we're rendering.
+                .WithRootConstant<GBufferPassData>() // the index of the Meshinstance we're rendering.
                 .WithDecriptorRange(1, space: 0) // Vertex buffer
                 .WithDecriptorRange(1, space: 1) // IndexBuffer
                 .WithDecriptorRange(1, space: 2) // MeshInstance
@@ -156,7 +159,8 @@ internal unsafe partial struct GBufferRenderPass
         var indexBuffer = resourceManager.Access(meshSystem.GetIndexBufferHandle());
         var vertexBuffer = resourceManager.Access(meshSystem.GetVertexBufferHandle());
 
-        commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
+        //commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
+        commandList.SetGraphicsRootDescriptorTable(IndexBufferIndex, indexBuffer);
         commandList.SetGraphicsRootDescriptorTable(VertexBufferIndex, vertexBuffer);
         commandList.SetGraphicsRootDescriptorTable(MeshInstanceIndex, meshBuffer);
         commandList.SetGraphicsRootDescriptorTable(MaterialsInstanceIndex, materialBuffer);
@@ -197,19 +201,18 @@ internal unsafe partial struct GBufferRenderPass
                                            ;
 
             //TODO: Implement GPU instancing
-
-            commandList.SetGraphicsRootConstant(PassDataIndex, new Test()
-            {
-                InstanceId = meshInstanceIndex,
-                VertexOffset = meshData->VertexStartLocation
-            });
             for (var index = 0; index < meshData->SubMeshCount; ++index)
             {
                 ref readonly var submesh = ref meshData->SubMeshes[index];
-                commandList.DrawIndexedInstanced(submesh.IndexCount, 1);
 
+                commandList.SetGraphicsRootConstant(PassDataIndex, new GBufferPassData
+                {
+                    InstanceId = meshInstanceIndex,
+                    VertexOffset = meshData->VertexStartLocation,
+                    IndexOffset = submesh.IndexStartLocation
+                });
+                commandList.DrawInstanced(submesh.IndexCount, 1);
             }
-
         }
     }
 

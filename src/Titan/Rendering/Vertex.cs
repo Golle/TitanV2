@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Titan.Rendering;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct Vertex
 {
     public Vector3 Position;

@@ -164,6 +164,7 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
     }
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct Vertex
 {
     public Vector3 Position;
