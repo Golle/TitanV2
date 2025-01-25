@@ -176,6 +176,10 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
     private static IEnumerable<string> GetSingleFile(string filePath)
     {
         var extension = Path.GetExtension(filePath);
+        if (IgnoredFileExtensions.Contains(extension))
+        {
+            yield break;
+        }
         if (extension == MetadataFileExtension)
         {
             // metadata file changed
@@ -184,6 +188,7 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
         else
         {
             var filename = Path.GetFileName(filePath);
+            
             var directory = Path.GetDirectoryName(filePath)!;
             var metadataPath = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
             if (!File.Exists(metadataPath))
