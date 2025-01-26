@@ -4,7 +4,6 @@ using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Threading;
-using Titan.ECS.Components;
 using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DBT;
@@ -12,7 +11,6 @@ using Titan.Systems;
 using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
 using static Titan.Platform.Win32.WindowMessage;
-using SetWindowPos = Titan.Platform.Win32.SetWindowPos;
 
 namespace Titan.Windows.Win32;
 
@@ -240,7 +238,7 @@ internal unsafe partial struct Win32WindowSystem
                     window->Width = (int)msg.WParam;
                     window->Y = window->X = -1;
                     UpdateWindowSize(window);
-                    var windowResult = SetWindowPos(handle, 0, window->X, window->Y, window->WidthWithFrame, window->HeightWithFrame, SetWindowPos.SWP_ASYNCWINDOWPOS);
+                    var windowResult = SetWindowPos(handle, 0, window->X, window->Y, window->WidthWithFrame, window->HeightWithFrame, SetWindowPosFlags.SWP_ASYNCWINDOWPOS);
                     if (windowResult)
                     {
                         queue->Push(new Win32ResizeEvent((uint)window->Width, (uint)window->Height));

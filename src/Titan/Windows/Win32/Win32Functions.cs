@@ -47,7 +47,7 @@ internal static unsafe class Win32Functions
             handle,
             isTopMost ? HWND.HWND_TOPMOST : HWND.HWND_NOTOPMOST,
             0, 0, 0, 0,
-            SetWindowPos.SWP_NOMOVE | SetWindowPos.SWP_NOSIZE | SetWindowPos.SWP_NOACTIVATE
+            SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOSIZE | SetWindowPosFlags.SWP_NOACTIVATE
         );
     }
 

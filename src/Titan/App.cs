@@ -13,9 +13,25 @@ public enum ApplicationType
     Headless
 }
 
+[Flags]
+public enum BuiltInRendererFlags
+{
+    GBuffer = 1 << 0,
+    DeferredLighting = 1 << 1,
+    UIRenderer = 1 << 2,
+    DebugRenderer = 1 << 3,
+
+#if DEBUG
+    Default = GBuffer | DeferredLighting | UIRenderer | DebugRenderer
+#else
+    Default = GBuffer | DeferredLighting | UIRenderer
+#endif
+}
+
 public record AppConfig(string Name, string Version)
 {
     public ApplicationType ApplicationType { get; init; } = ApplicationType.Game;
+    public BuiltInRendererFlags BuiltInRendererFlags { get; init; } = BuiltInRendererFlags.Default;
     public MemoryConfig Memory { get; init; } = MemoryConfig.Default;
     public JobSystemConfig JobSystem { get; init; } = JobSystemConfig.Default;
     public EventConfig EventConfig { get; init; } = EventConfig.Default;

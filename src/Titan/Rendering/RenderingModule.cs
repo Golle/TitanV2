@@ -1,6 +1,7 @@
 using Titan.Application;
 using Titan.Graphics.D3D12;
 using Titan.Graphics.Vulkan;
+using Titan.Rendering.RenderPasses;
 using Titan.Rendering.Resources;
 
 namespace Titan.Rendering;
@@ -16,13 +17,19 @@ internal sealed class RenderingModule : IModule
             .AddSystemsAndResource<RenderTargetCache>()
 
             .AddModule<DeferredRenderingModule>()
+            .AddModule<UIRenderingModule>()
+
+            .AddSystemsAndResource<BackbufferRenderPass>()
             ;
+
+        if (config.BuiltInRendererFlags.HasFlag(BuiltInRendererFlags.DebugRenderer))
+        {
+            builder.AddSystemsAndResource<DebugRenderPass>();
+        }
 
         if (GlobalConfiguration.Platform == Platforms.Windows)
         {
-            builder
-                .AddModule<D3D12GraphicsModule>()
-                ;
+            builder.AddModule<D3D12GraphicsModule>();
         }
         else if (GlobalConfiguration.Platform == Platforms.Linux)
         {

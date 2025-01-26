@@ -75,7 +75,7 @@ public static unsafe partial class User32
         int Y,
         int cx,
         int cy,
-        SetWindowPos uFlags
+        SetWindowPosFlags uFlags
     );
 
     [LibraryImport(DllName, SetLastError = true)]

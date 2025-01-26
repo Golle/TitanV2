@@ -1,7 +1,7 @@
 namespace Titan.Platform.Win32;
 
 [Flags]
-public enum SetWindowPos
+public enum SetWindowPosFlags
 {
     SWP_NOSIZE = 0x0001,
     SWP_NOMOVE = 0x0002,

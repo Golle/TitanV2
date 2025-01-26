@@ -194,11 +194,11 @@ internal unsafe partial struct GBufferRenderPass
 
             //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
             //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
-            meshInstanceData.ModelMatrix = Matrix4x4.Transpose(Matrix4x4.CreateScale(transform.Scale) *
-                                           Matrix4x4.CreateFromQuaternion(transform.Rotation) *
-                                           Matrix4x4.CreateTranslation(transform.Position)
-                                           )
-                                           ;
+            meshInstanceData.ModelMatrix = Matrix4x4.Transpose(
+                Matrix4x4.CreateFromQuaternion(transform.Rotation) *
+                Matrix4x4.CreateScale(transform.Scale) *
+                Matrix4x4.CreateTranslation(transform.Position)
+            );
 
             //TODO: Implement GPU instancing
             for (var index = 0; index < meshData->SubMeshCount; ++index)
