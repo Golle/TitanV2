@@ -145,6 +145,12 @@ internal static class SystemsBuilder
 
 
         builder.AppendLine("var count = state.Count;");
+        builder
+            .AppendLine("if(count == 0)")
+            .AppendOpenBracer()
+            .AppendLine("continue;")
+            .AppendCloseBracer();
+            
         for (var i = 0; i < count; ++i)
         {
             builder.AppendLine($"var p{i} = new {TitanTypes.Span}<{components[i].Parameter.Type}>(data[{i}], count);");
