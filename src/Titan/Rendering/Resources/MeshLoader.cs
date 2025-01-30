@@ -4,7 +4,6 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
-using Titan.Graphics.D3D12;
 using Titan.Meshes;
 
 namespace Titan.Rendering.Resources;
@@ -13,7 +12,6 @@ namespace Titan.Rendering.Resources;
 internal unsafe partial struct MeshLoader
 {
     private PoolAllocator<MeshAsset> _meshes;
-    private D3D12ResourceManager* _resourceManager;
     private MeshSystem* _meshSystem;
 
     public bool Init(in AssetLoaderInitializer init)
@@ -24,7 +22,6 @@ internal unsafe partial struct MeshLoader
             return false;
         }
 
-        _resourceManager = init.GetResourcePointer<D3D12ResourceManager>();
         _meshSystem = init.GetResourcePointer<MeshSystem>();
         return true;
     }
@@ -90,4 +87,5 @@ public struct SubMesh
     public int VertexCount;
     public int IndexOffset;
     public int IndexCount;
+
 }

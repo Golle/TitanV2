@@ -148,7 +148,7 @@ public readonly unsafe struct MappedGPUResource<T>(T* resource, Handle<GPUBuffer
         {
             return;
         }
-        Debug.Assert(values.Length + offset < count);
+        Debug.Assert(values.Length + offset <= count);
         MemoryUtils.Copy(resource + offset, values);
     }
 }

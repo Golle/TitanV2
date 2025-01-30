@@ -14,6 +14,7 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 [JsonDerivedType(typeof(MtlMetadata), nameof(MtlMetadata))]
 [JsonDerivedType(typeof(FontMetadata), nameof(FontMetadata))]
 [JsonDerivedType(typeof(AudioMetadata), nameof(AudioMetadata))]
+[JsonDerivedType(typeof(MaterialMetadata), nameof(MaterialMetadata))]
 internal abstract class AssetFileMetadata
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -49,6 +50,10 @@ internal abstract class AssetFileMetadata
     public string BinaryFileFullPath { get; set; } = string.Empty;
     [JsonIgnore]
     public string BinaryFileRelativePath { get; set; } = string.Empty;
+    [JsonIgnore]
+    public string MetadataFileFullPath { get; set; } = string.Empty;
+    [JsonIgnore]
+    public string MetadataFileRelativePath { get; set; } = string.Empty;
     [JsonIgnore]
     public string FileExtension { get; set; } = string.Empty;
 }

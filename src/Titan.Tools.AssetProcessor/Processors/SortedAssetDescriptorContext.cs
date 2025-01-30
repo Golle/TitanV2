@@ -51,8 +51,18 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         }
     }
 
+    public bool TryAddMaterial(in MaterialDescriptor material, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
+    {
+        var descriptor = new AssetDescriptor
+        {
+            Type = AssetType.Material,
+            Material = material
+        };
+        return AddAsset(data, metadata, descriptor);
+    }
+
     public bool HasErrors => _diagnostics.Any(static d => d.Level == DiagnosticsLevel.Error);
-    
+
 
     public bool TryAddTexture2D(in Texture2DDescriptor texture2D, ReadOnlySpan<byte> data, AssetFileMetadata metadata)
     {
@@ -133,8 +143,8 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
         }
     }
 
-    public IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename)
-        => metadataFiles.Where(m => m.ContentFileRelativePath.EndsWith(filename, true, null));
+    public IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename) =>
+        metadataFiles.Where(m => m.ContentFileRelativePath.EndsWith(filename, true, null));
 
     // ReSharper disable InconsistentlySynchronizedField
     public Task Complete()

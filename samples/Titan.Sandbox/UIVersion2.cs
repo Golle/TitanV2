@@ -4,6 +4,7 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
+using Titan.Rendering.Resources;
 using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
@@ -87,19 +88,19 @@ internal partial struct UIVersion2
 
             //NOTE(Jens): I like this design, but it will be hard to create the Selected element.. not sure how to do that.
             var timer = Stopwatch.StartNew();
-            if (context.SelectBox(543, new(800, 700), new(140, 32), out var state))
-            {
-                context.SelectBoxItem(ref state, "Item1");
-                context.SelectBoxItem(ref state, "Item2");
-                context.SelectBoxItem(ref state, "Item3");
-                context.SelectBoxItem(ref state, "Item4");
-                context.SelectBoxItem(ref state, "Item5");
-                context.SelectBoxItem(ref state, "Item6");
-                context.SelectBoxItem(ref state, "Item7");
-                context.SelectBoxItem(ref state, "Item8");
-                context.SelectBoxItem(ref state, "Item9");
-                context.SelectBoxItem(ref state, "Item10");
-            }
+            //if (context.SelectBox(543, new(800, 700), new(140, 32), out var state))
+            //{
+            //    context.SelectBoxItem(ref state, "Item1");
+            //    context.SelectBoxItem(ref state, "Item2");
+            //    context.SelectBoxItem(ref state, "Item3");
+            //    context.SelectBoxItem(ref state, "Item4");
+            //    context.SelectBoxItem(ref state, "Item5");
+            //    context.SelectBoxItem(ref state, "Item6");
+            //    context.SelectBoxItem(ref state, "Item7");
+            //    context.SelectBoxItem(ref state, "Item8");
+            //    context.SelectBoxItem(ref state, "Item9");
+            //    context.SelectBoxItem(ref state, "Item10");
+            //}
 
             timer.Stop();
             //Logger.Error($"Elapsed: {timer.Elapsed.Microseconds} microseconds");

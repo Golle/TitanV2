@@ -27,6 +27,7 @@ public struct SubMeshData
 {
     public uint IndexStartLocation;
     public uint IndexCount;
+    public uint MaterialIndex;
 }
 
 

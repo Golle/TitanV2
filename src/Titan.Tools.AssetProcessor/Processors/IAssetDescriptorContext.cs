@@ -23,6 +23,9 @@ internal interface IAssetDescriptorContext
     bool TryAddShader(in ShaderDescriptor shader, ReadOnlySpan<byte> data, ShaderMetadata metadata);
     bool TryAddMesh(in MeshDescriptor mesh, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
     bool TryAddAudio(in AudioDescriptor audio, ReadOnlySpan<byte> data, AudioMetadata metadata);
+    bool TryAddFont(in FontDescriptor font, ReadOnlySpan<GlyphInfo> glyphInfo, ReadOnlySpan<byte> pixelData, FontMetadata metadata);
+    bool TryAddMaterial(in MaterialDescriptor material, ReadOnlySpan<byte> data, AssetFileMetadata metadata);
+
     void AddDiagnostics(DiagnosticsLevel level, string message);
     IEnumerable<AssetFileMetadata> GetMetadataByFilename(string filename);
 
@@ -32,5 +35,5 @@ internal interface IAssetDescriptorContext
     bool HasErrors { get; }
     IEnumerable<(DiagnosticsLevel Level, string Message)> Diagnostics { get; }
     IEnumerable<T> GetMetadataByType<T>() where T : AssetFileMetadata;
-    bool TryAddFont(in FontDescriptor font, ReadOnlySpan<GlyphInfo> glyphInfo, ReadOnlySpan<byte> pixelData, FontMetadata metadata);
+
 }

@@ -155,6 +155,12 @@ public static class AssetsManagerExtensions
         return assetsManager.Load<FontAsset>(descriptor);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<MaterialAsset> LoadMaterial(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Material);
+        return assetsManager.Load<MaterialAsset>(descriptor);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static AssetHandle<TextureAsset> LoadTexture(this in AssetsManager assetsManager, in AssetDescriptor descriptor)

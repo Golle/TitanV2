@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core.Logging;
+using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.Tools.AssetProcessor.Parsers.WavefrontObj;
 
@@ -27,19 +28,16 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
             {
                 throw new NotImplementedException("Obj file without a mtl file has not been implemented.");
             }
-
-            Logger.Trace<ObjModelProcessor>($"Positions: {wavefrontObj.Positions.Length}");
-
-            var mtlFile = Path.Combine(Path.GetDirectoryName(metadata.ContentFileFullPath)!, wavefrontObj.MaterialLib);
-            if (!File.Exists(mtlFile))
+            var materialMetadata = context
+                .GetMetadataByFilename(wavefrontObj.MaterialLib)
+                .FirstOrDefault();
+            if (materialMetadata == null)
             {
-                Logger.Error<ObjModelMetadata>($"The material file {wavefrontObj.MaterialLib} does not exist at path {mtlFile}");
-                throw new FileNotFoundException("Missing material file", mtlFile);
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to find material lib file. Path = {metadata.ContentFileRelativePath}, Material Lib = {wavefrontObj.MaterialLib}");
+                return;
             }
-
-            var mtlFileLines = await File.ReadAllLinesAsync(mtlFile);
-            var parsedMaterials = MtlParser.Parse(mtlFileLines);
-
+            metadata.Dependencies = new List<AssetFileMetadata>() { materialMetadata };
+            Logger.Warning<ObjModelProcessor>("No way to look up materials corerctly implemented. This needs to be solved!");
             HandleObject(wavefrontObj.Objects[0]);
 
             void HandleObject(ObjectGroup obj)

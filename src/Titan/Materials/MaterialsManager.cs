@@ -29,4 +29,7 @@ public readonly unsafe struct MaterialsManager
 
         return _system->CreateMaterial(texture, args.Color);
     }
+
+    public void DestroyMaterial(Handle<MaterialData> handle)
+        => _system->DestroyMaterial(handle);
 }

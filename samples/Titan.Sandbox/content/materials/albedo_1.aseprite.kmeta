@@ -1,0 +1,14 @@
+{
+  "$type": "ImageMetadata",
+  "type": "Texture",
+  "compression": "None",
+  "sprites": [],
+  "id": "ece79898-50ba-4390-850f-3e4c92b9ee10",
+  "name": "Albedo1",
+  "fileSize": 893,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

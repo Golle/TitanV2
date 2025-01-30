@@ -56,12 +56,12 @@ public struct AssetDescriptor
     public ref ShaderDescriptor Shader => ref _descriptors.Shader;
     [UnscopedRef]
     public ref AudioDescriptor Audio => ref _descriptors.Audio;
-
     [UnscopedRef]
     public ref FontDescriptor Font => ref _descriptors.Font;
-
     [UnscopedRef]
     public ref SpriteDescriptor Sprite => ref _descriptors.Sprite;
+    [UnscopedRef]
+    public ref MaterialDescriptor Material => ref _descriptors.Material;
 
 
     /// <summary>
@@ -82,5 +82,7 @@ public struct AssetDescriptor
         public FontDescriptor Font;
         [FieldOffset(0)]
         public SpriteDescriptor Sprite;
+        [FieldOffset(0)]
+        public MaterialDescriptor Material;
     }
 }
