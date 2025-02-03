@@ -38,6 +38,11 @@ internal abstract class AssetFileMetadata
     /// <remarks>This field is not used by engine or the asset tool at the moment</remarks>
     /// </summary>
     public string? Link { get; set; }
+    /// <summary>
+    /// A comment about the file
+    /// <remarks>This field is not used my engine or the asset tool at the momeont</remarks>
+    /// </summary>
+    public string? Comment { get; set; }
 
     [JsonIgnore]
     public IReadOnlyList<AssetFileMetadata> Dependencies { get; set; } = [];

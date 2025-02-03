@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using Titan.Application;
 using Titan.Core;
 using Titan.Core.Maths;
 using Titan.Graphics.D3D12;
@@ -20,6 +22,7 @@ public readonly unsafe struct MaterialsManager
     {
         _system = system;
         _resourceManager = resourceManager;
+
     }
 
     public Handle<MaterialData> CreateMaterial(in CreateMaterialArgs args)
@@ -32,4 +35,7 @@ public readonly unsafe struct MaterialsManager
 
     public void DestroyMaterial(Handle<MaterialData> handle)
         => _system->DestroyMaterial(handle);
+
+    public Handle<GPUBuffer> GetGPUHandleForCurrentFrame()
+        => _system->GetMaterialsGPUHandle(EngineState.FrameIndex);
 }

@@ -143,7 +143,7 @@ internal unsafe partial struct GBufferRenderPass
 
 
     [System(SystemStage.PreUpdate)]
-    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshSystem meshSystem, in MaterialsSystem materialsSystem, in D3D12ResourceManager resourceManager)
+    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, MeshManager meshManager, MaterialsManager materialsManager, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
@@ -155,9 +155,9 @@ internal unsafe partial struct GBufferRenderPass
         var frameIndex = EngineState.FrameIndex;
 
         var meshBuffer = resourceManager.Access(pass->MeshInstancesHandles[frameIndex]);
-        var materialBuffer = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle(frameIndex));
-        var indexBuffer = resourceManager.Access(meshSystem.GetIndexBufferHandle());
-        var vertexBuffer = resourceManager.Access(meshSystem.GetVertexBufferHandle());
+        var materialBuffer = resourceManager.Access(materialsManager.GetGPUHandleForCurrentFrame());
+        var indexBuffer = resourceManager.Access(meshManager.GetGPUIndexBufferHandle());
+        var vertexBuffer = resourceManager.Access(meshManager.GetGPUVertexBufferHandle());
 
         //commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
         commandList.SetGraphicsRootDescriptorTable(IndexBufferIndex, indexBuffer);
@@ -203,7 +203,7 @@ internal unsafe partial struct GBufferRenderPass
 
                 //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
                 //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
-                
+
                 ref readonly var submesh = ref meshData->SubMeshes[index];
                 meshInstanceData.MaterialIndex = (int)submesh.MaterialIndex;
                 commandList.SetGraphicsRootConstant(PassDataIndex, new GBufferPassData

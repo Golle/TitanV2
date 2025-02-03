@@ -118,7 +118,7 @@ internal class SortedAssetDescriptorContext(AssetFileMetadata[] metadataFiles) :
     {
         lock (_assets)
         {
-            if (_assets.Any(a => a.Metadata.Name != null && a.Metadata.Name == metadata.Name))
+            if (_assets.Any(a => a.Metadata.Name != null && a.Metadata.Name == metadata.Name && a.Metadata.GetType() == metadata.GetType()))
             {
                 Logger.Error<SortedAssetDescriptorContext>($"Multiple assets with the same name. Name = {metadata.Name}");
                 return false;

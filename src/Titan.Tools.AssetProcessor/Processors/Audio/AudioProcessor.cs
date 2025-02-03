@@ -55,7 +55,7 @@ internal class AudioProcessor : AssetProcessor<AudioMetadata>
 
             if (format.nSamplesPerSec != SampleRate)
             {
-                context.AddDiagnostics(DiagnosticsLevel.Error, $"Mismatch in sample rate. Resampling not implemented yet. Expected = {SampleRate} Audio File = {format.wBitsPerSample}. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
+                context.AddDiagnostics(DiagnosticsLevel.Error, $"Mismatch in sample rate. Resampling not implemented yet. Expected = {SampleRate} Audio File = {format.nSamplesPerSec}. Id = {metadata.Id}. Name = {metadata.Name}. Path = {metadata.ContentFileRelativePath}");
                 return;
             }
 

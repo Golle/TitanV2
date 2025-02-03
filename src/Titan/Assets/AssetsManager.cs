@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Titan.Audio.Resources;
 using Titan.Core.Logging;
 using Titan.Rendering.Resources;
 using Titan.UI.Resources;
@@ -175,6 +176,13 @@ public static class AssetsManagerExtensions
     {
         Debug.Assert(descriptor.Type is AssetType.Mesh);
         return assetsManager.Load<MeshAsset>(descriptor);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<AudioAsset> LoadAudio(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Audio);
+        return assetsManager.Load<AudioAsset>(descriptor);
     }
 }
 
