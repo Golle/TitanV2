@@ -36,37 +36,58 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                 context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to find material lib file. Path = {metadata.ContentFileRelativePath}, Material Lib = {wavefrontObj.MaterialLib}");
                 return;
             }
-            metadata.Dependencies = new List<AssetFileMetadata>() { materialMetadata };
-            Logger.Warning<ObjModelProcessor>("No way to look up materials corerctly implemented. This needs to be solved!");
+
+            // Get the material names and sort them by the same order as the MtlProcessor. So we can get the correct index of the material.
+            var materialNames = MtlParser.Parse(await File.ReadAllLinesAsync(materialMetadata.ContentFileFullPath))
+                .Select(m => m.Name)
+                .ToArray();
+
+            Array.Sort(materialNames, string.CompareOrdinal);
+            
+            metadata.Dependencies = new List<AssetFileMetadata> { materialMetadata };
+
             HandleObject(wavefrontObj.Objects[0]);
 
             void HandleObject(ObjectGroup obj)
             {
                 var modelIndices = wavefrontObj.Indicies[obj.IndexOffset..];
-                var materials = wavefrontObj.FaceMaterials[obj.FaceOffset..obj.FaceCount];
+                var faceMaterials = wavefrontObj.FaceMaterials[obj.FaceOffset..obj.FaceCount];
                 var faceVertices = wavefrontObj.FaceVertices[obj.FaceOffset..obj.FaceCount];
 
                 List<Vertex> vertices = new();
                 List<SubMesh> meshes = new();
                 List<uint> indices = new();
 
-                var currentMaterial = materials[0]!;
-                //var material = parsedMaterials.First(m => m.Name == currentMaterial);
+                var currentMaterial = faceMaterials[0]!;
+                var materialIndex = Array.IndexOf(materialNames, currentMaterial);
+                if (materialIndex == -1)
+                {
+                    context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to find material {currentMaterial}. Material file = {materialMetadata.ContentFileRelativePath} Obj file = {metadata.ContentFileRelativePath}");
+                    return;
+                }
                 var indexOffset = 0;
                 var vertexOffset = 0;
                 for (var i = 0; i < obj.FaceCount; ++i)
                 {
-                    if (currentMaterial != materials[i])
+                    if (currentMaterial != faceMaterials[i])
                     {
-                        currentMaterial = materials[i]!;
+                        currentMaterial = faceMaterials[i]!;
                         meshes.Add(new SubMesh
                         {
                             VertexCount = vertices.Count - vertexOffset,
                             VertexOffset = vertexOffset,
                             IndexCount = vertices.Count - vertexOffset,
                             IndexOffset = vertexOffset,
+                            MaterialIndex = materialIndex
                         });
                         vertexOffset = vertices.Count;
+
+                        materialIndex = Array.IndexOf(materialNames, currentMaterial);
+                        if (materialIndex == -1)
+                        {
+                            context.AddDiagnostics(DiagnosticsLevel.Error, $"Failed to find material {currentMaterial}. Material file = {materialMetadata.ContentFileRelativePath} Obj file = {metadata.ContentFileRelativePath}");
+                            return;
+                        }
                     }
 
                     var vertexCount = faceVertices[i];
@@ -107,6 +128,7 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                     VertexOffset = vertexOffset,
                     IndexCount = vertices.Count - vertexOffset,
                     IndexOffset = vertexOffset,
+                    MaterialIndex = materialIndex
                 });
 
                 for (var i = 0u; i < vertices.Count; ++i)
@@ -124,7 +146,7 @@ internal class ObjModelProcessor : AssetProcessor<ObjModelMetadata>
                     IndexCount = (uint)indices.Count,
                     MaterialCount = -1,
                     SubMeshCount = (uint)meshes.Count,
-                    VertexCount = (uint)vertices.Count
+                    VertexCount = (uint)vertices.Count,
                 }, stream.ToArray(), metadata))
                 {
                     Logger.Error<ObjModelProcessor>("Failed to add mesh.");
@@ -176,4 +198,5 @@ public struct SubMesh
     public int VertexCount;
     public int IndexOffset;
     public int IndexCount;
+    public int MaterialIndex;
 }

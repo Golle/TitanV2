@@ -188,13 +188,7 @@ internal unsafe partial struct GBufferRenderPass
             //TODO(Jens): Add frustrum culling
 
             var meshData = meshSystem.Access(mesh.MeshIndex);
-            var meshInstanceIndex = pass->MeshInstances++;
-            ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
-            meshInstanceData.MaterialIndex = mesh.MaterialIndex;
-
-            //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
-            //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
-            meshInstanceData.ModelMatrix = Matrix4x4.Transpose(
+            var modelMatrix = Matrix4x4.Transpose(
                 Matrix4x4.CreateFromQuaternion(transform.Rotation) *
                 Matrix4x4.CreateScale(transform.Scale) *
                 Matrix4x4.CreateTranslation(transform.Position)
@@ -203,8 +197,15 @@ internal unsafe partial struct GBufferRenderPass
             //TODO: Implement GPU instancing
             for (var index = 0; index < meshData->SubMeshCount; ++index)
             {
-                ref readonly var submesh = ref meshData->SubMeshes[index];
+                var meshInstanceIndex = pass->MeshInstances++;
+                ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
+                meshInstanceData.ModelMatrix = modelMatrix;
 
+                //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
+                //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
+                
+                ref readonly var submesh = ref meshData->SubMeshes[index];
+                meshInstanceData.MaterialIndex = (int)submesh.MaterialIndex;
                 commandList.SetGraphicsRootConstant(PassDataIndex, new GBufferPassData
                 {
                     InstanceId = meshInstanceIndex,

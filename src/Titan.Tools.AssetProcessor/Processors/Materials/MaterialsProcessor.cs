@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Titan.Assets.Types;
@@ -21,6 +20,7 @@ internal class MaterialsProcessor : AssetProcessor<MaterialMetadata>
 {
     protected override async Task OnProcess(MaterialMetadata metadata, IAssetDescriptorContext context)
     {
+        context.AddDiagnostics(DiagnosticsLevel.Warning, "custom materials processor has been disabled.");
         return;
         await using var handle = File.OpenRead(metadata.ContentFileFullPath);
         var material = JsonSerializer.Deserialize(handle, MaterialJsonContext.Default.MaterialInfo);

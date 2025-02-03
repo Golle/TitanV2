@@ -4,6 +4,7 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
+using Titan.Materials;
 using Titan.Meshes;
 
 namespace Titan.Rendering.Resources;
@@ -43,6 +44,10 @@ internal unsafe partial struct MeshLoader
         var vertices = buffer.SliceArray<Vertex>((uint)verticesOffset, meshDescriptor.VertexCount);
         var indices = buffer.SliceArray<uint>((uint)indicesOffset, meshDescriptor.IndexCount);
 
+        var materials = dependencies.Length > 0
+            ? dependencies[0].GetAsset<MaterialAsset>().GetMaterials()
+            : ReadOnlySpan<Handle<MaterialData>>.Empty;
+
         var mesh = _meshes.SafeAlloc();
         if (mesh == null)
         {
@@ -54,7 +59,8 @@ internal unsafe partial struct MeshLoader
         {
             Indicies = indices,
             Vertices = vertices,
-            SubMeshes = subMeshes
+            SubMeshes = subMeshes,
+            Materials = materials
         });
 
         return mesh;
@@ -87,5 +93,5 @@ public struct SubMesh
     public int VertexCount;
     public int IndexOffset;
     public int IndexCount;
-
+    public int MaterialIndex;
 }

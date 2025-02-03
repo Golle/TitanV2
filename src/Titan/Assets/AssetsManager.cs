@@ -53,7 +53,6 @@ public readonly unsafe struct AssetsManager
             return;
         }
 
-        //NOTE(Jens): A lot of code for almost nothing. See if there are better ways to do this.
         var asset = _assetSystem->Assets.GetPointer(descriptor.Id);
         var dependencies = asset->Registry->GetDependencies(descriptor);
         Debug.Assert(dependencies.Length > 0);
@@ -66,6 +65,8 @@ public readonly unsafe struct AssetsManager
             {
                 dependencyAsset->State = AssetState.LoadRequested;
             }
+            // recursive call to load dependencies of dependencies. For example a Mesh have  Material that has one or several textures.
+            LoadDependencies(*dependencyAsset->Descriptor);
         }
     }
 

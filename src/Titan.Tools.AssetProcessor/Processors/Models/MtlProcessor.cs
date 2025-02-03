@@ -10,11 +10,13 @@ using Titan.Tools.AssetProcessor.Parsers.WavefrontObj;
 namespace Titan.Tools.AssetProcessor.Processors.Models;
 internal class MtlProcessor : AssetProcessor<MtlMetadata>
 {
+    private static int Compare(Material m1, Material m2) => string.CompareOrdinal(m1.Name, m2.Name);
     protected override async Task OnProcess(MtlMetadata metadata, IAssetDescriptorContext context)
     {
         var content = await File.ReadAllLinesAsync(metadata.ContentFileFullPath);
 
         var materials = MtlParser.Parse(content);
+        Array.Sort(materials, Compare);
 
         if (materials.Length == 0)
         {
@@ -29,7 +31,7 @@ internal class MtlProcessor : AssetProcessor<MtlMetadata>
         {
             TitanBinaryWriter writer = new(buffer);
 
-            for(var i = 0; i < materials.Length;++i)
+            for (var i = 0; i < materials.Length; ++i)
             {
                 ref readonly var material = ref materials[i];
                 writer.Write(material.Diffuse);

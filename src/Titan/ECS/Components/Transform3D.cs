@@ -27,7 +27,7 @@ public partial struct Transform3D
 [Component]
 public partial struct Mesh
 {
-    public Handle<MaterialData> MaterialIndex;
+    //public Handle<MaterialData> MaterialIndex;
     public Handle<MeshData> MeshIndex;
 
     //TODO(Jens): For static meshes this can be calculated in the asset pipeline

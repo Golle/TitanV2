@@ -99,15 +99,13 @@ namespace Titan.Sandbox
         private Entity _entity;
         private bool _done;
 
-        private AssetHandle<TextureAsset> BookTexture;
-        private AssetHandle<MaterialAsset> BookMaterials;
         private AssetHandle<MeshAsset> BookMesh;
 
         [System(SystemStage.Init)]
         public static void LoadResources(ref EntityTestSystem system, AssetsManager assetsManager)
         {
             system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
-            system.BookMaterials = assetsManager.LoadMaterial(EngineAssetsRegistry.Materials.MagicBookOBJ.Asset);
+            //system.BookMaterials = assetsManager.LoadMaterial(EngineAssetsRegistry.Materials.MagicBookOBJ.Asset);
             //system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
         }
 
@@ -136,14 +134,12 @@ namespace Titan.Sandbox
                 //_entity = default;
                 _done = true;
             }
-            else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookMaterials))
+            else if (assetsManager.IsLoaded(BookMesh))
             {
-                var materialAsset = assetsManager.Get(BookMaterials);
                 var mesh = new Mesh
                 {
                     //TODO(Jens): Replace this mesh thing with a Create mesh
-                    MeshIndex = assetsManager.Get(BookMesh),
-                    MaterialIndex = materialAsset.Get(1)
+                    MeshIndex = assetsManager.Get(BookMesh)
                 };
 
                 _entity = entityManager.CreateEntity();

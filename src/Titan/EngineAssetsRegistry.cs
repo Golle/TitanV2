@@ -254,7 +254,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 375640,
+                Length = 375644,
                 Offset = 109142016,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.obj"),
@@ -281,7 +281,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 22369648,
-                Offset = 109517656,
+                Offset = 109517660,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png.kbin")
@@ -308,7 +308,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 4194304,
-                Offset = 131887304,
+                Offset = 131887308,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"box.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"box.png.kbin")
@@ -335,7 +335,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 16552,
-                Offset = 136081608,
+                Offset = 136081612,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click1.ogg"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click1.ogg.kbin")
@@ -357,7 +357,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 9832,
-                Offset = 136098160,
+                Offset = 136098164,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click2.ogg"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click2.ogg.kbin")
@@ -379,7 +379,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 15196,
-                Offset = 136107992,
+                Offset = 136107996,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click3.ogg"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click3.ogg.kbin")
@@ -401,7 +401,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 6444,
-                Offset = 136123188,
+                Offset = 136123192,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click4.ogg"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click4.ogg.kbin")
@@ -423,7 +423,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 5648,
-                Offset = 136129632,
+                Offset = 136129636,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click5.ogg"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\UIAudio\click5.ogg.kbin")
@@ -445,7 +445,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 128581,
-                Offset = 136135280,
+                Offset = 136135284,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\Cutive_Mono\CutiveMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\Cutive_Mono\CutiveMono-Regular.ttf.kbin")
@@ -472,7 +472,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 262396,
-                Offset = 136263861,
+                Offset = 136263865,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.aseprite"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.aseprite.kbin")
@@ -504,7 +504,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 34,
-                Offset = 136526257,
+                Offset = 136526261,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.mtl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.mtl.kbin")
@@ -527,7 +527,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 12827,
-                Offset = 136526291,
+                Offset = 136526295,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\RobotoMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\RobotoMono-Regular.ttf.kbin")
@@ -554,7 +554,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3168,
-                Offset = 136539118,
+                Offset = 136539122,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Pixel.hlsl.kbin")
@@ -577,7 +577,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3080,
-                Offset = 136542286,
+                Offset = 136542290,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.UI.Vertex.hlsl.kbin")
@@ -600,7 +600,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1732,
-                Offset = 136545366,
+                Offset = 136545370,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Debug.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Debug.Pixel.hlsl.kbin")
@@ -623,7 +623,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2716,
-                Offset = 136547098,
+                Offset = 136547102,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Debug.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Debug.Vertex.hlsl.kbin")
@@ -646,7 +646,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3768,
-                Offset = 136549814,
+                Offset = 136549818,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Pixel.hlsl.kbin")
@@ -669,7 +669,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2060,
-                Offset = 136553582,
+                Offset = 136553586,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl.kbin")
@@ -692,7 +692,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2848,
-                Offset = 136555642,
+                Offset = 136555646,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl.kbin")
@@ -715,7 +715,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1784,
-                Offset = 136558490,
+                Offset = 136558494,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl.kbin")
@@ -738,7 +738,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3368,
-                Offset = 136560274,
+                Offset = 136560278,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl.kbin")
@@ -761,7 +761,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 4868,
-                Offset = 136563642,
+                Offset = 136563646,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl.kbin")
@@ -784,7 +784,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2796,
-                Offset = 136568510,
+                Offset = 136568514,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl.kbin")
@@ -807,7 +807,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3084,
-                Offset = 136571306,
+                Offset = 136571310,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl.kbin")
@@ -830,7 +830,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 90139,
-                Offset = 136574390,
+                Offset = 136574394,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf.kbin")
@@ -856,8 +856,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 37616,
-                Offset = 136664529,
+                Length = 37624,
+                Offset = 136664533,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.obj"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.obj.kbin")
@@ -883,7 +883,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 34,
-                Offset = 136702145,
+                Offset = 136702157,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.mtl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\tileLarge_forest.mtl.kbin")
@@ -906,7 +906,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 113920,
-                Offset = 136702179,
+                Offset = 136702191,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png.kbin")

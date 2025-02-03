@@ -29,6 +29,10 @@ public partial struct MaterialAsset
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Handle<MaterialData>(in MaterialAsset asset)
         => asset.Get(0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ReadOnlySpan<Handle<MaterialData>> GetMaterials()
+        => Materials.AsReadOnlySpan()[..MaterialCount];
 }
 
 [AssetLoader<MaterialAsset>]
