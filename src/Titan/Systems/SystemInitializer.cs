@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Titan.Assets;
 using Titan.Audio;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.ECS;
 using Titan.ECS.Archetypes;
 using Titan.Events;
@@ -98,8 +99,13 @@ public unsafe ref struct SystemInitializer
             _unmanagedResources.GetResourcePointer<MeshSystem>()
         );
 
-    public void AddReadOnlyComponent(in ComponentType type)
+    public void AddReadOnlyComponent(in ComponentType type, bool isTag)
     {
+        if (isTag)
+        {
+            //NOTE(Jens): We ignore tags for dependencies.
+            return;
+        }
         Debug.Assert(ReadOnlyCount < _readOnly.Length);
 
         //NOTE(Jens): We offset the ID with the highest in the UnmanagedResources, so no extra work has to be done to support components.
@@ -107,8 +113,9 @@ public unsafe ref struct SystemInitializer
         _readOnly[ReadOnlyCount++] = id;
     }
 
-    public void AddMutableComponent(in ComponentType type)
+    public void AddMutableComponent(in ComponentType type, bool isTag)
     {
+        Debug.Assert(isTag == false, "Can't have mutable reference to Tag components.");
         //NOTE(Jens): We offset the ID with the highest in the UnmanagedResources, so no extra work has to be done to support components.
         var id = _unmanagedResources.HighestId + type.Id;
         Debug.Assert(MutableCount < _mutable.Length);

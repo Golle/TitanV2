@@ -34,6 +34,13 @@ public partial struct Mesh
     public AABB BoundingBox;
 }
 
+
+public struct AABBInt
+{
+    public Vector3Int Min;
+    public Vector3Int Max;
+}
+
 public struct AABB
 {
     public Vector3 Min;
@@ -63,5 +70,6 @@ public partial struct Light
 public enum LightType : byte
 {
     Point,
-    Directional
+    Directional,
+    Sunlight // This is a temporary solution for a specific lighting model. We'll solve it in another way later.
 }

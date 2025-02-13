@@ -20,6 +20,7 @@ struct InputTextures
 
 struct FrameData 
 {
+    float4x4 WorldMatrix;
     float4x4 ViewProjection;
     float3 CameraPosition;
     uint WindowWidth;

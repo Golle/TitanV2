@@ -29,6 +29,7 @@ namespace Titan.Rendering;
 [StructLayout(LayoutKind.Sequential, Size = 256)]
 internal struct FrameData
 {
+    public Matrix4x4 WorldMatrix;
     public Matrix4x4 ViewProjection;
     public Vector3 CameraPosition;
     public uint WindowWidth;
@@ -382,6 +383,7 @@ public unsafe partial struct RenderGraph
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
         graph._frameDataGPU.WriteSingle(new FrameData
         {
+            WorldMatrix = camera.WorldMatrix,
             ViewProjection = camera.ViewProjectionMatrixTransposed,
             CameraPosition = camera.Position,
             WindowHeight = (uint)window.Height,

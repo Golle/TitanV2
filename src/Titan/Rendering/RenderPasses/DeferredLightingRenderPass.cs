@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Titan.Configurations;
 using Titan.Core;
@@ -24,7 +25,8 @@ internal struct LightInstanceData
     public Vector3 Direction;
     public ColorRGB Color;
     public float IntensityOrRadius;
-    public unsafe fixed float Padding[2];
+    public int LightType;
+    public unsafe fixed float Padding[1];
 }
 
 [UnmanagedResource]
@@ -32,7 +34,7 @@ internal unsafe partial struct DeferredLightingRenderPass
 {
     private static Vector3[] HardcodedLights =
     [
-
+        new(0.3f, 0.3f, 0.35f),
         new(1f), // 100% brightness
         new(0.4f, 0.4f, 0.4f), // Neutral gray, 40% brightness
         new(0.5f, 0.45f, 0.35f), // Slightly warm tone
@@ -138,6 +140,7 @@ internal unsafe partial struct DeferredLightingRenderPass
             return;
         }
 
+        
         ref var index = ref pass->LightInstances;
         var stagingBuffer = pass->CPULights;
         var count = lights.Length;
@@ -155,7 +158,8 @@ internal unsafe partial struct DeferredLightingRenderPass
                 Color = light.Color,
                 Direction = light.Direction,
                 IntensityOrRadius = light.Radius,
-                Position = transform.Position
+                Position = transform.Position,
+                LightType = (int)light.LightType
             };
         }
     }
@@ -177,6 +181,7 @@ internal unsafe partial struct DeferredLightingRenderPass
 
         if (pass.LightInstances > 0)
         {
+            //Logger.Debug($"asdasd {pass.LightInstances}");
             var lights = pass
                 .CPULights
                 .Slice(0, pass.LightInstances)
@@ -206,5 +211,19 @@ internal unsafe partial struct DeferredLightingRenderPass
         Logger.Warning<DeferredLightingRenderPass>("Shutdown has not been implemented");
         graph.DestroyPass(pass->PassHandle);
         pass->PassHandle = Handle<RenderPass>.Invalid;
+    }
+
+
+    [Conditional("DEBUG")]
+    [System]
+    public static void DebugDrawLights(ReadOnlySpan<Light> lights, ReadOnlySpan<Transform3D> transforms)
+    {
+        var count = lights.Length;
+        for(var i = 0; i < count;++i)
+        {
+            ref readonly var transform = ref transforms[i];
+            var center = transform.Position;
+            DebugDraw.DrawBox(center, 1, Color.Magenta);
+        }
     }
 }

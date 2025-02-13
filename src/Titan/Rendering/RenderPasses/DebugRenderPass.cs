@@ -14,12 +14,12 @@ using Titan.Systems;
 namespace Titan.Rendering.RenderPasses;
 
 [UnmanagedResource]
-public unsafe partial struct DebugRenderPass
+internal unsafe partial struct DebugRenderPass
 {
     private Handle<RenderPass> Handle;
     private Handle<GPUBuffer> LineBuffer;
     private MappedGPUResource<Line> LineBufferGPU;
-    private Inline512<Line> Lines;
+    private Inline2048<Line> Lines;
     private int Count;
 
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
@@ -43,10 +43,9 @@ public unsafe partial struct DebugRenderPass
             VertexShader = EngineAssetsRegistry.Shaders.ShaderDebugVertex
         };
 
-        pass->Handle = graph.CreatePass("DEBUG", args);
+        pass->Handle = graph.CreatePass("DEBUG_LINE", args);
 
-
-        pass->LineBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Line>(1024, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+        pass->LineBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Line>((uint)pass->Lines.Size, BufferType.Structured, cpuVisible: true, shaderVisible: true));
         if (!resourceManager.TryMapBuffer(pass->LineBuffer, out pass->LineBufferGPU))
         {
             Logger.Error<DebugRenderPass>("Failed to map the debug line buffer.");
@@ -55,6 +54,8 @@ public unsafe partial struct DebugRenderPass
 
         pass->Lines = default;
         pass->Count = 0;
+
+        DebugDraw.DebugAPI = pass;
     }
 
 

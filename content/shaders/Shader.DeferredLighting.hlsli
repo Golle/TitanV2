@@ -23,7 +23,8 @@ struct LightInstanceData
     float3 Direction;
     float3 Color; // RGB (no Alpha channel)
     float IntensityOrRadius;
-    float2 _padding;
+    int type;
+    float _padding;
 };
 
 

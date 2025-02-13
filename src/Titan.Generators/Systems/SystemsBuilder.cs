@@ -150,7 +150,7 @@ internal static class SystemsBuilder
             .AppendOpenBracer()
             .AppendLine("continue;")
             .AppendCloseBracer();
-            
+
         for (var i = 0; i < count; ++i)
         {
             builder.AppendLine($"var p{i} = new {TitanTypes.Span}<{components[i].Parameter.Type}>(data[{i}], count);");
@@ -295,13 +295,14 @@ internal static class SystemsBuilder
 
         foreach (var (component, _) in components)
         {
+            // If it's marked as a Tag component, we don't track dependencies
             if (component.Kind is ArgumentKind.ReadOnlyComponent)
             {
-                builder.AppendLine($"{ArgumentName}.AddReadOnlyComponent({component.Type}.Type);");
+                builder.AppendLine($"{ArgumentName}.AddReadOnlyComponent({component.Type}.Type, {component.Type}.IsTag);");
             }
             else if (component.Kind is ArgumentKind.MutableComponent)
             {
-                builder.AppendLine($"{ArgumentName}.AddMutableComponent({component.Type}.Type);");
+                builder.AppendLine($"{ArgumentName}.AddMutableComponent({component.Type}.Type, {component.Type}.IsTag);");
             }
         }
 

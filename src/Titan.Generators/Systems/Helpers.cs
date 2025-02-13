@@ -25,8 +25,12 @@ internal static class Helpers
 
     public static ComponentType ReadComponentType(GeneratorAttributeSyntaxContext syntaxContext)
     {
+        var attribute = syntaxContext.Attributes.First(a => a.AttributeClass?.ToDisplayString() == TitanTypes.ComponentAttribute);
+        var isTag = (bool)attribute.ConstructorArguments[0].Value!;
+
         var type = (INamedTypeSymbol)syntaxContext.TargetSymbol;
-        return new ComponentType(type.Name, type.ToDisplayString(), type.ContainingNamespace.ToDisplayString(), type.DeclaredAccessibility.AsString());
+
+        return new ComponentType(type.Name, type.ToDisplayString(), type.ContainingNamespace.ToDisplayString(), type.DeclaredAccessibility.AsString(), isTag);
     }
 
     public static ImmutableArray<(string Name, ulong Id)> ReadCompiledComponentTypes(Compilation compilation)
