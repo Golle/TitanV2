@@ -57,6 +57,7 @@ public record struct CreateDepthBufferArgs
     public required uint Width { get; init; }
     public required uint Height { get; init; }
     public float ClearValue { get; init; }
+    public bool ShaderVisible { get; init; }
 }
 
 
@@ -402,7 +403,14 @@ public unsafe partial struct D3D12ResourceManager
     {
         *texture = default;
 
-        texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height, args.Format);
+        Debug.Assert(args.Format == DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, "Only D32 format has been implemented.");
+
+        var resourceFormat = args.ShaderVisible
+            ? DXGI_FORMAT.DXGI_FORMAT_R32_TYPELESS
+            : args.Format;
+
+
+        texture->Resource = _device->CreateDepthBuffer(args.Width, args.Height, resourceFormat, args.Format);
 
         if (!texture->Resource.IsValid)
         {
@@ -421,7 +429,24 @@ public unsafe partial struct D3D12ResourceManager
             }
         }
 
-        _device->CreateDepthStencilView(texture->Resource, texture->DSV.CPU);
+        if (args.ShaderVisible)
+        {
+            if (!texture->SRV.IsValid)
+            {
+                texture->SRV = _allocator->Allocate(DescriptorHeapType.ShaderResourceView);
+                if (!texture->SRV.IsValid)
+                {
+                    Logger.Error<D3D12ResourceManager>("Failed to allocate a Shader Resource View descriptor.");
+                    texture->Resource.Dispose();
+                    return false;
+                }
+            }
+
+            const DXGI_FORMAT SRVFormat = DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT;
+            _device->CreateShaderResourceView(texture->Resource, SRVFormat, texture->SRV.CPU);
+        }
+
+        _device->CreateDepthStencilView(texture->Resource, args.Format, texture->DSV.CPU);
 
         texture->Width = args.Width;
         texture->Height = args.Height;

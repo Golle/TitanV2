@@ -19,4 +19,5 @@ public static class BuiltInRenderTargets
 public static class BuiltInDepthsBuffers
 {
     public static readonly DepthBufferConfig GbufferDepthBuffer = new(StringRef.Create("GBuffer_Depth"), DepthBufferFormat.D32);
+    public static readonly DepthBufferConfig ShadowMapDepthBuffer = new(StringRef.Create("ShadowMap_Depth"), DepthBufferFormat.D32, ClearValue: 1f, ShaderVisible: true);
 }

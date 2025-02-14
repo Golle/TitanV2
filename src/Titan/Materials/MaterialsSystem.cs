@@ -151,7 +151,7 @@ internal unsafe partial struct MaterialsSystem
     {
         if (system->DirtyCounter > 0)
         {
-            Logger.Error<MaterialsSystem>($"Dirty Materials: Counter = {system->DirtyCounter}");
+            Logger.Trace<MaterialsSystem>($"Dirty Materials: Counter = {system->DirtyCounter}");
             //TODO(Jens): Check for dirty materials. Right now we keep it simple. We upload everything if the counter is greater than 0.
             system->GPUMaterialData[EngineState.FrameIndex].Write(system->Materials.AsReadOnlySpan());
 

@@ -10,6 +10,7 @@ public static class Exstensions
         RenderTargetFormat.RGBA16F => DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT,
         RenderTargetFormat.RGBA32F => DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT,
         RenderTargetFormat.BackBuffer => DXGI_FORMAT.DXGI_FORMAT_UNKNOWN,
+
         _ => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
     };
 

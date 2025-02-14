@@ -356,11 +356,11 @@ internal unsafe partial struct D3D12Device
     public readonly void CreateRenderTargetView(ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
         => Device.Get()->CreateRenderTargetView(resource, desc, cpuHandle);
 
-    public readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, DXGI_FORMAT format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, float depthClearValue = 1.0f, byte stencilClearValue = 0)
+    public readonly ID3D12Resource* CreateDepthBuffer(uint width, uint height, DXGI_FORMAT format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT clearValueFormat = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT, float depthClearValue = 1.0f, byte stencilClearValue = 0)
     {
         D3D12_CLEAR_VALUE clearValue = new()
         {
-            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            Format = clearValueFormat,
             DepthStencil = new()
             {
                 Depth = depthClearValue,
@@ -372,7 +372,7 @@ internal unsafe partial struct D3D12Device
         {
             Width = width,
             Height = height,
-            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            Format = format,
             Dimension = D3D12_RESOURCE_DIMENSION.D3D12_RESOURCE_DIMENSION_TEXTURE2D,
             DepthOrArraySize = 1,
             MipLevels = 1,
@@ -396,11 +396,11 @@ internal unsafe partial struct D3D12Device
         return resource;
     }
 
-    public readonly void CreateDepthStencilView(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
+    public readonly void CreateDepthStencilView(ID3D12Resource* resource, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle)
     {
         D3D12_DEPTH_STENCIL_VIEW_DESC desc = new()
         {
-            Format = DXGI_FORMAT.DXGI_FORMAT_D32_FLOAT,
+            Format = format,
             ViewDimension = D3D12_DSV_DIMENSION.D3D12_DSV_DIMENSION_TEXTURE2D,
             Flags = D3D12_DSV_FLAGS.D3D12_DSV_FLAG_NONE
         };

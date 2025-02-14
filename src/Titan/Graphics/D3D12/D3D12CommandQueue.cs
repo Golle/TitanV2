@@ -17,7 +17,7 @@ internal unsafe partial struct D3D12CommandQueue
 {
     private struct QueuedCommandList
     {
-        public Inline4<Ptr<ID3D12CommandList>> CommandLists;
+        public Inline8<Ptr<ID3D12CommandList>> CommandLists;
         public uint Count;
     }
 

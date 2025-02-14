@@ -79,7 +79,8 @@ internal unsafe partial struct DeferredLightingRenderPass
                 BuiltInRenderTargets.GBufferNormal,
                 BuiltInRenderTargets.GBufferSpecular
             ],
-
+            DepthBuffer = BuiltInDepthsBuffers.ShadowMapDepthBuffer,
+            DepthBufferMode = DepthBufferMode.Read,
             PixelShader = ShaderDeferredLightingPixel,
             VertexShader = ShaderDeferredLightingVertex,
             ClearFunction = &ClearFunction
@@ -140,7 +141,7 @@ internal unsafe partial struct DeferredLightingRenderPass
             return;
         }
 
-        
+
         ref var index = ref pass->LightInstances;
         var stagingBuffer = pass->CPULights;
         var count = lights.Length;
@@ -219,7 +220,7 @@ internal unsafe partial struct DeferredLightingRenderPass
     public static void DebugDrawLights(ReadOnlySpan<Light> lights, ReadOnlySpan<Transform3D> transforms)
     {
         var count = lights.Length;
-        for(var i = 0; i < count;++i)
+        for (var i = 0; i < count; ++i)
         {
             ref readonly var transform = ref transforms[i];
             var center = transform.Position;
