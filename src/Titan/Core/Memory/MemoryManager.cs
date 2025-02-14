@@ -18,7 +18,7 @@ internal sealed unsafe class MemoryManager<TPlatformAllocator> : IMemoryManager 
     private PlatformAllocator* _allocator;
     private VirtualMemory _globalMemory;
     private GeneralAllocator _generalAllocator;
-    private readonly object _syncObject = new();
+    private readonly Lock _syncObject = new();
 
     public bool Init(MemoryConfig config)
     {

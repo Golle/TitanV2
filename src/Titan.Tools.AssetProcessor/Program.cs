@@ -4,9 +4,11 @@ using Titan.Core.Logging;
 using Titan.Tools.AssetProcessor;
 using Titan.Tools.AssetProcessor.Export;
 using Titan.Tools.AssetProcessor.Metadata;
+using Titan.Tools.AssetProcessor.Parsers.WavefrontObj;
 using Titan.Tools.AssetProcessor.Processors;
 using Titan.Tools.AssetProcessor.Processors.Audio;
 using Titan.Tools.AssetProcessor.Processors.Fonts;
+using Titan.Tools.AssetProcessor.Processors.Materials;
 using Titan.Tools.AssetProcessor.Processors.Models;
 using Titan.Tools.AssetProcessor.Processors.Shaders;
 using Titan.Tools.AssetProcessor.Processors.Textures;
@@ -75,7 +77,7 @@ command.SetHandler(async (path, bin, code, name, tmp, file) =>
         return;
     }
 
-    var metadataFiles = await contentFileReader.GetFiles(file);
+    var metadataFiles = await contentFileReader.GetFiles();
     if (metadataFiles == null)
     {
         Logger.Error<Program>("Error occurred when reading metadata files.");
@@ -96,9 +98,16 @@ command.SetHandler(async (path, bin, code, name, tmp, file) =>
         .With<ShaderProcessor>()
         .With<ObjModelProcessor>()
         .With<FontProcessor>()
+        .With<MaterialsProcessor>()
+        .With<MtlProcessor>()
         .With<AudioProcessor>();
 
-    var pipelineResult = await pipeline.Run(metadataFiles, context);
+    // in single file mode we still read all metadata files, but we only process the specific file.
+    var filteredFiles = string.IsNullOrWhiteSpace(file)
+        ? metadataFiles
+        : metadataFiles.Where(m => m.MetadataFileFullPath.Equals(file, StringComparison.OrdinalIgnoreCase) || m.ContentFileFullPath.Equals(file, StringComparison.OrdinalIgnoreCase));
+
+    var pipelineResult = await pipeline.Run(filteredFiles, context);
     if (!pipelineResult)
     {
         Logger.Error<Program>("Error occurred in the asset pipeline");

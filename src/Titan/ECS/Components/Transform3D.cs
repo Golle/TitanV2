@@ -27,11 +27,18 @@ public partial struct Transform3D
 [Component]
 public partial struct Mesh
 {
-    public Handle<MaterialData> MaterialIndex;
+    //public Handle<MaterialData> MaterialIndex;
     public Handle<MeshData> MeshIndex;
 
     //TODO(Jens): For static meshes this can be calculated in the asset pipeline
     public AABB BoundingBox;
+}
+
+
+public struct AABBInt
+{
+    public Vector3Int Min;
+    public Vector3Int Max;
 }
 
 public struct AABB
@@ -63,5 +70,6 @@ public partial struct Light
 public enum LightType : byte
 {
     Point,
-    Directional
+    Directional,
+    Sunlight // This is a temporary solution for a specific lighting model. We'll solve it in another way later.
 }

@@ -83,7 +83,7 @@ internal unsafe struct ComponentCommands
 
     public void DestroyEntity(in Entity entity)
     {
-        var index = Interlocked.Increment(ref _commandCount);
+        var index = Interlocked.Increment(ref _commandCount) -1;
         _commands[index] = new EntityCommand
         {
             Entity = entity,

@@ -4,7 +4,7 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Memory.Allocators;
-using Titan.Graphics.D3D12;
+using Titan.Materials;
 using Titan.Meshes;
 
 namespace Titan.Rendering.Resources;
@@ -13,7 +13,6 @@ namespace Titan.Rendering.Resources;
 internal unsafe partial struct MeshLoader
 {
     private PoolAllocator<MeshAsset> _meshes;
-    private D3D12ResourceManager* _resourceManager;
     private MeshSystem* _meshSystem;
 
     public bool Init(in AssetLoaderInitializer init)
@@ -24,7 +23,6 @@ internal unsafe partial struct MeshLoader
             return false;
         }
 
-        _resourceManager = init.GetResourcePointer<D3D12ResourceManager>();
         _meshSystem = init.GetResourcePointer<MeshSystem>();
         return true;
     }
@@ -39,13 +37,16 @@ internal unsafe partial struct MeshLoader
         Debug.Assert(descriptor.Type == AssetType.Mesh);
         ref readonly var meshDescriptor = ref descriptor.Mesh;
 
-
         var verticesOffset = meshDescriptor.SubMeshCount * sizeof(SubMesh);
         var indicesOffset = verticesOffset + meshDescriptor.VertexCount * sizeof(Vertex);
 
         var subMeshes = buffer.SliceArray<SubMesh>(0, meshDescriptor.SubMeshCount);
         var vertices = buffer.SliceArray<Vertex>((uint)verticesOffset, meshDescriptor.VertexCount);
         var indices = buffer.SliceArray<uint>((uint)indicesOffset, meshDescriptor.IndexCount);
+
+        var materials = dependencies.Length > 0
+            ? dependencies[0].GetAsset<MaterialAsset>().GetMaterials()
+            : ReadOnlySpan<Handle<MaterialData>>.Empty;
 
         var mesh = _meshes.SafeAlloc();
         if (mesh == null)
@@ -58,7 +59,8 @@ internal unsafe partial struct MeshLoader
         {
             Indicies = indices,
             Vertices = vertices,
-            SubMeshes = subMeshes
+            SubMeshes = subMeshes,
+            Materials = materials
         });
 
         return mesh;
@@ -91,4 +93,5 @@ public struct SubMesh
     public int VertexCount;
     public int IndexOffset;
     public int IndexCount;
+    public int MaterialIndex;
 }

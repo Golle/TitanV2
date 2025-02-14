@@ -294,9 +294,9 @@ internal unsafe partial struct AssetSystem
         // We read the file size, since it might have changed.
         var fileSystem = state->System->FileSystem.Value;
         var handle = fileSystem.Open(state->Descriptor->File.BinaryAssetPath.GetString(), state->Registry->EngineRegistry ? FilePathType.Engine : FilePathType.Content);
-        var fileSize = fileSystem.GetLength(handle);
+        state->FileSize = (uint)fileSystem.GetLength(handle);
         fileSystem.Close(ref handle);
-        return (uint)fileSize;
+        return state->FileSize;
 #else
         return state->Descriptor->File.Length;
 #endif
@@ -317,13 +317,12 @@ internal unsafe partial struct AssetSystem
 
 #if HOT_RELOAD_ASSETS
         var handle = fileSystem.Open(fileDescriptor.BinaryAssetPath.GetString(), asset->Registry->EngineRegistry ? FilePathType.Engine : FilePathType.Content);
-        var fileLength = fileSystem.GetLength(handle);
-        var bufferSpan = new Span<byte>(asset->FileBuffer, (int)fileLength);
+        var bufferSpan = new Span<byte>(asset->FileBuffer, (int)asset->FileSize);
         var bytesRead = fileSystem.Read(handle, bufferSpan);
         fileSystem.Close(ref handle);
-        if (fileLength != bytesRead)
+        if (asset->FileSize != bytesRead)
         {
-            Logger.Warning<AssetSystem>($"Mismatch in bytes read and size of asset. Asset Size = {fileLength} Bytes Read = {bytesRead}");
+            Logger.Warning<AssetSystem>($"Mismatch in bytes read and size of asset. Asset Size = {asset->FileSize} Bytes Read = {bytesRead}");
         }
         asset->State = AssetState.ReadingFileCompleted;
 #else
@@ -342,7 +341,13 @@ internal unsafe partial struct AssetSystem
         var loader = asset->GetLoader();
         Debug.Assert(loader != null);
         Debug.Assert(loader->Context != null, $"The context of the loader is null. Did you forget to register the loader? Type = {asset->Descriptor->Type}");
-        var buffer = new TitanBuffer(asset->FileBuffer, asset->Descriptor->File.Length);
+
+#if HOT_RELOAD_ASSETS
+        var length = asset->FileSize;
+#else
+        var length = asset->Descriptor->File.Length;
+#endif
+        var buffer = new TitanBuffer(asset->FileBuffer, length);
         asset->Resource = loader->Load(*asset->Descriptor, buffer, asset->GetDependencies());
 
         if (asset->Resource == null)
@@ -411,7 +416,7 @@ internal unsafe partial struct AssetSystem
             {
                 Logger.Warning<AssetSystem>($"The bytes read and the file length are different. Read = {bytesRead} FileLength = {fileLength}");
             }
-            
+
 
             if (!loader->Reload(asset->Resource, *asset->Descriptor, buffer.Slice(0, (uint)bytesRead)))
             {

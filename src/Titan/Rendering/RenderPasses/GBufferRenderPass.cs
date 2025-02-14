@@ -49,6 +49,14 @@ public record GBufferConfig : IConfiguration, IDefault<GBufferConfig>
 [UnmanagedResource]
 internal unsafe partial struct GBufferRenderPass
 {
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct GBufferPassData
+    {
+        public uint InstanceId;
+        public uint VertexOffset;
+        public uint IndexOffset;
+    }
+
     private Handle<RenderPass> PassHandle;
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
     private const uint VertexBufferIndex = PassDataIndex + 1;
@@ -71,7 +79,7 @@ internal unsafe partial struct GBufferRenderPass
         var passArgs = new CreateRenderPassArgs
         {
             RootSignatureBuilder = static builder => builder
-                .WithRootConstant<uint>() // the index of the Meshinstance we're rendering.
+                .WithRootConstant<GBufferPassData>() // the index of the Meshinstance we're rendering.
                 .WithDecriptorRange(1, space: 0) // Vertex buffer
                 .WithDecriptorRange(1, space: 1) // IndexBuffer
                 .WithDecriptorRange(1, space: 2) // MeshInstance
@@ -135,7 +143,7 @@ internal unsafe partial struct GBufferRenderPass
 
 
     [System(SystemStage.PreUpdate)]
-    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, in MeshSystem meshSystem, in MaterialsSystem materialsSystem, in D3D12ResourceManager resourceManager)
+    public static void BeginRenderPass(GBufferRenderPass* pass, in RenderGraph graph, in Window window, MeshManager meshManager, MaterialsManager materialsManager, in D3D12ResourceManager resourceManager)
     {
         if (!graph.Begin(pass->PassHandle, out var commandList))
         {
@@ -147,11 +155,12 @@ internal unsafe partial struct GBufferRenderPass
         var frameIndex = EngineState.FrameIndex;
 
         var meshBuffer = resourceManager.Access(pass->MeshInstancesHandles[frameIndex]);
-        var materialBuffer = resourceManager.Access(materialsSystem.GetMaterialsGPUHandle(frameIndex));
-        var indexBuffer = resourceManager.Access(meshSystem.GetIndexBufferHandle());
-        var vertexBuffer = resourceManager.Access(meshSystem.GetVertexBufferHandle());
+        var materialBuffer = resourceManager.Access(materialsManager.GetGPUHandleForCurrentFrame());
+        var indexBuffer = resourceManager.Access(meshManager.GetGPUIndexBufferHandle());
+        var vertexBuffer = resourceManager.Access(meshManager.GetGPUVertexBufferHandle());
 
-        commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
+        //commandList.SetIndexBuffer(indexBuffer); // remove when we support indexing into the index buffer inside the shader.
+        commandList.SetGraphicsRootDescriptorTable(IndexBufferIndex, indexBuffer);
         commandList.SetGraphicsRootDescriptorTable(VertexBufferIndex, vertexBuffer);
         commandList.SetGraphicsRootDescriptorTable(MeshInstanceIndex, meshBuffer);
         commandList.SetGraphicsRootDescriptorTable(MaterialsInstanceIndex, materialBuffer);
@@ -179,27 +188,32 @@ internal unsafe partial struct GBufferRenderPass
             //TODO(Jens): Add frustrum culling
 
             var meshData = meshSystem.Access(mesh.MeshIndex);
-            var meshInstanceIndex = pass->MeshInstances++;
-            ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
-            meshInstanceData.MaterialIndex = mesh.MaterialIndex;
-
-            //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
-            //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
-            meshInstanceData.ModelMatrix = Matrix4x4.Transpose(Matrix4x4.CreateScale(transform.Scale) *
-                                           Matrix4x4.CreateFromQuaternion(transform.Rotation) *
-                                           Matrix4x4.CreateTranslation(transform.Position)
-                                           )
-                                           ;
+            var modelMatrix = Matrix4x4.Transpose(
+                Matrix4x4.CreateFromQuaternion(transform.Rotation) *
+                Matrix4x4.CreateScale(transform.Scale) *
+                Matrix4x4.CreateTranslation(transform.Position)
+            );
 
             //TODO: Implement GPU instancing
-
-            commandList.SetGraphicsRootConstant(PassDataIndex, meshInstanceIndex);
             for (var index = 0; index < meshData->SubMeshCount; ++index)
             {
-                ref readonly var submesh = ref meshData->SubMeshes[index];
-                commandList.DrawIndexedInstanced(submesh.IndexCount, 1, submesh.IndexStartLocation, 0);
-            }
+                var meshInstanceIndex = pass->MeshInstances++;
+                ref var meshInstanceData = ref pass->StagingBuffer[meshInstanceIndex];
+                meshInstanceData.ModelMatrix = modelMatrix;
 
+                //NOTE(Jens): Consider implementing a TitanMatrix4x4 instead of using the built in. A lot of work, but calling Transponse on every Matrix might be bad  as well :|
+                //NOTE(Jens): another option is to use row_major in HLSL, this is probably not very optimized either.
+
+                ref readonly var submesh = ref meshData->SubMeshes[index];
+                meshInstanceData.MaterialIndex = (int)submesh.MaterialIndex;
+                commandList.SetGraphicsRootConstant(PassDataIndex, new GBufferPassData
+                {
+                    InstanceId = meshInstanceIndex,
+                    VertexOffset = meshData->VertexStartLocation,
+                    IndexOffset = submesh.IndexStartLocation
+                });
+                commandList.DrawInstanced(submesh.IndexCount, 1);
+            }
         }
     }
 

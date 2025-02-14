@@ -29,20 +29,29 @@ namespace Titan.Rendering;
 [StructLayout(LayoutKind.Sequential, Size = 256)]
 internal struct FrameData
 {
+    public Matrix4x4 WorldMatrix;
     public Matrix4x4 ViewProjection;
     public Vector3 CameraPosition;
     public uint WindowWidth;
     public uint WindowHeight;
 }
 
+public enum DepthBufferMode : byte
+{
+    Write,
+    Read
+}
+
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
-public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f);
+public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f, bool ShaderVisible = false);
+
 public ref struct CreateRenderPassArgs
 {
     public Func<RootSignatureBuilder, RootSignatureBuilder>? RootSignatureBuilder;
     public ReadOnlySpan<RenderTargetConfig> Inputs;
     public ReadOnlySpan<RenderTargetConfig> Outputs;
     public DepthBufferConfig? DepthBuffer;
+    public DepthBufferMode DepthBufferMode;
 
     public AssetDescriptor VertexShader;
     public AssetDescriptor PixelShader;
@@ -149,7 +158,15 @@ public unsafe partial struct RenderGraph
         var pass = _renderPasses.AsPointer() + index;
         pass->Name = StringRef.Create(name);
 
-        var builder = CreateDefaultRootSignatureBuilder((byte)args.Inputs.Length);
+
+        var numberOfSRVs = args.Inputs.Length;
+        if (args.DepthBuffer != null && args.DepthBufferMode == DepthBufferMode.Read)
+        {
+            // Depth buffer reads are a bit different than normal inputs.
+            numberOfSRVs++;
+        }
+
+        var builder = CreateDefaultRootSignatureBuilder((byte)numberOfSRVs);
         var rootSignatureArgs = (args.RootSignatureBuilder != null
                 ? args.RootSignatureBuilder(builder)
                 : builder)
@@ -166,6 +183,7 @@ public unsafe partial struct RenderGraph
         pass->CullMode = args.CullMode;
         pass->FillMode = args.FillMode;
         pass->Topology = args.Topology;
+        pass->DepthBufferMode = args.DepthBufferMode;
         pass->Order = args.Order;
         for (var i = 0; i < args.Outputs.Length; ++i)
         {
@@ -203,7 +221,6 @@ public unsafe partial struct RenderGraph
         {
             return false;
         }
-
         var index = handle.Value - HandleOffset;
         var pass = _renderPasses.AsPointer() + index;
 
@@ -224,7 +241,7 @@ public unsafe partial struct RenderGraph
         TitanList<D3D12_RESOURCE_BARRIER> barriers = stackalloc D3D12_RESOURCE_BARRIER[10];
         TitanList<D3D12_CPU_DESCRIPTOR_HANDLE> renderTargets = stackalloc D3D12_CPU_DESCRIPTOR_HANDLE[(int)pass->Outputs.Length];
         TitanList<Ptr<Texture>> renderTargetTextures = stackalloc Ptr<Texture>[(int)pass->Outputs.Length];
-        TitanList<int> inputTextures = stackalloc int[(int)pass->Inputs.Length];
+        TitanList<int> inputTextures = stackalloc int[(int)pass->Inputs.Length + 1]; // we add 1 for depth buffer.
 
         foreach (ref readonly var output in pass->Outputs.AsReadOnlySpan())
         {
@@ -249,12 +266,6 @@ public unsafe partial struct RenderGraph
             inputTextures.Add(texture->SRV.Index);
         }
 
-
-        if (!inputTextures.IsEmpty)
-        {
-            commandList.SetGraphicsRootConstants((uint)RootSignatureIndex.InputTexturesIndex, inputTextures);
-        }
-
         var frameDataBuffer = _resourceManager->Access(_frameDataConstantBuffer);
         commandList.SetGraphicsRootConstantBuffer((uint)RootSignatureIndex.FrameDataIndex, frameDataBuffer);
 
@@ -262,14 +273,27 @@ public unsafe partial struct RenderGraph
         if (pass->DepthBuffer.IsValid)
         {
             depthBuffer = _resourceManager->Access(pass->DepthBuffer);
-            commandList.SetRenderTargets(renderTargets, renderTargets.Count, &depthBuffer->DSV.CPU);
+            commandList.SetRenderTargets(renderTargets, renderTargets.Count, pass->DepthBufferMode == DepthBufferMode.Write ? &depthBuffer->DSV.CPU : null);
+            if (pass->DepthBufferMode == DepthBufferMode.Read)
+            {
+                Debug.Assert(depthBuffer->SRV.IsValid);
+                inputTextures.Add(depthBuffer->SRV.Index);
+                barriers.Add(D3D12Helpers.Transition(depthBuffer->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_READ));
+            }
         }
         else
         {
             commandList.SetRenderTargets(renderTargets, renderTargets.Count);
         }
 
-        commandList.ResourceBarriers(barriers);
+        if (!inputTextures.IsEmpty)
+        {
+            commandList.SetGraphicsRootConstants((uint)RootSignatureIndex.InputTexturesIndex, inputTextures);
+        }
+        if (!barriers.IsEmpty)
+        {
+            commandList.ResourceBarriers(barriers);
+        }
         pass->ClearFunction(renderTargetTextures, depthBuffer, commandList);
 
         return true;
@@ -316,7 +340,17 @@ public unsafe partial struct RenderGraph
             var texture = _resourceManager->Access(input);
             barriers.Add(D3D12Helpers.Transition(texture->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_COMMON));
         }
-        pass->CommandList.ResourceBarriers(barriers);
+
+        if (pass->DepthBuffer.IsValid && pass->DepthBufferMode == DepthBufferMode.Read)
+        {
+            var depthBuffer = _resourceManager->Access(pass->DepthBuffer);
+            barriers.Add(D3D12Helpers.Transition(depthBuffer->Resource, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATES.D3D12_RESOURCE_STATE_DEPTH_WRITE));
+        }
+
+        if (!barriers.IsEmpty)
+        {
+            pass->CommandList.ResourceBarriers(barriers);
+        }
         pass->CommandList.Close();
     }
 
@@ -378,11 +412,14 @@ public unsafe partial struct RenderGraph
             return;
         }
 
+        ref readonly var camera = ref cameraSystem.GetCurrentCamera();
+
         //NOTE(Jens): We can probably do this in some nicer way :) but works for now.
         graph._frameDataGPU.WriteSingle(new FrameData
         {
-            ViewProjection = cameraSystem.DefaultCamera.ViewProjectionMatrixTransposed,
-            CameraPosition = cameraSystem.DefaultCamera.Position,
+            WorldMatrix = camera.WorldMatrix,
+            ViewProjection = camera.ViewProjectionMatrixTransposed,
+            CameraPosition = camera.Position,
             WindowHeight = (uint)window.Height,
             WindowWidth = (uint)window.Width
         });
@@ -420,6 +457,7 @@ public unsafe partial struct RenderGraph
         return true;
     }
 
+
     [System(SystemStage.Last, SystemExecutionType.Inline)]
     internal static void Last(ref RenderGraph graph, in Window window, EventReader<WindowResizeEvent> resizeEvent)
     {
@@ -435,36 +473,47 @@ public unsafe partial struct RenderGraph
         }
     }
 
+
     private bool CreatePipelineStates()
     {
         foreach (ref var pass in _renderPasses.AsSpan()[.._renderPassCount])
         {
-            pass.PipelineState = _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
-            {
-                BlendState = pass.BlendState,
-                Depth = GetDeptStencilArgs(pass, _resourceManager),
-                RenderTargets = pass.Outputs,
-                RootSignature = pass.RootSignature,
-                VertexShader = _assetsManager.Get(pass.VertexShader).ShaderByteCode,
-                PixelShader = _assetsManager.Get(pass.PixelShader).ShaderByteCode,
-                Topology = pass.Topology switch
-                {
-                    PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
-                    _ => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-                },
-                CullMode = pass.CullMode,
-                FillMode = pass.FillMode
-            });
+            pass.PipelineState = CreatePipelineState(pass);
             if (pass.PipelineState.IsInvalid)
             {
                 Logger.Error<RenderGraph>($"Failed to create the pipeline state for render pass. Name = {pass.Name.GetString()}");
                 return false;
             }
+#if HOT_RELOAD_ASSETS
+            pass.ShaderHash = HashFromShaders(pass.VertexShader, pass.PixelShader);
+#endif
         }
+
+        return true;
+    }
+
+    private Handle<PipelineState> CreatePipelineState(in RenderPass renderPass)
+    {
+        return _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
+        {
+            BlendState = renderPass.BlendState,
+            Depth = GetDeptStencilArgs(renderPass, _resourceManager),
+            RenderTargets = renderPass.Outputs,
+            RootSignature = renderPass.RootSignature,
+            VertexShader = _assetsManager.Get(renderPass.VertexShader).ShaderByteCode,
+            PixelShader = _assetsManager.Get(renderPass.PixelShader).ShaderByteCode,
+            Topology = renderPass.Topology switch
+            {
+                PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
+                _ => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+            },
+            CullMode = renderPass.CullMode,
+            FillMode = renderPass.FillMode
+        });
 
         static DepthStencilArgs GetDeptStencilArgs(in RenderPass pass, D3D12ResourceManager* resourceManager)
         {
-            if (pass.DepthBuffer.IsInvalid)
+            if (pass.DepthBuffer.IsInvalid || pass.DepthBufferMode == DepthBufferMode.Read)
             {
                 return default;
             }
@@ -476,8 +525,6 @@ public unsafe partial struct RenderGraph
                 StencilEnabled = false, //TODO(Jens): Add support for stencil tests
             };
         }
-
-        return true;
     }
 
     private void SortRenderGraph()
@@ -488,6 +535,25 @@ public unsafe partial struct RenderGraph
         // If it's a match, add the dependant pass to the graph, and increaes the inDegree of the dependant pass
         for (var outer = 0; outer < _renderPassCount; ++outer)
         {
+            var depthBuffer = _renderPasses[outer].DepthBuffer;
+            // if we have a depthbuffer, check the depthbuffer with mode Read for the rest of the passes.
+            if (depthBuffer.IsValid && _renderPasses[outer].DepthBufferMode == DepthBufferMode.Write)
+            {
+                for (var inner = 0; inner < _renderPassCount; ++inner)
+                {
+                    if (inner == outer)
+                    {
+                        continue;
+                    }
+
+                    if (_renderPasses[inner].DepthBufferMode == DepthBufferMode.Read && _renderPasses[inner].DepthBuffer == depthBuffer)
+                    {
+                        graph[outer].AddDependency(inner);
+                        graph[inner].InDegree++;
+                    }
+                }
+            }
+
             foreach (var output in _renderPasses[outer].Outputs.AsReadOnlySpan())
             {
                 for (var inner = 0; inner < _renderPassCount; ++inner)
@@ -514,6 +580,11 @@ public unsafe partial struct RenderGraph
                         }
                     }
 
+                    if (Contains(_renderPasses[inner].Inputs, depthBuffer))
+                    {
+                        graph[outer].AddDependency(inner);
+                        graph[inner].InDegree++;
+                    }
                 }
             }
         }
@@ -571,6 +642,10 @@ public unsafe partial struct RenderGraph
 #endif
         static bool Contains(ReadOnlySpan<Handle<Texture>> textures, in Handle<Texture> handle)
         {
+            if (handle.IsInvalid)
+            {
+                return false;
+            }
             foreach (var texture in textures)
             {
                 if (handle == texture)
@@ -618,4 +693,39 @@ public unsafe partial struct RenderGraph
 
         graph = default;
     }
+
+
+
+#if HOT_RELOAD_ASSETS
+    [System(SystemStage.Last)]
+    internal static void CheckForDirtyShaders(ref RenderGraph graph)
+    {
+        if (graph._isReady == false)
+        {
+            return;
+        }
+
+        foreach (ref var pass in graph._renderPasses.AsSpan()[..graph._renderPassCount])
+        {
+            var hash = graph.HashFromShaders(pass.VertexShader, pass.PixelShader);
+            if (hash != pass.ShaderHash)
+            {
+                Logger.Warning($"Hash is different, recreating pipeline state. Pass = {pass.Name.GetString()}");
+                //graph._isReady = false;
+
+                pass.PipelineState = graph.CreatePipelineState(pass);
+                pass.ShaderHash = hash;
+            }
+        }
+    }
+
+    private ulong HashFromShaders(AssetHandle<ShaderAsset> shader1, AssetHandle<ShaderAsset> shader2)
+    {
+        var a = _assetsManager.Get(shader1).ShaderByteCode;
+        var b = _assetsManager.Get(shader2).ShaderByteCode;
+        var c = (ulong)a.Size + (ulong)a.AsPointer();
+        var d = (ulong)b.Size + (ulong)b.AsPointer();
+        return unchecked(c + d);
+    }
+#endif
 }

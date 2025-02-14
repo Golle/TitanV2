@@ -18,6 +18,9 @@ public struct SizeF(float width = 0, float height = 0)
     public static SizeF operator -(in SizeF lh, in SizeF rh) => new(lh.Width - rh.Width, lh.Height - rh.Height);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static SizeF operator -(in SizeF lh, float value) => new(lh.Width - value, lh.Height - value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static SizeF operator /(in SizeF lh, float value) => new(lh.Width / value, lh.Height / value);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static SizeF operator *(in SizeF lh, float value) => new(lh.Width * value, lh.Height * value);

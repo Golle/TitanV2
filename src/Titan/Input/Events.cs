@@ -24,3 +24,6 @@ public partial record struct WindowResizeEvent(uint Width, uint Height)
     public Size Size => new((int)Width, (int)Height);
     public SizeF SizeF => new(Width, Height);
 }
+
+[Event]
+public partial record struct MouseWheelDeltaEvent(short Delta);

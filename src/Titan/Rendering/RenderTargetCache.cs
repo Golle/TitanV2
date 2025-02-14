@@ -65,11 +65,12 @@ internal unsafe partial struct RenderTargetCache
                 Format = format,
                 Height = (uint)_window->Height,
                 Width = (uint)_window->Width,
-                ClearValue = depthConfig.ClearValue
+                ClearValue = depthConfig.ClearValue,
+                ShaderVisible = depthConfig.ShaderVisible
             });
             if (handle.IsInvalid)
             {
-                Logger.Error<RenderTargetCache>("Failed to create the DeptBuffer resource.");
+                Logger.Error<RenderTargetCache>("Failed to create the DepthBuffer resource.");
                 return Handle<Texture>.Invalid;
             }
             Logger.Trace<RenderTargetCache>($"Created new DepthBuffer. Name = {depthConfig.Name} Handle = {handle} Format = {format}");

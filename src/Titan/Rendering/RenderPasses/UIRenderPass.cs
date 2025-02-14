@@ -8,6 +8,7 @@ using Titan.Platform.Win32;
 using Titan.Resources;
 using Titan.Systems;
 using Titan.UI;
+using Titan.UI2;
 using Titan.Windows;
 
 namespace Titan.Rendering.RenderPasses;
@@ -51,7 +52,7 @@ internal unsafe partial struct UIRenderPass
 
 
     [System]
-    public static void Update(in UIRenderPass pass, in RenderGraph graph, in Window window, in D3D12ResourceManager resourceManager, in UISystem system)
+    public static void Update(in UIRenderPass pass, in RenderGraph graph, in Window window, in D3D12ResourceManager resourceManager, in UISystem system, in UISystem2 system2)
     {
         if (!graph.Begin(pass.PassHandle, out var commandList))
         {
@@ -59,7 +60,7 @@ internal unsafe partial struct UIRenderPass
         }
 
         //NOTE(Jens): We can cache these in the UI system.
-        var elementsIndex = resourceManager.Access(system.GetInstanceHandle())->SRV.GPU;
+        var elementsIndex = resourceManager.Access(system2.GetCurrentGPUHandle())->SRV.GPU;
         //var glyphsIndex = resourceManager.Access(system.GlyphInstances)->SRV.GPU;
         var indexBuffer = resourceManager.Access(pass.IndexBuffer);
 
@@ -69,7 +70,7 @@ internal unsafe partial struct UIRenderPass
     }
 
     [System(SystemStage.PostUpdate, SystemExecutionType.Inline)]
-    public static void PostUpdate(in UIRenderPass pass, in UISystem ui, ref RenderGraph graph)
+    public static void PostUpdate(in UIRenderPass pass, in UISystem ui, in UISystem2 ui2, ref RenderGraph graph)
     {
         if (!graph.IsReady)
         {
@@ -80,10 +81,11 @@ internal unsafe partial struct UIRenderPass
         //NOTE(Jens): Maybe we need to rethink the way this is executed. 
         var commandList = graph.GetCommandList(pass.PassHandle);
 
-        if (ui is { Count: > 0, Visible: true })
-        {
-            commandList.DrawIndexedInstanced(6, ui.Count);
-        }
+        commandList.DrawIndexedInstanced(6, ui2.GetCount());
+        //if (ui is { Count: > 0, Visible: true })
+        //{
+        //    commandList.DrawIndexedInstanced(6, ui.Count);
+        //}
 
         graph.End(pass.PassHandle);
     }

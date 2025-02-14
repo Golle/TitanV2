@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
@@ -10,11 +11,15 @@ internal unsafe class WicImageReader : IDisposable
     private ComPtr<IWICImagingFactory> _factory;
     public WicImageReader()
     {
-        var hr = Ole32.CoCreateInstance(CLSID.CLSID_WICImagingFactory2, null, CLSCTX.CLSCTX_INPROC_SERVER, IWICImagingFactory.Guid, (void**)_factory.GetAddressOf());
-        if (Win32Common.FAILED(hr))
+        ComPtr<IWICImagingFactory> factory = default;
+        var hr = Ole32.CoCreateInstance(CLSID.CLSID_WICImagingFactory2, null, CLSCTX.CLSCTX_INPROC_SERVER, _factory.UUID, (void**)factory.GetAddressOf());
+        if (Win32Common.FAILED(hr) || !factory.IsValid)
         {
             throw new Exception($"Failed to create the {nameof(IWICImagingFactory)} instance with HRESULT {hr}");
         }
+
+        //NOTE(Jens): Must use a temporary variable since this is a class. it mooooves because GC..
+        _factory = factory;
     }
 
     public Image? LoadImage(string path)

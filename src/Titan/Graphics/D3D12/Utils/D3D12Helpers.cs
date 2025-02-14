@@ -119,7 +119,7 @@ public static class D3D12Helpers
         }
     }
 
-    public static D3D12_STATIC_SAMPLER_DESC CreateStaticSamplerDesc(SamplerState state, uint register, uint registerSpace, D3D12_SHADER_VISIBILITY visibiliy = D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL) =>
+    public static D3D12_STATIC_SAMPLER_DESC CreateStaticSamplerDesc(SamplerState state, uint register, uint registerSpace, D3D12_SHADER_VISIBILITY visibiliy = D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_ALL, D3D12_SHADER_VISIBILITY shadowMapVisibility = D3D12_SHADER_VISIBILITY.D3D12_SHADER_VISIBILITY_PIXEL) =>
         state switch
         {
             SamplerState.Linear => new D3D12_STATIC_SAMPLER_DESC
@@ -153,6 +153,19 @@ public static class D3D12Helpers
                 ShaderVisibility = visibiliy,
                 RegisterSpace = registerSpace,
                 ShaderRegister = register
+            },
+            SamplerState.Shadow => new D3D12_STATIC_SAMPLER_DESC
+            {
+                RegisterSpace = registerSpace,
+                ShaderRegister = register,
+                ShaderVisibility = shadowMapVisibility,
+                AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                Filter = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+                ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+                MaxLOD = D3D12_FLOAT32_MAX
             },
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };

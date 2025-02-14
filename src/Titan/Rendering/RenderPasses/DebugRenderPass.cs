@@ -4,6 +4,7 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
+using Titan.ECS.Components;
 using Titan.Graphics;
 using Titan.Graphics.D3D12;
 using Titan.Platform.Win32;
@@ -13,12 +14,12 @@ using Titan.Systems;
 namespace Titan.Rendering.RenderPasses;
 
 [UnmanagedResource]
-public unsafe partial struct DebugRenderPass
+internal unsafe partial struct DebugRenderPass
 {
     private Handle<RenderPass> Handle;
     private Handle<GPUBuffer> LineBuffer;
     private MappedGPUResource<Line> LineBufferGPU;
-    private Inline512<Line> Lines;
+    private Inline2048<Line> Lines;
     private int Count;
 
     private const uint PassDataIndex = (uint)RenderGraph.RootSignatureIndex.CustomIndexStart;
@@ -42,10 +43,9 @@ public unsafe partial struct DebugRenderPass
             VertexShader = EngineAssetsRegistry.Shaders.ShaderDebugVertex
         };
 
-        pass->Handle = graph.CreatePass("DEBUG", args);
+        pass->Handle = graph.CreatePass("DEBUG_LINE", args);
 
-
-        pass->LineBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Line>(1024, BufferType.Structured, cpuVisible: true, shaderVisible: true));
+        pass->LineBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Line>((uint)pass->Lines.Size, BufferType.Structured, cpuVisible: true, shaderVisible: true));
         if (!resourceManager.TryMapBuffer(pass->LineBuffer, out pass->LineBufferGPU))
         {
             Logger.Error<DebugRenderPass>("Failed to map the debug line buffer.");
@@ -54,6 +54,8 @@ public unsafe partial struct DebugRenderPass
 
         pass->Lines = default;
         pass->Count = 0;
+
+        DebugDraw.DebugAPI = pass;
     }
 
 
@@ -98,4 +100,25 @@ public unsafe partial struct DebugRenderPass
     }
 
     private record struct Line(Vector3 Start, Vector3 Stop, ColorRGB color, ColorRGB color2);
+
+    public readonly void DrawAABB(in AABB boundingBox, in Color color)
+    {
+        var min = boundingBox.Min;
+        var max = boundingBox.Max;
+
+        DrawLine(min, new(min.X, min.Y, max.Z), color, color);
+        DrawLine(min, new(min.X, max.Y, min.Z), color, color);
+        DrawLine(min, new(max.X, min.Y, min.Z), color, color);
+
+        DrawLine(max, new(max.X, max.Y, min.Z), color, color);
+        DrawLine(max, new(max.X, min.Y, max.Z), color, color);
+        DrawLine(max, new(min.X, max.Y, max.Z), color, color);
+
+        DrawLine(new(min.X, min.Y, max.Z), new(min.X, max.Y, max.Z), color, color);
+        DrawLine(new(max.X, max.Y, min.Z), new(max.X, min.Y, min.Z), color, color);
+        DrawLine(new(min.X, max.Y, min.Z), new(max.X, max.Y, min.Z), color, color);
+        DrawLine(new(min.X, max.Y, max.Z), new(min.X, max.Y, min.Z), color, color);
+        DrawLine(new(min.X, min.Y, max.Z), new(max.X, min.Y, max.Z), color, color);
+        DrawLine(new(max.X, min.Y, min.Z), new(max.X, min.Y, max.Z), color, color);
+    }
 }

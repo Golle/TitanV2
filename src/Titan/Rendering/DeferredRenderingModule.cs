@@ -7,15 +7,16 @@ internal sealed class DeferredRenderingModule : IModule
 {
     public static bool Build(IAppBuilder builder, AppConfig config)
     {
-        builder
-            .AddSystemsAndResource<GBufferRenderPass>()
-            .AddSystemsAndResource<DeferredLightingRenderPass>()
-            .AddSystemsAndResource<BackbufferRenderPass>()
-            .AddSystemsAndResource<UIRenderPass>()
+        if (config.BuiltInRendererFlags.HasFlag(BuiltInRendererFlags.GBuffer))
+        {
+            builder.AddSystemsAndResource<GBufferRenderPass>();
+        }
 
-            // add behind compile flag.
-            .AddSystemsAndResource<DebugRenderPass>()
-            ;
+        if (config.BuiltInRendererFlags.HasFlag(BuiltInRendererFlags.DeferredLighting))
+        {
+            builder.AddSystemsAndResource<DeferredLightingRenderPass>();
+        }
+
         return true;
     }
 }

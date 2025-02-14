@@ -2,12 +2,13 @@ using System.Text;
 
 namespace Titan.Generators.Systems;
 
-internal struct ComponentType(string name, string fullName, string @namespace, string accessability)
+internal struct ComponentType(string name, string fullName, string @namespace, string accessability, bool isTag)
 {
     public readonly string Name = name;
     public readonly string FullName = fullName;
     public readonly string Namespace = @namespace;
     public readonly string Accessability = accessability;
+    public readonly bool IsTag = isTag;
 }
 
 internal static class ComponentBuilder
@@ -24,6 +25,7 @@ internal static class ComponentBuilder
             .AppendLine($"{component.Accessability} unsafe partial struct {component.Name} : {TitanTypes.IComponent}")
             .AppendOpenBracer()
             .AppendLine($"public static {TitanTypes.ComponentType} Type {{ get; }} = new ({IdFieldName}, (uint)sizeof({component.Name}));")
+            .AppendLine($"public static bool IsTag => {(component.IsTag ? "true" : "false")};")
             .AppendLine($"public const uint {IdFieldName} = {id};")
             .AppendCloseBracer();
 

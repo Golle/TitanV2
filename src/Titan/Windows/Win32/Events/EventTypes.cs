@@ -17,4 +17,5 @@ internal static class EventTypes
     public const int LostFocus = 40001;
     public const int GainedFocus = 40002;
 
+    public const int MouseWheelDelta = 60001;
 }

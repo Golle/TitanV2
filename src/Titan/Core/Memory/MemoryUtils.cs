@@ -7,6 +7,10 @@ namespace Titan.Core.Memory;
 
 public static unsafe class MemoryUtils
 {
+    public const uint KiloByte = 1024;
+    public const uint MegaByte = KiloByte * KiloByte;
+    public const uint GigaByte = MegaByte * KiloByte;
+
     private const uint OneKiloByte = 1024u;
 
     public static void InitArray<T>(in TitanArray<T> array, byte value = 0) where T : unmanaged

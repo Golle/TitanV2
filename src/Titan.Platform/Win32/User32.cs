@@ -75,7 +75,7 @@ public static unsafe partial class User32
         int Y,
         int cx,
         int cy,
-        SetWindowPos uFlags
+        SetWindowPosFlags uFlags
     );
 
     [LibraryImport(DllName, SetLastError = true)]
@@ -294,4 +294,12 @@ public static unsafe partial class User32
     [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool ClipCursor(RECT* rect);
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial HCURSOR LoadCursorW(HINSTANCE hInstance, char* lpCursorName);
+
+    [LibraryImport(DllName, SetLastError = true)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial HCURSOR LoadCursorA(HINSTANCE hInstance, byte* lpCursorName);
 }

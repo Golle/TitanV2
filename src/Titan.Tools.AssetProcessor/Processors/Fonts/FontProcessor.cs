@@ -1,5 +1,3 @@
-using System;
-using System.IO.IsolatedStorage;
 using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core.Logging;

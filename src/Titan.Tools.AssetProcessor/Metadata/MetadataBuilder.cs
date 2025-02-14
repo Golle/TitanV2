@@ -20,6 +20,7 @@ internal class MetadataBuilder
             ".ttf" => new FontMetadata(),
             ".shaderconf" => new ShaderInfoMetadata(),
             ".ogg" or ".wav" or ".mp3" => new AudioMetadata(),
+            ".tmat" => new MaterialMetadata(),
             _ => null
         };
         if (metadata == null)

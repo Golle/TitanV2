@@ -44,7 +44,6 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void SetRenderTargets(D3D12_CPU_DESCRIPTOR_HANDLE* renderTargetHandles, uint count, D3D12_CPU_DESCRIPTOR_HANDLE* depthBuffer)
     {
-        Debug.Assert(renderTargetHandles != null && count > 0);
         commandList->OMSetRenderTargets(count, renderTargetHandles, 1, depthBuffer);
     }
 

@@ -7,7 +7,7 @@ using Titan.Systems;
 using Titan.Windows.Win32.Events;
 
 namespace Titan.Windows.Win32;
-internal unsafe partial struct Win32MessagePump
+internal partial struct Win32MessagePump
 {
     [System(SystemStage.Last)]
     public static void Update(ref Window window, ref Win32MessageQueue queue, EventWriter writer)
@@ -60,10 +60,13 @@ internal unsafe partial struct Win32MessagePump
                     // Maybe we need a more granular approach later, but for now this will do.
                     writer.Send(new AudioDeviceChangedEvent());
                     break;
-
                 case EventTypes.Resize:
                     ref readonly var resizeEvent = ref @event.As<Win32ResizeEvent>();
                     writer.Send(new WindowResizeEvent(resizeEvent.Width, resizeEvent.Height));
+                    break;
+                case EventTypes.MouseWheelDelta:
+                    ref readonly var wheelDeltaEvent = ref @event.As<Win32MouseWheelEvent>();
+                    writer.Send(new MouseWheelDeltaEvent(wheelDeltaEvent.Delta));
                     break;
                 default:
                     Logger.Warning<Win32WindowSystem>($"Win32 Message not handled. Id = {@event.Id}");

@@ -1,13 +1,24 @@
+using System.Diagnostics;
 using Titan.Application.Events;
 using Titan.Events;
 using Titan.Systems;
+using Titan.Windows;
 
 namespace Titan.Application;
+
+
+public static class GameTime
+{
+    public static long LastTimestamp { get; internal set; }
+    public static float DeltaTimeSeconds => (float)DeltaTime.TotalSeconds;
+    public static float DeltaTimeMillis => (float)DeltaTime.TotalMilliseconds;
+    public static TimeSpan DeltaTime { get; internal set; }
+}
 
 /// <summary>
 /// State is updated in system state First, do not use these values in system that is in state First or Last. 
 /// </summary>
-internal partial struct EngineState
+public partial struct EngineState
 {
     /// <summary>
     /// The number of frames since the start of the application.
@@ -22,16 +33,22 @@ internal partial struct EngineState
     /// </summary>
     public static bool Active { get; private set; }
 
+    public static int WindowWidth { get; private set; }
+    public static int WindowHalfWidth { get; private set; }
+    public static int WindowHeight { get; private set; }
+    public static int WindowHalfHeight { get; private set; }
+
     [System(SystemStage.PreInit, SystemExecutionType.Inline)]
-    public static void Init()
+    internal static void Init()
     {
         Active = true;
         FrameCount = 0;
         FrameIndex = 0;
+        GameTime.LastTimestamp = Stopwatch.GetTimestamp();
     }
 
     [System(SystemStage.First, SystemExecutionType.Inline)]
-    public static void First()
+    internal static void First(in Window window)
     {
         // increase the frame count at the start of the frame, that means every stage will have the same frame count. 
         FrameCount++;
@@ -41,10 +58,19 @@ internal partial struct EngineState
 #else
         FrameIndex = (FrameIndex + 1) & 0x1;
 #endif
+        var current = Stopwatch.GetTimestamp();
+        GameTime.DeltaTime = Stopwatch.GetElapsedTime(GameTime.LastTimestamp, current);
+        GameTime.LastTimestamp = current;
+
+        WindowHeight = window.Height;
+        WindowWidth = window.Width;
+        WindowHalfHeight = WindowHeight >> 1;
+        WindowHalfWidth = WindowWidth >> 1;
+
     }
 
     [System(SystemStage.Last, SystemExecutionType.Inline)]
-    public static void Last(EventReader<EngineShutdownEvent> shutdown)
+    internal static void Last(EventReader<EngineShutdownEvent> shutdown)
     {
         //NOTE(Jens): HasEvents doesn't track per type yet. so we need to do this.. :|
 

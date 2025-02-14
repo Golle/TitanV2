@@ -1,0 +1,15 @@
+{
+  "$type": "FontMetadata",
+  "characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.;:-\u002B*/?!%\u0026() ",
+  "defaultGlyph": "?",
+  "typeface": "Roboto Mono",
+  "fontSize": 16,
+  "id": "fbac4838-30b6-4160-99ff-cf7346ab635c",
+  "name": "RobotoMonoRegular",
+  "fileSize": 87236,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

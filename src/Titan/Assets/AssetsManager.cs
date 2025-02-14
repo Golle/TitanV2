@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Titan.Audio.Resources;
 using Titan.Core.Logging;
 using Titan.Rendering.Resources;
 using Titan.UI.Resources;
@@ -53,7 +54,6 @@ public readonly unsafe struct AssetsManager
             return;
         }
 
-        //NOTE(Jens): A lot of code for almost nothing. See if there are better ways to do this.
         var asset = _assetSystem->Assets.GetPointer(descriptor.Id);
         var dependencies = asset->Registry->GetDependencies(descriptor);
         Debug.Assert(dependencies.Length > 0);
@@ -66,6 +66,8 @@ public readonly unsafe struct AssetsManager
             {
                 dependencyAsset->State = AssetState.LoadRequested;
             }
+            // recursive call to load dependencies of dependencies. For example a Mesh have  Material that has one or several textures.
+            LoadDependencies(*dependencyAsset->Descriptor);
         }
     }
 
@@ -155,6 +157,12 @@ public static class AssetsManagerExtensions
         return assetsManager.Load<FontAsset>(descriptor);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<MaterialAsset> LoadMaterial(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Material);
+        return assetsManager.Load<MaterialAsset>(descriptor);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static AssetHandle<TextureAsset> LoadTexture(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
@@ -168,6 +176,13 @@ public static class AssetsManagerExtensions
     {
         Debug.Assert(descriptor.Type is AssetType.Mesh);
         return assetsManager.Load<MeshAsset>(descriptor);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<AudioAsset> LoadAudio(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Audio);
+        return assetsManager.Load<AudioAsset>(descriptor);
     }
 }
 

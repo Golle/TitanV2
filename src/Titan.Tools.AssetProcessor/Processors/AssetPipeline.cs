@@ -18,7 +18,7 @@ internal sealed class AssetPipeline
         return this;
     }
 
-    public async Task<bool> Run(AssetFileMetadata[] metadataFiles, IAssetDescriptorContext context)
+    public async Task<bool> Run(IEnumerable<AssetFileMetadata> metadataFiles, IAssetDescriptorContext context)
     {
         var success = true;
         await Parallel.ForEachAsync(metadataFiles, async (metadata, _) =>

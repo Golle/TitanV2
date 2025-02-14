@@ -73,6 +73,7 @@ namespace Titan.Sandbox
                 .AddSystemsAndResource<EntityTestSystem>()
                 .AddSystems<TheAudioThing>()
                 .AddSystems<InputStuff>()
+                .AddSystems<UIVersion2>()
                 ;
 
             return true;
@@ -98,14 +99,14 @@ namespace Titan.Sandbox
         private Entity _entity;
         private bool _done;
 
-        private AssetHandle<TextureAsset> BookTexture;
         private AssetHandle<MeshAsset> BookMesh;
 
         [System(SystemStage.Init)]
         public static void LoadResources(ref EntityTestSystem system, AssetsManager assetsManager)
         {
             system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
-            system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
+            //system.BookMaterials = assetsManager.LoadMaterial(EngineAssetsRegistry.Materials.MagicBookOBJ.Asset);
+            //system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
         }
 
         [System]
@@ -133,24 +134,18 @@ namespace Titan.Sandbox
                 //_entity = default;
                 _done = true;
             }
-            else if (assetsManager.IsLoaded(BookMesh) && assetsManager.IsLoaded(BookTexture))
+            else if (assetsManager.IsLoaded(BookMesh))
             {
+                var mesh = new Mesh
+                {
+                    //TODO(Jens): Replace this mesh thing with a Create mesh
+                    MeshIndex = assetsManager.Get(BookMesh)
+                };
+
                 _entity = entityManager.CreateEntity();
                 entityManager.AddComponent(_entity, Transform3D.Create(Vector3.UnitZ * 10 + Vector3.UnitY * -3));
                 entityManager.AddComponent<TransformRect>(_entity);
-
-                var bookMaterial = materialsManager.CreateMaterial(new()
-                {
-                    Color = Color.White,
-                    AlbedoTexture = assetsManager.Get(BookTexture)
-                });
-                entityManager.AddComponent(_entity, new Mesh
-                {
-                    //TODO(Jens): Replace this mesh thing with a Create mesh
-                    MeshIndex = assetsManager.Get(BookMesh),
-                    MaterialIndex = bookMaterial
-                });
-
+                entityManager.AddComponent(_entity, mesh);
 
                 for (var z = 0; z < 5; ++z)
                     for (var j = 0; j < 5; ++j)
@@ -160,13 +155,7 @@ namespace Titan.Sandbox
 
                             entityManager.AddComponent(ent, new Selected());
                             entityManager.AddComponent(ent, Transform3D.Create(Vector3.UnitZ * 10 * (j + 1) + Vector3.UnitY * 10 * (z + 1) + Vector3.UnitX * 10 * (i + 1)));
-
-                            entityManager.AddComponent(ent, new Mesh
-                            {
-                                //TODO(Jens): Replace this mesh thing with a Create mesh
-                                MeshIndex = assetsManager.Get(BookMesh),
-                                MaterialIndex = bookMaterial
-                            });
+                            entityManager.AddComponent(ent, mesh);
                         }
 
                 entityManager.AddComponent(_entity, new Selected());
@@ -338,7 +327,7 @@ namespace Titan.Sandbox
 
 
         private static Inline2<UISelectBoxState> _screenStates;
-        
+
         [System]
         public static void ScreenSize(UIManager ui, in Window window)
         {

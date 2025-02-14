@@ -4,7 +4,6 @@ using Titan.Configurations;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Threading;
-using Titan.ECS.Components;
 using Titan.Input;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DBT;
@@ -12,7 +11,6 @@ using Titan.Systems;
 using Titan.Windows.Win32.Events;
 using static Titan.Platform.Win32.User32;
 using static Titan.Platform.Win32.WindowMessage;
-using SetWindowPos = Titan.Platform.Win32.SetWindowPos;
 
 namespace Titan.Windows.Win32;
 
@@ -136,7 +134,7 @@ internal unsafe partial struct Win32WindowSystem
             WNDCLASSEXW windowClass = new()
             {
                 CbSize = (uint)sizeof(WNDCLASSEXW),
-                HCursor = default,
+                HCursor = LoadCursorA(default, StandardCursorIDs.IDC_ARROW),
                 HIcon = 0,
                 HIconSm = 0,
                 HbrBackground = 0,
@@ -207,50 +205,54 @@ internal unsafe partial struct Win32WindowSystem
                 break;
             }
 
-            if (msg.Message == WM_TOGGLE_CURSOR)
+            //NOTE(Jens): Some events are collected before the Window proc is called. This is to decrease the latency.
+            switch (msg.Message)
             {
-                //NOTE(Jens): ShowCursor has a counter inside, we don't want to increase it more than once.
-                if (window->CursorVisible && msg.WParam == 0)
-                {
-                    ShowCursor(0);
-                }
-                else if (!window->CursorVisible && msg.WParam == 1)
-                {
-                    ShowCursor(1);
-                }
+                case WM_TOGGLE_CURSOR:
+                    //NOTE(Jens): ShowCursor has a counter inside, we don't want to increase it more than once.
+                    if (window->CursorVisible && msg.WParam == 0)
+                    {
+                        ShowCursor(0);
+                    }
+                    else if (!window->CursorVisible && msg.WParam == 1)
+                    {
+                        ShowCursor(1);
+                    }
 
-                window->CursorVisible = msg.WParam == 1;
-                continue;
-            }
+                    window->CursorVisible = msg.WParam == 1;
+                    continue;
 
-            if (msg.Message == WM_CLIP_CURSOR_TO_SCREEN)
-            {
-                var windowRect = new RECT
-                {
-                    Left = window->X,
-                    Top = window->Y,
-                    Right = window->Width + window->X,
-                    Bottom = window->Height + window->Y
-                };
-                ClipCursor(msg.WParam == 1 ? &windowRect : null);
-                continue;
-            }
+                case WM_CLIP_CURSOR_TO_SCREEN:
+                    var windowRect = new RECT
+                    {
+                        Left = window->X,
+                        Top = window->Y,
+                        Right = window->Width + window->X,
+                        Bottom = window->Height + window->Y
+                    };
+                    ClipCursor(msg.WParam == 1 ? &windowRect : null);
+                    continue;
 
-            if (msg.Message == WM_WINDOW_RESIZE)
-            {
-                window->Height = (int)msg.LParam;
-                window->Width = (int)msg.WParam;
-                window->Y = window->X = -1;
-                UpdateWindowSize(window);
-                var windowResult = SetWindowPos(handle, 0, window->X, window->Y, window->WidthWithFrame, window->HeightWithFrame, SetWindowPos.SWP_ASYNCWINDOWPOS);
-                if (windowResult)
-                {
-                    queue->Push(new Win32ResizeEvent((uint)window->Width, (uint)window->Height));
-                }
-                else
-                {
-                    Logger.Error<Win32WindowSystem>("Failed to update the size and position of the Window.");
-                }
+                case WM_WINDOW_RESIZE:
+                    window->Height = (int)msg.LParam;
+                    window->Width = (int)msg.WParam;
+                    window->Y = window->X = -1;
+                    UpdateWindowSize(window);
+                    var windowResult = SetWindowPos(handle, 0, window->X, window->Y, window->WidthWithFrame, window->HeightWithFrame, SetWindowPosFlags.SWP_ASYNCWINDOWPOS);
+                    if (windowResult)
+                    {
+                        queue->Push(new Win32ResizeEvent((uint)window->Width, (uint)window->Height));
+                    }
+                    else
+                    {
+                        Logger.Error<Win32WindowSystem>("Failed to update the size and position of the Window.");
+                    }
+
+                    break;
+                case WM_MOUSEWHEEL:
+                    var delta = (short)(msg.WParam >> 16);
+                    queue->Push(new Win32MouseWheelEvent(delta));
+                    break;
             }
 
             TranslateMessage(&msg);

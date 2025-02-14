@@ -14,7 +14,7 @@ internal unsafe partial struct InputSystem
     private const uint MouseStateSize = sizeof(bool) * (uint)MouseButton.Count;
 
     [System(SystemStage.PreUpdate)]
-    public static void Update(InputState* state, in Window window, EventReader<KeyUpEvent> keyUpEvents, EventReader<KeyDownEvent> keyDownEvents, EventReader<CharacterTypedEvent> characterEvents, EventReader<WindowLostFocusEvent> lostFocusEvents, EventReader<WindowGainedFocusEvent> gainedFocusEvents)
+    public static void Update(InputState* state, in Window window, EventReader<KeyUpEvent> keyUpEvents, EventReader<KeyDownEvent> keyDownEvents, EventReader<CharacterTypedEvent> characterEvents, EventReader<WindowLostFocusEvent> lostFocusEvents, EventReader<WindowGainedFocusEvent> gainedFocusEvents, EventReader<MouseWheelDeltaEvent> mouseWheelEvents)
     {
         var lostFocus = lostFocusEvents.Any();
         if (lostFocus)
@@ -28,6 +28,7 @@ internal unsafe partial struct InputSystem
 
         MemoryUtils.Copy(state->Previous, state->Current, KeyStateSize);
         MemoryUtils.Copy(state->PreviousMouseState, state->MouseState, MouseStateSize);
+        state->MouseWheelDelta = 0;
 
         // If we hide the cursor we want to put it back where it was.
         if (window.CursorVisible && state->MouseHidden)
@@ -51,25 +52,26 @@ internal unsafe partial struct InputSystem
             state->MouseState[(int)MouseButton.XButton1] = window.IsButtonDown(MouseButton.XButton1);
             state->MouseState[(int)MouseButton.XButton2] = window.IsButtonDown(MouseButton.XButton2);
         }
-        
 
         state->MouseHidden = !window.CursorVisible;
 
-
         if (state->MouseVisible)
         {
-            var mousePosition = window.GetRelativeCursorPosition();
+            var cursorPosition = window.GetRelativeCursorPosition();
             state->PreviousMousePosition = state->MousePosition;
-            state->MousePosition = mousePosition;
+            state->MousePosition = cursorPosition;
             state->PreviousMousePositionUI = state->MousePositionUI;
-            state->MousePositionUI = mousePosition with { Y = window.Height - mousePosition.Y };
+            state->MousePositionUI = cursorPosition with { Y = window.Height - cursorPosition.Y };
             state->MousePositionDelta = (Vector2)(state->MousePosition - state->PreviousMousePosition);
+            state->CursorPositionNDC = new((cursorPosition.X / (float)window.Width) * 2.0f - 1.0f, 1.0f - (cursorPosition.Y / (float)window.Height) * 2.0f);
+            state->OutsideWindow = cursorPosition.Y < 0 || cursorPosition.X < 0 || cursorPosition.X > window.Width || cursorPosition.Y > window.Height;
         }
         else
         {
             // When the cursor is hidden, we use the absolute position.
             var mousePosition = window.GetAbsoluteCursorPosition();
             state->MousePositionUI = new Point(-1, -1);
+            state->CursorPositionNDC = default; // center screen
             // always put the mouse in the center of the screen.
             state->PreviousMousePosition = state->MousePosition = new(window.ScreenWidth / 2, window.ScreenHeight / 2);
             // calculate the delta in the movement.
@@ -96,6 +98,11 @@ internal unsafe partial struct InputSystem
         foreach (ref readonly var keyUp in keyUpEvents)
         {
             state->Current[(int)keyUp.Code] = false;
+        }
+
+        foreach (ref readonly var mouseWheelDelta in mouseWheelEvents)
+        {
+            state->MouseWheelDelta += mouseWheelDelta.Delta;
         }
     }
 }

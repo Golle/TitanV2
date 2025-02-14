@@ -1,16 +1,15 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using Titan.Configurations;
+using Titan.Core.Memory;
 using Titan.Input;
 using Titan.Resources;
 using Titan.Systems;
-using Titan.UI;
 using Titan.Windows;
 
 namespace Titan.ECS.Systems;
-
-
 
 public record CameraStateConfig : IConfiguration, IDefault<CameraStateConfig>, IPersistable<CameraStateConfig>
 {
@@ -30,127 +29,73 @@ public record CameraStateConfig : IConfiguration, IDefault<CameraStateConfig>, I
 
 
 public record struct Ray(Vector3 Origin, Vector3 Direction);
-public struct Camera
-{
-    /// <summary>
-    /// Clamp value to avoid camera flipping
-    /// </summary>
-    public const float PitchClampValue = 89.9f * (MathF.PI / 180.0f);
-    public static readonly Vector3 DefaultForward = -Vector3.UnitZ;
-    public static readonly Vector3 DefaultUp = Vector3.UnitY;
-    public static readonly Vector3 DefaultRight = Vector3.UnitX;
-    public Vector3 Position;
-    public Vector3 Target;
-    public Vector3 Up;
-    public Vector3 Forward;
-    public Vector3 Right;
-
-    public float Fov;
-    public float AspectRatio;
-    public float NearPlane;
-    public float FarPlane;
-
-    public Matrix4x4 WorldMatrix;
-    public Matrix4x4 ProjectionMatrix;
-    public Matrix4x4 ViewMatrix;
-    public Matrix4x4 ViewProjectionMatrix;
-    public Matrix4x4 InverseViewProjectionMatrix;
-    // This is what we use on the GPU side because of Row vs Column major
-    public Matrix4x4 ViewProjectionMatrixTransposed;
-
-    public float Pitch;
-    public float Yaw;
-    public float Roll;
-
-    public static Camera Create()
-    {
-        return new Camera
-        {
-            Position = Vector3.Zero,
-            Target = DefaultForward,
-            Up = DefaultUp,
-            Forward = -DefaultForward,
-            Right = DefaultRight,
-            Fov = MathF.PI / 4,
-            NearPlane = 0.1f,
-            FarPlane = 1000f,
-            WorldMatrix = Matrix4x4.Identity,
-        };
-    }
-
-
-    /// <summary>
-    /// Create a Ray from the specified screen coordinates. Default is in the center of the screen.
-    /// <remarks>Use NDC to create the ray.</remarks>
-    /// </summary>
-    /// <param name="screenCoordinates">Screen coordinates in NDC, 0,0 is the default.</param>
-    /// <returns>A <see cref="Ray"/> with Origin and a Direction</returns>
-    public readonly Ray CreateRay(in Vector2 screenCoordinates = default)
-    {
-        var x = screenCoordinates.X;
-        var y = screenCoordinates.Y;
-
-        // Clip-space coordinates for near and far planes
-        var clipSpaceNear = new Vector4(x, y, -1.0f, 1.0f);
-        var clipSpaceFar = new Vector4(x, y, 1000.0f, 1.0f);
-        // Transform clip-space to world-space
-        //var inverseViewProjection = Matrix4x4.Invert(camera.ViewProjectionMatrix, out var result) ? result : Matrix4x4.Identity;
-        var worldSpaceNear = Vector4.Transform(clipSpaceNear, InverseViewProjectionMatrix);
-        var worldSpaceFar = Vector4.Transform(clipSpaceFar, InverseViewProjectionMatrix);
-
-        // Convert to homogeneous coordinates
-        worldSpaceNear /= worldSpaceNear.W;
-        worldSpaceFar /= worldSpaceFar.W;
-
-        // Calculate ray origin and direction
-        var origin = new Vector3(worldSpaceNear.X, worldSpaceNear.Y, worldSpaceNear.Z);
-        var direction = -Vector3.Normalize(new Vector3(
-            worldSpaceFar.X - worldSpaceNear.X,
-            worldSpaceFar.Y - worldSpaceNear.Y,
-            worldSpaceFar.Z - worldSpaceNear.Z));
-
-        return new(origin, direction);
-    }
-}
 
 [UnmanagedResource]
-public partial struct CameraSystem
+public unsafe partial struct CameraSystem
 {
-    public Camera DefaultCamera;
+    public readonly ref readonly Camera GetCurrentCamera() => ref *CurrentCamera;
+
+    private Camera DefaultCamera;
+    private Camera* CurrentCamera;
 
     [System(SystemStage.Init)]
     internal static void Startup(ref CameraSystem system, in Window window, IConfigurationManager configurationManager)
     {
         ref var camera = ref system.DefaultCamera;
-        camera = Camera.Create();
+        camera = Camera.Create(window.Width, window.Height);
 
         var config = configurationManager.GetConfigOrDefault<CameraStateConfig>();
 
-        camera.Position = config.Position;
-        camera.Target = config.Target;
-        camera.Pitch = config.Pitch;
-        camera.Yaw = config.Yaw;
+        camera.MoveTo(config.Position);
+        camera.SetTarget(config.Target);
+        camera.SetRotation(config.Yaw, config.Pitch, 0);
+        
+        system.CurrentCamera = MemoryUtils.AsPointer(system.DefaultCamera);
+    }
 
-        //camera.Position = Vector3.UnitZ * -10 + Vector3.UnitY * 10;
-        camera.AspectRatio = window.Width / (float)window.Height;
-        //camera.ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.Fov, camera.AspectRatio, camera.NearPlane, camera.FarPlane);
-        camera.ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(camera.Fov, camera.AspectRatio, camera.NearPlane, camera.FarPlane);
 
-        //camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
+    [System]
+    internal static void Update(ref CameraSystem system, in InputState inputState, in Window window)
+    {
+        ref var camera = ref *system.CurrentCamera;
+
+        //NOTE(Jens): This is not a very nice way to do it, but we need to update movement after all other properties.
+        Vector3 movement = default;
+        var isInFreeLookMode = camera.Id == system.DefaultCamera.Id;
+        if (isInFreeLookMode)
+        {
+            movement = UpdateFreelookCamera(ref camera, inputState, window);
+        }
+        camera.RotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
+        //var rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
+
+        camera.Forward = Vector3.Transform(Camera.DefaultForward, camera.RotationMatrix);
+        
+        
+        var rotatationYMatrix = Matrix4x4.CreateRotationY(camera.Yaw);
+        camera.Right = Vector3.Transform(Camera.DefaultRight, rotatationYMatrix);
+        camera.Up = Vector3.Transform(Camera.DefaultUp, rotatationYMatrix);
+        camera.Target = Vector3.Normalize(camera.Forward);
+
+        if (isInFreeLookMode)
+        {
+            camera.MoveTowardsTarget(movement);
+        }
+
+        camera.Target = camera.Position + camera.Target;
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
+
         camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
         camera.ViewProjectionMatrixTransposed = Matrix4x4.Transpose(camera.ViewProjectionMatrix);
+
         var inverseResult = Matrix4x4.Invert(camera.ViewProjectionMatrix, out camera.InverseViewProjectionMatrix);
         Debug.Assert(inverseResult, "Failed to invert the View Projection Matrix. Why?");
     }
 
-    [System]
-    internal static void Update(ref CameraSystem system, in InputState inputState, UIManager uiManager, in Window window)
+    private static Vector3 UpdateFreelookCamera(ref Camera camera, in InputState inputState, in Window window)
     {
         const float mouseLookMultiplier = 0.002f;
         var speed = inputState.IsKeyDown(KeyCode.Shift) ? 0.2f : 0.1f;
-
-        ref var camera = ref system.DefaultCamera;
 
         Vector3 movement = default;
 
@@ -200,27 +145,10 @@ public partial struct CameraSystem
             camera.Pitch = Math.Clamp(camera.Pitch, -Camera.PitchClampValue, Camera.PitchClampValue);
 
             camera.Yaw += inputState.MousePositionDelta.X * mouseLookMultiplier;
+
         }
 
-        var rotationMatrix = Matrix4x4.CreateFromYawPitchRoll(camera.Yaw, camera.Pitch, camera.Roll);
-        camera.Target = Vector3.Normalize(Vector3.Transform(Camera.DefaultForward, rotationMatrix));
-
-        var rotatationYMatrix = Matrix4x4.CreateRotationY(camera.Yaw);
-        camera.Right = Vector3.Transform(Camera.DefaultRight, rotatationYMatrix);
-        camera.Up = Vector3.Transform(Camera.DefaultUp, rotatationYMatrix);
-        camera.Forward = Vector3.Transform(Camera.DefaultForward, rotationMatrix);
-
-        camera.Position += movement.X * camera.Right;
-        camera.Position += movement.Z * camera.Forward;
-        camera.Position += movement.Y * camera.Up;
-        camera.Target = camera.Position + camera.Target;
-        camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
-
-        camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
-        camera.ViewProjectionMatrixTransposed = Matrix4x4.Transpose(camera.ViewProjectionMatrix);
-
-        var inverseResult = Matrix4x4.Invert(camera.ViewProjectionMatrix, out camera.InverseViewProjectionMatrix);
-        Debug.Assert(inverseResult, "Failed to invert the View Projection Matrix. Why?");
+        return movement;
     }
 
     [System(SystemStage.Shutdown)]
@@ -234,5 +162,16 @@ public partial struct CameraSystem
             Target = camera.Target,
             Yaw = camera.Yaw
         });
+    }
+
+    public readonly void SetFreeLookCamera()
+    {
+        //TODO(Jens): This is a dirty hack to support swapping camera. I want it to work in some other way in the future.
+        Unsafe.AsRef(in this).CurrentCamera = MemoryUtils.AsPointer(DefaultCamera);
+    }
+    public readonly void SetCamera(ref Camera camera)
+    {
+        //TODO(Jens): This is a dirty hack to support swapping camera. I want it to work in some other way in the future.
+        Unsafe.AsRef(in this).CurrentCamera = MemoryUtils.AsPointer(camera);
     }
 }

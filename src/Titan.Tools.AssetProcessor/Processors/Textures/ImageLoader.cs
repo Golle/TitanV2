@@ -8,13 +8,13 @@ using Titan.Tools.AssetProcessor.Metadata.Types;
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
 internal class ImageLoader
 {
-    private static readonly WicImageReader _imageReader = new();
-
+    //private static readonly WicImageReader _imageReader = new();
     private const string DirectXTexFileName = "texconv.exe";
 
     public static Image? LoadAndCompress(string path, CompressionType compression, string tempPath)
     {
-        var image = _imageReader.LoadImage(path);
+        using var imageReader = new WicImageReader();
+        var image = imageReader.LoadImage(path);
         if (image == null)
         {
             Logger.Error<ImageLoader>("Failed to load image");

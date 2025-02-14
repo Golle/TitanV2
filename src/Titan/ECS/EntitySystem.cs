@@ -55,7 +55,7 @@ internal unsafe partial struct EntitySystem
         {
             foreach (ref readonly var @event in entityDestroyed)
             {
-                Logger.Info<EntitySystem>($"Entity destroyed :O: Entity = {@event.Entity.Id}");
+                //Logger.Info<EntitySystem>($"Entity destroyed :O: Entity = {@event.Entity.Id}");
 
                 var version = unchecked((byte)(@event.Entity.Version + 1));
                 var id = @event.Entity.IdNoVersion;
@@ -77,7 +77,7 @@ internal unsafe partial struct EntitySystem
 
     public void Destroy(Entity entity)
     {
-        Logger.Trace<EntitySystem>($"Destroying entity: {entity.IdNoVersion}");
+        //Logger.Trace<EntitySystem>($"Destroying entity: {entity.IdNoVersion}");
         _writer.Send(new EntityDestroyedEvent(entity));
     }
 }

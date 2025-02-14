@@ -7,6 +7,7 @@ using Titan.Core.Logging;
 using Titan.Core.Memory;
 using Titan.Core.Memory.Allocators;
 using Titan.Graphics.D3D12;
+using Titan.Materials;
 using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.Resources;
@@ -27,6 +28,7 @@ public struct SubMeshData
 {
     public uint IndexStartLocation;
     public uint IndexCount;
+    public uint MaterialIndex;
 }
 
 
@@ -35,6 +37,7 @@ public ref struct MeshArgs
     public required ReadOnlySpan<Vertex> Vertices;
     public required ReadOnlySpan<uint> Indicies;
     public ReadOnlySpan<SubMesh> SubMeshes;
+    public ReadOnlySpan<Handle<MaterialData>> Materials;
 }
 
 [UnmanagedResource]
@@ -64,8 +67,8 @@ internal unsafe partial struct MeshSystem
         var vertexCount = (uint)(vertexMemorySize / sizeof(Vertex));
         var indexCount = (uint)(indexMemorySize / sizeof(uint));
 
-        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Structured, cpuVisible: false, shaderVisible: true));
-        system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Index, cpuVisible: false, shaderVisible: false));
+        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
+        system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
 
         if (system->StaticVertexBuffer.IsInvalid)
         {
@@ -103,16 +106,16 @@ internal unsafe partial struct MeshSystem
 
         var data = MeshData.AsPtr(handle);
         Debug.Assert(args.SubMeshes.Length <= data->SubMeshes.Size);
-
         data->VertexStartLocation = GetNextVertexStartLocation(vertexCount);
         var indexStartLocation = GetNextIndicesStartLocation(indexCount);
-
         // We only support submeshes, so when no submeshes are available we just add a single submesh with all the indices.
         if (args.SubMeshes.IsEmpty)
         {
             data->SubMeshCount = 1;
             data->SubMeshes[0].IndexStartLocation = indexStartLocation;
             data->SubMeshes[0].IndexCount = indexCount;
+            Debug.Fail("This has not been implemented, not sure what data we have here. Fix when this occurs.");
+            //data->SubMeshes[0].MaterialIndex = ?
         }
         else
         {
@@ -121,7 +124,8 @@ internal unsafe partial struct MeshSystem
                 data->SubMeshes[data->SubMeshCount++] = new()
                 {
                     IndexCount = (uint)submesh.IndexCount,
-                    IndexStartLocation = (uint)(indexStartLocation + submesh.IndexOffset)
+                    IndexStartLocation = (uint)(indexStartLocation + submesh.IndexOffset),
+                    MaterialIndex = args.Materials[submesh.MaterialIndex] //NOTE(Jens): This will always be set in the current implementation.
                 };
             }
         }
@@ -136,7 +140,7 @@ internal unsafe partial struct MeshSystem
                 return Handle<MeshData>.Invalid;
             }
 
-            if (!ResourceManager->Upload(StaticIndexBuffer, new TitanBuffer(indices, (uint)(sizeof(uint) * indexCount)), data->SubMeshes[0].IndexStartLocation))
+            if (!ResourceManager->Upload(StaticIndexBuffer, new TitanBuffer(indices, sizeof(uint) * indexCount), data->SubMeshes[0].IndexStartLocation))
             {
                 Logger.Error<MeshSystem>("Failed to upload Indices.");
                 MeshData.SafeFree(handle); // TODO: slot is lost, neeeeed to fix.
@@ -160,14 +164,18 @@ internal unsafe partial struct MeshSystem
 
     private uint GetNextIndicesStartLocation(uint count)
     {
-        var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(uint) * count), 256);
-        return Interlocked.Add(ref NextIndex, alignedIncrement) - alignedIncrement;
+        var size = (uint)sizeof(uint) * count;
+        return Interlocked.Add(ref NextIndex, size) - size;
+        //var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(uint) * count), 256);
+        //return Interlocked.Add(ref NextIndex, alignedIncrement) - alignedIncrement;
     }
 
     private uint GetNextVertexStartLocation(uint count)
     {
-        var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(Vertex) * count), 256);
-        return Interlocked.Add(ref NextVertex, alignedIncrement) - alignedIncrement;
+        var size = (uint)sizeof(Vertex) * count;
+        return Interlocked.Add(ref NextVertex, size) - size;
+        //var alignedIncrement = MemoryUtils.AlignToUpper((uint)(sizeof(Vertex) * count), 256);
+        //return Interlocked.Add(ref NextVertex, alignedIncrement) - alignedIncrement;
     }
 
     [System(SystemStage.Shutdown)]

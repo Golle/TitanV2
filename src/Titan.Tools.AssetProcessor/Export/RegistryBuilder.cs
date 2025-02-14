@@ -109,6 +109,18 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
 
+    private static string CreateMaterialDescriptor(AssetDescriptor assetDescriptor, AssetFileMetadata metadata)
+    {
+        ref readonly var material = ref assetDescriptor.Material;
+        var content =
+            $@"{nameof(AssetDescriptor.Material)} = new()
+            {{
+                {nameof(MaterialDescriptor.MaterialCount)} = {material.MaterialCount}
+            }}";
+
+        return CreateBaseDescriptor(assetDescriptor, content, metadata);
+    }
+
     private static string CreateBaseDescriptor(in AssetDescriptor baseDescriptor, string content, AssetFileMetadata metadata)
     {
         //NOTE(Jens): Consider removing AssetPath, it can be useful in debug/tracing/logging but it will use some additional memory.
@@ -155,11 +167,15 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
             static void AddDependencies(Span<uint> slice, List<(AssetDescriptor Descriptor, AssetFileMetadata Metadata)> assets, AssetFileMetadata current)
             {
                 var total = 0;
-                for (var i = 0; i < assets.Count; ++i)
+                // Need to loop through dependencies from the one that has dependencies so they are written in the order they are added.
+                foreach (var dependency in current.Dependencies)
                 {
-                    if (current.Dependencies.Contains(assets[i].Metadata))
+                    for (var i = 0; i < assets.Count; ++i)
                     {
-                        slice[total++] = (uint)i;
+                        if (assets[i].Metadata == dependency)
+                        {
+                            slice[total++] = (uint)i;
+                        }
                     }
                 }
                 Debug.Assert(current.Dependencies.Count == total);
@@ -223,6 +239,7 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     AssetType.Audio => CreateAudioDescriptor(descriptor, metadata),
                     AssetType.Font => CreateFontDescriptor(descriptor, metadata),
                     AssetType.Sprite => CreateSpriteDescriptor(descriptor, metadata),
+                    AssetType.Material => CreateMaterialDescriptor(descriptor, metadata),
                     _ => throw new NotImplementedException($"The conversion for {descriptor.Type} has not been implemented yet")
                 };
 
@@ -302,6 +319,20 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     _builder
                         .EndScope()
                         .EndScope();
+                }
+                else if (descriptor.Type == AssetType.Material && metadata is MtlMetadata mtlMetadata)
+                {
+                    _builder
+                        .AppendLine($"public static class {propertyName}")
+                        .BeginScope()
+                        .AppendLine($"public static ref readonly {typeof(AssetDescriptor).FullName} Asset => ref {AssetMemberName}[{index}];");
+                    for (var i = 0; i < mtlMetadata.MaterialNames.Length; ++i)
+                    {
+                        var materialName = StringHelper.ToPropertyName(mtlMetadata.MaterialNames[i] ?? $"UnnamedMaterial{i}");
+                        _builder.AppendLine($"public const byte {materialName} = {i};");
+                    }
+
+                    _builder.EndScope();
                 }
                 else
                 {

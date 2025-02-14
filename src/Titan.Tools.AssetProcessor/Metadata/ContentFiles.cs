@@ -8,7 +8,7 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
 {
     private const string MetadataFileExtension = ".kmeta";
     private const string BinaryFileExtension = ".kbin";
-    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".mtl"];
+    private static readonly string[] IgnoredFileExtensions = [".md", ".hlsli", ".blend", ".blend1"];
 
     public async Task<bool> VerifyMetadataFiles()
     {
@@ -61,25 +61,10 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
 
     }
 
-    public async Task<AssetFileMetadata[]?> GetFiles(string? singleFile)
+    public async Task<AssetFileMetadata[]?> GetFiles()
     {
         ConcurrentDictionary<Guid, AssetFileMetadata> metadatas = new();
-
-        if (singleFile != null)
-        {
-            var filePath = Path.GetFullPath(singleFile);
-            var contentFullPath = Path.GetFullPath(contentFolder);
-            if (!filePath.StartsWith(contentFullPath, StringComparison.InvariantCultureIgnoreCase))
-            {
-                Logger.Error<ContentFiles>($"The target file is not in the content folder. Content Folder =  {contentFullPath} File = {filePath}");
-                throw new InvalidOperationException("File is not part of the content.");
-            }
-        }
-
-        var files = singleFile != null
-            ? GetSingleFile(singleFile)
-            : EnumerateFiles(contentFolder, $"*{MetadataFileExtension}");
-
+        var files = EnumerateFiles(contentFolder, $"*{MetadataFileExtension}");
         await Parallel.ForEachAsync(files, async (file, _) =>
         {
             var metadata = await ReadMetadata(file);
@@ -90,16 +75,19 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
             }
             var assetFilename = Path.GetFileNameWithoutExtension(file);
             var filename = Path.GetFileNameWithoutExtension(assetFilename);
-            var binaryFileName = $"{filename}{BinaryFileExtension}";
+            var extension = Path.GetExtension(assetFilename).ToLowerInvariant();
+            var binaryFileName = $"{filename}{extension}{BinaryFileExtension}";
             var directory = Path.GetDirectoryName(file)!;
             metadata.ContentFileFullPath = Path.Combine(directory, assetFilename);
             metadata.ContentFileRelativePath = Path.GetRelativePath(contentFolder, metadata.ContentFileFullPath);
+            metadata.MetadataFileFullPath = file;
+            metadata.MetadataFileRelativePath = Path.GetRelativePath(contentFolder, file);
             var relativeFolder = Path.GetDirectoryName(metadata.ContentFileRelativePath)!;
 
             metadata.BinaryFileRelativePath = Path.Combine(relativeFolder, binaryFileName);
             metadata.BinaryFileFullPath = Path.Combine(binaryFolder, metadata.BinaryFileRelativePath);
 
-            metadata.FileExtension = Path.GetExtension(assetFilename).ToLowerInvariant();
+            metadata.FileExtension = extension;
             if (!metadatas.TryAdd(metadata.Id, metadata))
             {
                 throw new InvalidOperationException("Failed to add metadata. Probably duplicate key.");
@@ -170,25 +158,4 @@ internal sealed class ContentFiles(string contentFolder, string binaryFolder, Me
 
     private static IEnumerable<string> EnumerateFiles(string basePath, string pattern)
         => Directory.EnumerateFiles(basePath, pattern, SearchOption.AllDirectories);
-
-    private static IEnumerable<string> GetSingleFile(string filePath)
-    {
-        var extension = Path.GetExtension(filePath);
-        if (extension == MetadataFileExtension)
-        {
-            // metadata file changed
-            yield return filePath;
-        }
-        else
-        {
-            var filename = Path.GetFileName(filePath);
-            var directory = Path.GetDirectoryName(filePath)!;
-            var metadataPath = Path.Combine(directory, $"{filename}{MetadataFileExtension}");
-            if (!File.Exists(metadataPath))
-            {
-                throw new FileNotFoundException($"The metadata file for {filePath} does not exist.");
-            }
-            yield return metadataPath;
-        }
-    }
 }

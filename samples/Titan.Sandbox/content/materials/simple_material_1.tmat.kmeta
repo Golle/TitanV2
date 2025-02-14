@@ -1,0 +1,19 @@
+{
+  "$type": "MaterialMetadata",
+  "diffuse": [
+    255,
+    255,
+    255,
+    255
+  ],
+  "albedoMap": null,
+  "normalMap": null,
+  "id": "068ced69-5626-4d5f-97a2-40e04569173f",
+  "name": "SimpleMaterial1",
+  "fileSize": 61,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null
+}

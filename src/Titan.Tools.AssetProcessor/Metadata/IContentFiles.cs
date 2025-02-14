@@ -3,5 +3,5 @@ namespace Titan.Tools.AssetProcessor.Metadata;
 internal interface IContentFiles
 {
     Task<bool> VerifyMetadataFiles();
-    Task<AssetFileMetadata[]?> GetFiles(string? singleFile = null);
+    Task<AssetFileMetadata[]?> GetFiles();
 }

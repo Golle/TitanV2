@@ -1,7 +1,8 @@
 {
     "files.associations": {
         "*.kmeta": "json",
-        "*.shaderconf" : "json"
+        "*.shaderconf" : "json",
+        "*.tmat" : "json"
     },
     // "editor.tabSize": 2,
     // "editor.insertSpaces": true,

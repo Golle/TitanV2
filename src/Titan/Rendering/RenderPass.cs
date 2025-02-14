@@ -25,8 +25,15 @@ public struct RenderPass
     public BlendStateType BlendState;
     public CullMode CullMode;
     public FillMode FillMode;
+    public DepthBufferMode DepthBufferMode;
     public PrimitiveTopology Topology;
     public Viewport Viewport;
     public Rect ScissorRect;
     public sbyte Order;
+
+
+#if HOT_RELOAD_ASSETS
+    // to support hot reload
+    internal ulong ShaderHash;
+#endif
 }

@@ -8,6 +8,7 @@ using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
 using Titan.UI.Widgets;
+using Titan.Windows;
 
 namespace Titan.Editor;
 
@@ -61,24 +62,10 @@ internal partial struct DebugUISystem
     private static float _fps;
     private static readonly Stopwatch _timer = Stopwatch.StartNew();
     [System]
-    public static void PrintStats(UIManager ui, in InputState inputState)
+    public static void PrintStats(UIManager ui, in InputState inputState, in Window window)
     {
+        var context = ui.GiveMe();
         _frames++;
-        if (inputState.MouseVisible)
-        {
-            ui.Text(new(800, 200), "Mouse Visible"u8, _font, Color.Magenta);
-        }
-        else
-        {
-            ui.Text(new(800, 200), "Mouse Hidden"u8, _font, Color.Magenta);
-
-            Inline256<byte> text = default;
-            inputState.MousePositionDelta.X.TryFormat(text, out var size);
-            ui.Text(new(870, 300), text[..size], _font, Color.Magenta);
-            inputState.MousePositionDelta.Y.TryFormat(text, out size);
-            ui.Text(new(870, 400), text[..size], _font, Color.Magenta);
-        }
-
         if (_timer.Elapsed.TotalSeconds > 1.0)
         {
             _fps = MathF.Round((float)(_frames / _timer.Elapsed.TotalSeconds));
@@ -86,11 +73,15 @@ internal partial struct DebugUISystem
             _timer.Restart();
         }
 
-        Inline32<byte> fpsText = default;
-        "FPS:"u8.CopyTo(fpsText.AsSpan());
-        _fps.TryFormat(fpsText.AsSpan()[4..], out var bytes);
-        ui.Text(new Vector2(0, 100), fpsText[..(bytes + 4)], _font, Color.Red);
+        context.Begin(1);
 
+        Inline32<char> fpsText = default;
+        _fps.TryFormat(fpsText.AsSpan(), out var bytes);
+        var offset = new Vector2(window.Width-36, window.Height-22);
+        context.Label(offset, new(200, 20), fpsText[..bytes], Color.White);
+        context.End();
+        
+        
         //NOTE(Jens): disable this for now
         return;
         _testStyle.NinePatch = UIImageStyleNinePatch.FromValue(24);
