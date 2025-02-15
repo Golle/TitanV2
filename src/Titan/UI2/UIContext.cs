@@ -8,6 +8,7 @@ using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
+using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.UI;
 using Titan.UI.Resources;
@@ -248,6 +249,22 @@ public unsafe struct UIContext
     public void Image(in Vector2 offset, in SizeF scale, AssetHandle<TextureAsset> image)
     {
 
+
+    }
+
+    public void Image(in Vector2 offset, in SizeF size, int textureId)
+    {
+        
+        AddWidget(new UIWidget
+        {
+            Color = Color.White,
+            Id = _nextId++,
+            Offset = offset,
+            Size = size,
+            TextureCoordinates = new TextureCoordinate(default, Vector2.One),
+            Type = UIElementType.Sprite,
+            TextureId = textureId
+        });
 
     }
 

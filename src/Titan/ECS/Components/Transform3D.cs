@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Titan.Core;
 using Titan.Core.Maths;
+using Titan.ECS.Systems;
 using Titan.Materials;
 using Titan.Meshes;
 
@@ -65,6 +66,16 @@ public partial struct Light
     public float Intensity;
     [FieldOffset(20)]
     public Vector3 Direction;
+
+    [FieldOffset(32)]
+    public Matrix4x4 LightViewProj;
+}
+
+[Component]
+public partial struct ShadowCaster
+{
+    public Matrix4x4 Projection;
+    public Matrix4x4 ViewMatrix;
 }
 
 public enum LightType : byte

@@ -159,12 +159,12 @@ public static class D3D12Helpers
                 RegisterSpace = registerSpace,
                 ShaderRegister = register,
                 ShaderVisibility = shadowMapVisibility,
-                AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
                 Filter = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
                 ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+                BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
                 MaxLOD = D3D12_FLOAT32_MAX
             },
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)

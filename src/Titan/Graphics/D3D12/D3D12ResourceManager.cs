@@ -774,7 +774,7 @@ public unsafe partial struct D3D12ResourceManager
         var cullMode = args.CullMode == 0 ? D3D12_CULL_MODE.D3D12_CULL_MODE_NONE : (D3D12_CULL_MODE)args.CullMode;
 
         var psoStream = new D3D12PipelineSubobjectStream()
-                .Blend(D3D12Helpers.GetBlendState(args.BlendState)) //TODO(Jens): Should be configurable, but keep it simple for now.
+                .Blend(D3D12Helpers.GetBlendState(args.BlendState))
                 .Topology(args.Topology)
                 .Razterizer(D3D12_RASTERIZER_DESC.Default() with
                 {

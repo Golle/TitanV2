@@ -43,7 +43,7 @@ public enum DepthBufferMode : byte
 }
 
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
-public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f, bool ShaderVisible = false);
+public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f, bool ShaderVisible = false, int Width = -1, int Height = -1);
 
 public ref struct CreateRenderPassArgs
 {
@@ -54,7 +54,7 @@ public ref struct CreateRenderPassArgs
     public DepthBufferMode DepthBufferMode;
 
     public AssetDescriptor VertexShader;
-    public AssetDescriptor PixelShader;
+    public AssetDescriptor? PixelShader;
 
     public BlendStateType BlendState;
     public CullMode CullMode;
@@ -174,7 +174,7 @@ public unsafe partial struct RenderGraph
 
         pass->RootSignature = _resourceManager->CreateRootSignature(rootSignatureArgs);
         //NOTE(Jens): Need support for Compute shaders as well.
-        pass->PixelShader = _assetsManager.Load<ShaderAsset>(args.PixelShader);
+        pass->PixelShader = args.PixelShader.HasValue ? _assetsManager.Load<ShaderAsset>(args.PixelShader.Value) : AssetHandle<ShaderAsset>.Invalid;
         pass->VertexShader = _assetsManager.Load<ShaderAsset>(args.VertexShader);
 
         pass->Outputs = _allocator.AllocateArray<Handle<Texture>>(args.Outputs.Length);
@@ -212,7 +212,8 @@ public unsafe partial struct RenderGraph
             .WithConstant(numberOfInputs, ShaderVisibility.Pixel, register: 0, space: 10)
             .WithConstantBuffer(ConstantBufferFlags.Static, ShaderVisibility.All, register: 0, space: 11)
             .WithSampler(SamplerState.Point, ShaderVisibility.Pixel, register: 0, space: 10)
-            .WithSampler(SamplerState.Linear, ShaderVisibility.Pixel, register: 1, space: 10);
+            .WithSampler(SamplerState.Linear, ShaderVisibility.Pixel, register: 1, space: 10)
+            .WithSampler(SamplerState.Shadow, ShaderVisibility.Pixel, register: 2, space: 10);
 
     public readonly bool Begin(in Handle<RenderPass> handle, out CommandList commandList)
     {
@@ -311,6 +312,12 @@ public unsafe partial struct RenderGraph
     {
         var index = handle.Value - HandleOffset;
         return _renderPasses[index].RootSignature;
+    }
+
+    public readonly Handle<Texture> GetDepthBuffer(in Handle<RenderPass> handle)
+    {
+        var index = handle.Value - HandleOffset;
+        return _renderPasses[index].DepthBuffer;
     }
 
     public readonly void End(in Handle<RenderPass> handle)
@@ -501,7 +508,7 @@ public unsafe partial struct RenderGraph
             RenderTargets = renderPass.Outputs,
             RootSignature = renderPass.RootSignature,
             VertexShader = _assetsManager.Get(renderPass.VertexShader).ShaderByteCode,
-            PixelShader = _assetsManager.Get(renderPass.PixelShader).ShaderByteCode,
+            PixelShader = renderPass.PixelShader.IsValid ? _assetsManager.Get(renderPass.PixelShader).ShaderByteCode : TitanBuffer.Empty,
             Topology = renderPass.Topology switch
             {
                 PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
@@ -722,7 +729,7 @@ public unsafe partial struct RenderGraph
     private ulong HashFromShaders(AssetHandle<ShaderAsset> shader1, AssetHandle<ShaderAsset> shader2)
     {
         var a = _assetsManager.Get(shader1).ShaderByteCode;
-        var b = _assetsManager.Get(shader2).ShaderByteCode;
+        var b = shader2.IsValid ? _assetsManager.Get(shader2).ShaderByteCode : a;
         var c = (ulong)a.Size + (ulong)a.AsPointer();
         var d = (ulong)b.Size + (ulong)b.AsPointer();
         return unchecked(c + d);

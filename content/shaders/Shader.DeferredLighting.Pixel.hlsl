@@ -51,12 +51,37 @@ float3 ApplyLighting(LightInstanceData light, float3 normal, float3 albedoColor)
     return albedoColor * (directLight + ambientLight);
 }
 
+// Converts world position to shadow map UV + depth
+float SampleShadow(LightInstanceData light, Texture2D shadowMap, float3 worldPos)
+{
+    // Transform world position into light space
+    float4 shadowCoord = mul(float4(worldPos, 1.0), light.LightViewProj);
+    shadowCoord.xyz /= shadowCoord.w; // Perspective divide
+
+    float ShadowBias =0.001f;
+    
+    float2 shadowUV = shadowCoord.xy * 0.5 + 0.5;
+    shadowUV.y = 1.0 - shadowUV.y;
+    float shadowDepth = shadowCoord.z - ShadowBias; // Apply bias to reduce artifacts
+
+// return shadowUV;
+    // Check if the position is outside the shadow map range
+    if (shadowUV.x < 0.0 || shadowUV.x > 1.0 || shadowUV.y < 0.0 || shadowUV.y > 1.0)
+        return 1.0; // Fully lit outside the shadow area
+
+    // Sample shadow map using hardware PCF (Percentage-Closer Filtering)
+    float shadowFactor = shadowMap.SampleCmpLevelZero(ShadowMapSampler, shadowUV, shadowDepth);
+
+    return shadowFactor;
+}
+
 float4 main(LightsVertexOutput input): SV_TARGET0
 {
     Texture2D gPosition = GetInputTexture(PositionIndex);
     Texture2D gAlbedo = GetInputTexture(AlbedoIndex);
     Texture2D gNormal = GetInputTexture(NormalIndex);
     Texture2D gSpecular = GetInputTexture(SpecularIndex);
+    Texture2D shadowMap = GetInputTexture(ShadowMapIndex);
 
     float3 specular = gSpecular.Sample(PointSampler, input.Texture).xyz;
     float3 position = gPosition.Sample(PointSampler, input.Texture).xyz;
@@ -66,7 +91,7 @@ float4 main(LightsVertexOutput input): SV_TARGET0
     
 
     LightInstanceData light = GetLight(input.InstanceId);
-
+    
     float3 lighting;
     switch(light.type) {
         case 0:
@@ -77,9 +102,16 @@ float4 main(LightsVertexOutput input): SV_TARGET0
             break;
         case 2:
             lighting = ApplyLighting(light, normal, albedoColor);
+            float shadowFactor = SampleShadow(light, shadowMap, position);
+            // float depth = shadowMap.SampleLevel(PointSampler, shadowFactor, 0).r;
+            // return float4(depth.xxx, 1.0);
+            // return float4(shadowFactor, 0.0, 1.0);
+            // float shadowFactor = SampleShadow(light, shadowMap, position);
+            lighting = lighting * (shadowFactor+0.04f);
             break;
     }
     
+
     lighting = pow(lighting, 1.0 / 2.2); // Gamma correction TODO: should we have this?
 
     return float4(lighting, 1.0);
