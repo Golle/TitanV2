@@ -19,6 +19,13 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         Debug.Assert(texture != null);
         commandList->OMSetRenderTargets(1, &texture->RTV.CPU, 1, null);
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SetPipelineState(PipelineState* pipelineState)
+    {
+        Debug.Assert(pipelineState != null);
+        commandList->SetPipelineState(pipelineState->Resource);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]

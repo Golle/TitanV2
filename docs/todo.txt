@@ -125,6 +125,12 @@
 The asset processor is currently just a command line tool that will walk through all assets in a folder and put them into a single binary, based on some configuration in the metadata files.   
 The long term goal is to have a hot reload system, that can detect changes and create reloadable files that the engine can consume in debug builds. 
 
+
+# Shaders
+    # Compilation
+    [ ] Add support for DEFINES
+    [ ] Add support for multiple compilations of the same file, with different defines.disco
+
 # Hot Reload
 
 ## Asset Processor

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Titan.Application;
 using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
@@ -45,6 +46,13 @@ public enum DepthBufferMode : byte
 public record struct RenderTargetConfig(StringRef Name, RenderTargetFormat Format, Color OptimizedClearColor = default, float ClearValue = 1f);
 public record struct DepthBufferConfig(StringRef Name, DepthBufferFormat Format, float ClearValue = 1f, bool ShaderVisible = false, int Width = -1, int Height = -1);
 
+
+public readonly record struct ShaderGroup
+{
+    public AssetDescriptor? VertexShader { get; init; }
+    public AssetDescriptor? PixelShader { get; init; }
+}
+
 public ref struct CreateRenderPassArgs
 {
     public Func<RootSignatureBuilder, RootSignatureBuilder>? RootSignatureBuilder;
@@ -53,8 +61,17 @@ public ref struct CreateRenderPassArgs
     public DepthBufferConfig? DepthBuffer;
     public DepthBufferMode DepthBufferMode;
 
+
+    [Obsolete]
     public AssetDescriptor VertexShader;
+    [Obsolete]
     public AssetDescriptor? PixelShader;
+
+    public ReadOnlySpan<ShaderGroup> Shaders;
+
+
+    public Viewport? Viewport;
+    public Rect? ScissorRect;
 
     public BlendStateType BlendState;
     public CullMode CullMode;
@@ -94,7 +111,6 @@ public unsafe partial struct RenderGraph
     private Inline16<Ptr<RenderPass>> _sortedPasses;
     private Inline8<RenderPassGroup> _groups;
 
-
     private D3D12ResourceManager* _resourceManager;
     private D3D12CommandQueue* _commandQueue;
     private D3D12Allocator* _d3d12Allocator;
@@ -102,7 +118,6 @@ public unsafe partial struct RenderGraph
 
     private AssetsManager _assetsManager;
     private AtomicBumpAllocator _allocator;
-
 
     private bool _isReady;
     private int _renderPassCount;
@@ -174,8 +189,37 @@ public unsafe partial struct RenderGraph
 
         pass->RootSignature = _resourceManager->CreateRootSignature(rootSignatureArgs);
         //NOTE(Jens): Need support for Compute shaders as well.
-        pass->PixelShader = args.PixelShader.HasValue ? _assetsManager.Load<ShaderAsset>(args.PixelShader.Value) : AssetHandle<ShaderAsset>.Invalid;
-        pass->VertexShader = _assetsManager.Load<ShaderAsset>(args.VertexShader);
+
+        if (args.Shaders.Length == 0)
+        {
+            Logger.Warning<RenderGraph>($"Render pass {name} is using old shader structure.");
+            pass->VertexShaders = _allocator.AllocateArray<AssetHandle<ShaderAsset>>(1);
+            pass->PixelShaders = _allocator.AllocateArray<AssetHandle<ShaderAsset>>(1);
+            pass->PipelineStates = _allocator.AllocateArray<Handle<PipelineState>>(1);
+            pass->PixelShaders[0] = args.PixelShader.HasValue ? _assetsManager.Load<ShaderAsset>(args.PixelShader.Value) : AssetHandle<ShaderAsset>.Invalid;
+            pass->VertexShaders[0] = _assetsManager.Load<ShaderAsset>(args.VertexShader);
+
+#if HOT_RELOAD_ASSETS
+            pass->ShaderHashes = _allocator.AllocateArray<ulong>(1);
+#endif
+        }
+        else
+        {
+            pass->VertexShaders = _allocator.AllocateArray<AssetHandle<ShaderAsset>>(args.Shaders.Length);
+            pass->PixelShaders = _allocator.AllocateArray<AssetHandle<ShaderAsset>>(args.Shaders.Length);
+            pass->PipelineStates = _allocator.AllocateArray<Handle<PipelineState>>(args.Shaders.Length);
+
+            for (var i = 0; i < args.Shaders.Length; ++i)
+            {
+                ref readonly var shader = ref args.Shaders[i];
+                pass->VertexShaders[i] = shader.VertexShader.HasValue ? _assetsManager.Load<ShaderAsset>(shader.VertexShader.Value) : AssetHandle<ShaderAsset>.Invalid;
+                pass->PixelShaders[i] = shader.PixelShader.HasValue ? _assetsManager.Load<ShaderAsset>(shader.PixelShader.Value) : AssetHandle<ShaderAsset>.Invalid;
+            }
+
+#if HOT_RELOAD_ASSETS
+            pass->ShaderHashes = _allocator.AllocateArray<ulong>(args.Shaders.Length);
+#endif
+        }
 
         pass->Outputs = _allocator.AllocateArray<Handle<Texture>>(args.Outputs.Length);
         pass->Inputs = _allocator.AllocateArray<Handle<Texture>>(args.Inputs.Length);
@@ -183,6 +227,11 @@ public unsafe partial struct RenderGraph
         pass->CullMode = args.CullMode;
         pass->FillMode = args.FillMode;
         pass->Topology = args.Topology;
+
+        pass->Viewport = args.Viewport ?? default;
+        pass->ScissorRect = args.ScissorRect ?? default;
+        pass->UseDefaultViewport = !args.Viewport.HasValue;
+
         pass->DepthBufferMode = args.DepthBufferMode;
         pass->Order = args.Order;
         for (var i = 0; i < args.Outputs.Length; ++i)
@@ -225,7 +274,8 @@ public unsafe partial struct RenderGraph
         var index = handle.Value - HandleOffset;
         var pass = _renderPasses.AsPointer() + index;
 
-        pass->CommandList = commandList = _commandQueue->GetCommandList(pass->PipelineState);
+        //NOTE(Jens): We always reset the command list with the first Pipeline state (if multiple are present)
+        pass->CommandList = commandList = _commandQueue->GetCommandList(pass->PipelineStates[0]);
         pass->CommandList.SetGraphicsRootSignature(_resourceManager->Access(pass->RootSignature)->Resource);
         pass->CommandList.SetTopology(pass->Topology switch
         {
@@ -320,6 +370,15 @@ public unsafe partial struct RenderGraph
         return _renderPasses[index].DepthBuffer;
     }
 
+    public readonly void SetPipelineState(in Handle<RenderPass> handle, int pipelineStateIndex)
+    {
+        var index = handle.Value - HandleOffset;
+        ref readonly var pass = ref _renderPasses[index];
+        Debug.Assert(pipelineStateIndex >= 0 && pipelineStateIndex < pass.PipelineStates.Length);
+        var pipelineState = _resourceManager->Access(pass.PipelineStates[pipelineStateIndex]);
+        pass.CommandList.SetPipelineState(pipelineState);
+    }
+
     public readonly void End(in Handle<RenderPass> handle)
     {
         if (!IsReady || handle.IsInvalid)
@@ -362,7 +421,7 @@ public unsafe partial struct RenderGraph
     }
 
     [System(SystemStage.First)]
-    internal static void OnNewFrame(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in Window window, in InputState inputState)
+    internal static void OnNewFrame(ref RenderGraph graph, in D3D12ResourceManager resourceManager, in DXGISwapchain swapchain, in InputState inputState)
     {
         if (graph._isReady)
         {
@@ -380,21 +439,26 @@ public unsafe partial struct RenderGraph
             return;
         }
 
-        graph.SetDefaultViewPorts(window);
+        graph.SetDefaultViewPorts();
         graph.SortRenderGraph();
 
         graph._isReady = true;
         graph._backbufferHandle = swapchain.CurrentBackbuffer;
     }
 
-    private void SetDefaultViewPorts(in Window window)
+    private void SetDefaultViewPorts()
     {
         foreach (ref var pass in _renderPasses.AsSpan().Slice(0, _renderPassCount))
         {
+            if (!pass.UseDefaultViewport)
+            {
+                continue;
+            }
+
             pass.Viewport = new()
             {
-                Width = window.Width,
-                Height = window.Height,
+                Width = EngineState.WindowWidth,
+                Height = EngineState.WindowHeight,
                 MaxDepth = 1.0f,
                 MinDepth = 0.0f,
                 TopLeftX = 0,
@@ -402,11 +466,12 @@ public unsafe partial struct RenderGraph
             };
             pass.ScissorRect = new()
             {
-                Bottom = window.Height,
-                Right = window.Width,
+                Bottom = EngineState.WindowHeight,
+                Right = EngineState.WindowWidth,
                 Top = 0,
                 Left = 0
             };
+
         }
     }
 
@@ -450,14 +515,17 @@ public unsafe partial struct RenderGraph
     {
         foreach (ref readonly var pass in _renderPasses.AsReadOnlySpan()[.._renderPassCount])
         {
-            if (pass.VertexShader.IsValid && !_assetsManager.IsLoaded(pass.VertexShader))
+            for (var shaderIndex = 0; shaderIndex < pass.PixelShaders.Length; ++shaderIndex)
             {
-                return false;
-            }
+                if (pass.VertexShaders[shaderIndex].IsValid && !_assetsManager.IsLoaded(pass.VertexShaders[shaderIndex]))
+                {
+                    return false;
+                }
 
-            if (pass.PixelShader.IsValid && !_assetsManager.IsLoaded(pass.PixelShader))
-            {
-                return false;
+                if (pass.PixelShaders[shaderIndex].IsValid && !_assetsManager.IsLoaded(pass.PixelShaders[shaderIndex]))
+                {
+                    return false;
+                }
             }
         }
 
@@ -466,7 +534,7 @@ public unsafe partial struct RenderGraph
 
 
     [System(SystemStage.Last, SystemExecutionType.Inline)]
-    internal static void Last(ref RenderGraph graph, in Window window, EventReader<WindowResizeEvent> resizeEvent)
+    internal static void Last(ref RenderGraph graph, EventReader<WindowResizeEvent> resizeEvent)
     {
         if (!resizeEvent.HasEvents)
         {
@@ -475,7 +543,7 @@ public unsafe partial struct RenderGraph
         foreach (var _ in resizeEvent)
         {
             Logger.Warning<RenderGraph>("This is a hack, rethink this solution. Function = Last");
-            graph.SetDefaultViewPorts(window);
+            graph.SetDefaultViewPorts();
             break;
         }
     }
@@ -485,21 +553,25 @@ public unsafe partial struct RenderGraph
     {
         foreach (ref var pass in _renderPasses.AsSpan()[.._renderPassCount])
         {
-            pass.PipelineState = CreatePipelineState(pass);
-            if (pass.PipelineState.IsInvalid)
+            for (var shaderIndex = 0; shaderIndex < pass.PipelineStates.Length; ++shaderIndex)
             {
-                Logger.Error<RenderGraph>($"Failed to create the pipeline state for render pass. Name = {pass.Name.GetString()}");
-                return false;
-            }
+                pass.PipelineStates[shaderIndex] = CreatePipelineState(pass, shaderIndex);
+                if (pass.PipelineStates[shaderIndex].IsInvalid)
+                {
+                    Logger.Error<RenderGraph>($"Failed to create the pipeline state for render pass. Name = {pass.Name.GetString()}");
+                    return false;
+                }
 #if HOT_RELOAD_ASSETS
-            pass.ShaderHash = HashFromShaders(pass.VertexShader, pass.PixelShader);
+                pass.ShaderHashes[shaderIndex] = HashFromShaders(pass.VertexShaders[shaderIndex], pass.PixelShaders[shaderIndex]);
 #endif
+            }
+
         }
 
         return true;
     }
 
-    private Handle<PipelineState> CreatePipelineState(in RenderPass renderPass)
+    private Handle<PipelineState> CreatePipelineState(in RenderPass renderPass, int shaderIndex)
     {
         return _resourceManager->CreatePipelineState(new CreatePipelineStateArgs
         {
@@ -507,8 +579,8 @@ public unsafe partial struct RenderGraph
             Depth = GetDeptStencilArgs(renderPass, _resourceManager),
             RenderTargets = renderPass.Outputs,
             RootSignature = renderPass.RootSignature,
-            VertexShader = _assetsManager.Get(renderPass.VertexShader).ShaderByteCode,
-            PixelShader = renderPass.PixelShader.IsValid ? _assetsManager.Get(renderPass.PixelShader).ShaderByteCode : TitanBuffer.Empty,
+            VertexShader = _assetsManager.Get(renderPass.VertexShaders[shaderIndex]).ShaderByteCode,
+            PixelShader = renderPass.PixelShaders[shaderIndex].IsValid ? _assetsManager.Get(renderPass.PixelShaders[shaderIndex]).ShaderByteCode : TitanBuffer.Empty,
             Topology = renderPass.Topology switch
             {
                 PrimitiveTopology.Line => D3D12_PRIMITIVE_TOPOLOGY_TYPE.D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
@@ -683,11 +755,26 @@ public unsafe partial struct RenderGraph
     {
         Debug.Assert(handle.IsValid);
         var pass = _renderPasses.GetPointer(handle - HandleOffset);
-        _assetsManager.Unload(ref pass->PixelShader);
-        _assetsManager.Unload(ref pass->VertexShader);
-        _resourceManager->DestroyPipelineState(pass->PipelineState);
+        for (var i = 0; i < pass->PixelShaders.Length; ++i)
+        {
+            if (pass->VertexShaders[i].IsValid)
+            {
+                _assetsManager.Unload(ref pass->VertexShaders[i]);
+            }
+
+            if (pass->PixelShaders[i].IsValid)
+            {
+                _assetsManager.Unload(ref pass->PixelShaders[i]);
+            }
+
+            if (pass->PipelineStates[i].IsValid)
+            {
+                _resourceManager->DestroyPipelineState(pass->PipelineStates[i]);
+            }
+        }
+
         _resourceManager->DestroyRootSignature(pass->RootSignature);
-        pass = default;
+        *pass = default;
     }
 
     [System(SystemStage.PostShutdown)]
@@ -714,15 +801,19 @@ public unsafe partial struct RenderGraph
 
         foreach (ref var pass in graph._renderPasses.AsSpan()[..graph._renderPassCount])
         {
-            var hash = graph.HashFromShaders(pass.VertexShader, pass.PixelShader);
-            if (hash != pass.ShaderHash)
+            for (var shaderIndex = 0; shaderIndex < pass.ShaderHashes.Length; ++shaderIndex)
             {
-                Logger.Warning($"Hash is different, recreating pipeline state. Pass = {pass.Name.GetString()}");
-                //graph._isReady = false;
+                var hash = graph.HashFromShaders(pass.VertexShaders[shaderIndex], pass.PixelShaders[shaderIndex]);
+                if (hash != pass.ShaderHashes[shaderIndex])
+                {
+                    Logger.Warning($"Hash is different, recreating pipeline state. Pass = {pass.Name.GetString()} Shader Index = {shaderIndex}");
+                    //graph._isReady = false;
 
-                pass.PipelineState = graph.CreatePipelineState(pass);
-                pass.ShaderHash = hash;
+                    pass.PipelineStates[shaderIndex] = graph.CreatePipelineState(pass, shaderIndex);
+                    pass.ShaderHashes[shaderIndex] = hash;
+                }
             }
+
         }
     }
 

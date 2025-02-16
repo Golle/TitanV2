@@ -76,6 +76,7 @@ public readonly unsafe struct AssetsManager
         Debug.Assert(handle.IsValid);
 
         handle = default;
+        Logger.Warning<AssetsManager>("Unloading is not supported yet.");
     }
 
     public ref readonly T Get<T>(in AssetHandle<T> handle) where T : unmanaged, IAsset

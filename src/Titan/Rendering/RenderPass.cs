@@ -12,9 +12,11 @@ public struct RenderPass
     public StringRef Name;
 
     public Handle<RootSignature> RootSignature;
-    public Handle<PipelineState> PipelineState;
-    public AssetHandle<ShaderAsset> VertexShader;
-    public AssetHandle<ShaderAsset> PixelShader;
+
+    public TitanArray<Handle<PipelineState>> PipelineStates;
+
+    public TitanArray<AssetHandle<ShaderAsset>> VertexShaders;
+    public TitanArray<AssetHandle<ShaderAsset>> PixelShaders;
 
     public TitanArray<Handle<Texture>> Inputs;
     public TitanArray<Handle<Texture>> Outputs;
@@ -30,10 +32,11 @@ public struct RenderPass
     public Viewport Viewport;
     public Rect ScissorRect;
     public sbyte Order;
+    public bool UseDefaultViewport;
 
 
 #if HOT_RELOAD_ASSETS
     // to support hot reload
-    internal ulong ShaderHash;
+    internal TitanArray<ulong> ShaderHashes;
 #endif
 }

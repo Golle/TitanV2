@@ -70,9 +70,40 @@ float SampleShadow(LightInstanceData light, Texture2D shadowMap, float3 worldPos
         return 1.0; // Fully lit outside the shadow area
 
     // Sample shadow map using hardware PCF (Percentage-Closer Filtering)
-    float shadowFactor = shadowMap.SampleCmpLevelZero(ShadowMapSampler, shadowUV, shadowDepth);
+    // float shadowFactorOLD = shadowMap.SampleCmpLevelZero(ShadowMapSampler, shadowUV, shadowDepth);
 
-    return shadowFactor;
+    // return shadowFactorOLD;
+
+    // PCF, 3x3 sampling
+    float2 texelSize = 1.0 / float2(4096, 4096); // Shadow map resolution
+    float shadowFactor = 0.0f;
+
+    bool sample3 = false;
+    if(sample3){
+        for (int x = -1; x <= 1; x++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                float2 offset = float2(x, y) * texelSize;
+                shadowFactor += shadowMap.SampleCmpLevelZero(ShadowMapSampler, shadowUV + offset, shadowDepth);
+            }
+        }
+        return shadowFactor / 9.0; // Average over 9 samples
+
+    }
+    else {
+        // PCF, 5x5 sampling
+        for (int x = -2; x <= 2; x++)
+        {
+            for (int y = -2; y <= 2; y++)
+            {
+                float2 offset = float2(x, y) * texelSize;
+                shadowFactor += shadowMap.SampleCmpLevelZero(ShadowMapSampler, shadowUV + offset, shadowDepth);
+            }
+        }
+        
+        return shadowFactor / 25.0; // Average over 9 samples
+    }
 }
 
 float4 main(LightsVertexOutput input): SV_TARGET0
@@ -103,11 +134,9 @@ float4 main(LightsVertexOutput input): SV_TARGET0
         case 2:
             lighting = ApplyLighting(light, normal, albedoColor);
             float shadowFactor = SampleShadow(light, shadowMap, position);
-            // float depth = shadowMap.SampleLevel(PointSampler, shadowFactor, 0).r;
-            // return float4(depth.xxx, 1.0);
-            // return float4(shadowFactor, 0.0, 1.0);
-            // float shadowFactor = SampleShadow(light, shadowMap, position);
-            lighting = lighting * (shadowFactor+0.04f);
+
+            float minLight = 0.15f; 
+            lighting = lerp(lighting * shadowFactor, lighting, minLight);
             break;
     }
     
