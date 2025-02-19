@@ -20,6 +20,7 @@ internal static class GlobalConfiguration
     public const uint MaxRenderFrames = 2;
 #endif
     public const uint CommandBufferCount = 16;
+    public const uint ComputeBufferCount = 6;
 
 
     private static Platforms GetPlatform()

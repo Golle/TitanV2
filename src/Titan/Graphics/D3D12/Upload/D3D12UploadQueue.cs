@@ -36,7 +36,7 @@ internal unsafe partial struct D3D12UploadQueue
         {
             ref var frame = ref queue->UploadFrames[i];
             frame.Allocator = device.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_COPY, $"{nameof(D3D12UploadQueue)}.{nameof(UploadFrames)}[{i}]");
-            frame.CommandList = device.CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_COPY, $"{nameof(D3D12UploadQueue)}.{nameof(UploadFrames)}[{i}]");
+            frame.CommandList = device.CreateCommandList(D3D12_COMMAND_LIST_TYPE.D3D12_COMMAND_LIST_TYPE_COPY, $"{nameof(D3D12UploadQueue)}.{nameof(UploadFrames)}[{i}]");
 
             if (!frame.Allocator.IsValid)
             {

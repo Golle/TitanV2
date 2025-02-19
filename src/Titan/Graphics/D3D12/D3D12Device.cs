@@ -48,7 +48,7 @@ internal unsafe partial struct D3D12Device
     }
 
 
-    public readonly ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type, string? debugName = null)
     {
         var device = Device.Get();
         D3D12_COMMAND_QUEUE_DESC desc = new()
@@ -66,10 +66,14 @@ internal unsafe partial struct D3D12Device
             return null;
         }
 
+        if (debugName != null)
+        {
+            D3D12Helpers.SetName(queue, debugName);
+        }
         return queue;
     }
 
-    public readonly ID3D12GraphicsCommandList4* CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE type, string? name = null)
+    public readonly ID3D12GraphicsCommandList4* CreateCommandList(D3D12_COMMAND_LIST_TYPE type, string? name = null)
     {
         ID3D12GraphicsCommandList4* commandList;
         var hr = Device.Get()->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAGS.D3D12_COMMAND_LIST_FLAG_NONE, ID3D12GraphicsCommandList4.Guid, (void**)&commandList);
