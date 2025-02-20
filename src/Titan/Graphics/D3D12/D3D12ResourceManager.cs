@@ -657,6 +657,8 @@ public unsafe partial struct D3D12ResourceManager
     /// <returns>The handle to the root signature, or Invalid on failure</returns>
     public readonly Handle<RootSignature> CreateRootSignature(in CreateRootSignatureArgs args)
     {
+        const int MaxParameters = 20;
+        Debug.Assert(args.Parameters.Length <= MaxParameters);
         var handle = _rootSignatures.SafeAlloc();
         if (handle.IsInvalid)
         {
@@ -665,8 +667,8 @@ public unsafe partial struct D3D12ResourceManager
         }
 
         var rootSignature = _rootSignatures.AsPtr(handle);
-        TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[10];
-        TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[10];
+        TitanList<D3D12_ROOT_PARAMETER1> parameters = stackalloc D3D12_ROOT_PARAMETER1[MaxParameters];
+        TitanList<D3D12_STATIC_SAMPLER_DESC> samplers = stackalloc D3D12_STATIC_SAMPLER_DESC[MaxParameters];
 
         var tempBufferSize = sizeof(D3D12_DESCRIPTOR_RANGE1) * 16;
         var tempBuffer = stackalloc byte[tempBufferSize];

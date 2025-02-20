@@ -20,7 +20,9 @@ internal static class GlobalConfiguration
     public const uint MaxRenderFrames = 2;
 #endif
     public const uint CommandBufferCount = 16;
-    public const uint ComputeBufferCount = 6;
+
+    //NOTE(Jens): We don't use compute shaders at the moment.
+    public const uint ComputeBufferCount = 0;
 
 
     private static Platforms GetPlatform()

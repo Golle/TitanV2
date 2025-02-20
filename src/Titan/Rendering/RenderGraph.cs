@@ -471,7 +471,6 @@ public unsafe partial struct RenderGraph
                 Top = 0,
                 Left = 0
             };
-
         }
     }
 

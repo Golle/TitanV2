@@ -78,7 +78,7 @@ float SampleShadow(LightInstanceData light, Texture2D shadowMap, float3 worldPos
     float2 texelSize = 1.0 / float2(4096, 4096); // Shadow map resolution
     float shadowFactor = 0.0f;
 
-    bool sample3 = false;
+    bool sample3 = true;
     if(sample3){
         for (int x = -1; x <= 1; x++)
         {
