@@ -35,6 +35,10 @@ public record struct Vector3Int(int X, int Y, int Z)
         => new(a.X - value, a.Y - value, a.Z - value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector3Int operator -(Vector3Int a, Vector3Int value)
+        => new(a.X - value.X, a.Y - value.Y, a.Z - value.Z);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector3Int Clamp(Vector3Int v, Vector3Int min, Vector3Int max) =>
         Vector128.Clamp(v.AsVector128(), min.AsVector128(), max.AsVector128())
             .AsVector3Int();

@@ -5,10 +5,10 @@ using Titan.Core.Memory.Allocators;
 
 namespace Titan.Core.Memory;
 
-public record MemoryConfig(uint MaxVirtualMemory, uint GeneralPurposeMemory) : IConfiguration, IDefault<MemoryConfig>
+public record MemoryConfig(ulong MaxVirtualMemory, ulong GeneralPurposeMemory) : IConfiguration, IDefault<MemoryConfig>
 {
-    public static readonly uint DefaultMaxVirtualMemory = MemoryUtils.GigaBytes(2);
-    public static readonly uint DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(256);
+    public static readonly ulong  DefaultMaxVirtualMemory = MemoryUtils.GigaBytes(2);
+    public static readonly ulong DefaultGeneralPurposeMemory = MemoryUtils.MegaBytes(256);
 
     public static MemoryConfig Default => new(DefaultMaxVirtualMemory, DefaultGeneralPurposeMemory);
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,6 +23,10 @@ public struct MeshData
     public uint VertexStartLocation;
     public byte SubMeshCount;
     public Inline8<SubMeshData> SubMeshes;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ReadOnlySpan<SubMeshData> GetSubmeshes()
+        => SubMeshes.AsReadOnlySpan()[..SubMeshCount];
 }
 
 public struct SubMeshData

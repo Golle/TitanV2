@@ -171,6 +171,12 @@ public static class AssetsManagerExtensions
         Debug.Assert(descriptor.Type is AssetType.Texture);
         return assetsManager.Load<TextureAsset>(descriptor);
     }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static AssetHandle<SpriteAsset> LoadSprite(this in AssetsManager assetsManager, in AssetDescriptor descriptor)
+    {
+        Debug.Assert(descriptor.Type is AssetType.Sprite);
+        return assetsManager.Load<SpriteAsset>(descriptor);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static AssetHandle<MeshAsset> LoadMesh(this in AssetsManager assetsManager, in AssetDescriptor descriptor)

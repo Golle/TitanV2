@@ -85,7 +85,7 @@ public unsafe partial struct CameraSystem
         camera.Target = camera.Position + camera.Target;
         camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
 
-        camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
+        camera.ViewProjectionMatrix = camera.ViewMatrix * camera.ProjectionMatrix;
         camera.ViewProjectionMatrixTransposed = Matrix4x4.Transpose(camera.ViewProjectionMatrix);
 
         var inverseResult = Matrix4x4.Invert(camera.ViewProjectionMatrix, out camera.InverseViewProjectionMatrix);

@@ -27,7 +27,8 @@ struct FrameData
     float3 CameraPosition;
     uint WindowWidth;
     uint WindowHeight;
-    float3 _padding;
+    float Time;
+    float2 _padding;
 };
 
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);

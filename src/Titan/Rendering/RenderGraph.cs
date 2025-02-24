@@ -35,6 +35,7 @@ internal struct FrameData
     public Vector3 CameraPosition;
     public uint WindowWidth;
     public uint WindowHeight;
+    public float Time;
 }
 
 public enum DepthBufferMode : byte
@@ -492,7 +493,8 @@ public unsafe partial struct RenderGraph
             ViewProjection = camera.ViewProjectionMatrixTransposed,
             CameraPosition = camera.Position,
             WindowHeight = (uint)window.Height,
-            WindowWidth = (uint)window.Width
+            WindowWidth = (uint)window.Width,
+            Time = GameTime.TotalTimeSeconds
         });
 
         Span<CommandList> commandListBuffer = stackalloc CommandList[10];
