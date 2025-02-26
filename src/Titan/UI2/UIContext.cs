@@ -254,7 +254,7 @@ public unsafe struct UIContext
 
     public void Image(in Vector2 offset, in SizeF size, int textureId)
     {
-        
+
         AddWidget(new UIWidget
         {
             Color = Color.White,
@@ -507,6 +507,12 @@ public unsafe struct UIContext
         => Checkbox(id, in offset, in size, color, ref state, _style->Checkbox);
 
     public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref UICheckboxState2 state, in UICheckboxStyle2 style)
+        => Checkbox(id, in offset, in size, in color, ref state.Checked, in style);
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref bool isChecked)
+        => Checkbox(id, in offset, in size, in color, ref isChecked, _style->Checkbox);
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref bool isChecked, in UICheckboxStyle2 style)
     {
         if (!_assetsManager.IsLoaded(style.Asset))
         {
@@ -529,7 +535,7 @@ public unsafe struct UIContext
 
             if (IsActive(id) && ButtonReleased)
             {
-                state.Checked = !state.Checked;
+                isChecked = !isChecked;
             }
 
             AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.SelectedIndex));
@@ -540,7 +546,7 @@ public unsafe struct UIContext
         }
 
 
-        if (state.Checked)
+        if (isChecked)
         {
             AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.CheckmarkIndex));
         }

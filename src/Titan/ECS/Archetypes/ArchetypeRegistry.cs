@@ -306,4 +306,30 @@ internal unsafe partial struct ArchetypeRegistry
         MemoryUtils.Copy(query->Archetypes, archetypeBuffer, archetypeSize);
         MemoryUtils.Copy(query->Offsets, offsetBuffer, offsetSize);
     }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool HasComponent(in Entity entity, in ComponentType type)
+    {
+        var id = entity.IdNoVersion;
+        ref var data = ref _data[id];
+        return data.IsValid && data.Record.Archetype->Id.Signature % type.Id == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void* GetComponent(in Entity entity, in ComponentType type)
+    {
+        var id = entity.IdNoVersion;
+        ref var data = ref _data[id];
+
+        if (data.IsValid && (data.Record.Archetype->Id.Signature % type.Id) == 0)
+        {
+            ref var record = ref data.Record;
+            var offset = record.Archetype->Layout.GetOffsetFromId(type.Id);
+            Debug.Assert(offset >= 0);
+            return record.Chunk->GetComponentData((ushort)offset, (ushort)type.Size, record.Index);
+        }
+
+        return null;
+    }
 }

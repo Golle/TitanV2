@@ -65,6 +65,8 @@ internal static class TitanTypes
     public const string Entity = $"{ECS}.Entity";
     public const string CachedQuery = $"{ECS}.Archetypes.CachedQuery";
     public const string QueryState = $"{ECS}.Archetypes.QueryState";
+    public const string ReadOnlyStorage = $"{ECS}.Components.ReadOnlyStorage";
+    public const string MutableStorage = $"{ECS}.Components.MutableStorage";
 
     public const string IConfiguration = $"{Configurations}.IConfiguration";
 

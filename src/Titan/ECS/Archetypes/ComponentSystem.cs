@@ -83,4 +83,12 @@ internal unsafe partial struct ComponentSystem
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void DestroyEntity(in Entity entity)
         => _commands.DestroyEntity(entity);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T* GetComponent<T>(in Entity entity) where T : unmanaged, IComponent
+        => (T*)_registry->GetComponent(entity, T.Type);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool HasComponent<T>(in Entity entity) where T : unmanaged, IComponent
+        => _registry->HasComponent(entity, T.Type);
 }
