@@ -31,6 +31,9 @@ internal struct UIState
     public bool ButtonPressed;
     public bool ButtonDown;
     public bool ButtonReleased;
+
+    public bool IsCursorInUI;
+    public bool IsCursorInUILastFrame;
     public int GetHighligthedId()
     {
         var id = InvalidId;
@@ -198,6 +201,7 @@ internal unsafe partial struct UISystem2
             system.State.ButtonDown = false;
             system.State.ButtonReleased = false;
             system.State.ButtonPressed = false;
+            
         }
         else
         {
@@ -210,6 +214,8 @@ internal unsafe partial struct UISystem2
         system.Count = 0;
         system.State.HighlightedId = system.State.GetHighligthedId();
         system.State.HighlightedCount = 0;
+        system.State.IsCursorInUILastFrame = system.State.IsCursorInUI;
+        system.State.IsCursorInUI = false;
 
     }
 

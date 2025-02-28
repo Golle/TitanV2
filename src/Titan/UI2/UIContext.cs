@@ -4,11 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
-using Titan.Rendering;
 using Titan.Rendering.Resources;
 using Titan.UI;
 using Titan.UI.Resources;
@@ -112,7 +110,7 @@ public struct UIButtonStyle
 public unsafe struct UIContext
 {
     private readonly AssetsManager _assetsManager;
-    private InputState* _inputState;
+    private readonly InputState* _inputState;
     private readonly UISystem2* _system;
     private readonly UIState* _state;
     private byte _contextId; // this should be used to uniquely identify a context.
@@ -134,8 +132,9 @@ public unsafe struct UIContext
         _system = system;
         _state = &_system->State;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool CursorInUI() => _state->HighlightedId != 0;
+    public bool CursorInUI() => _state->HighlightedId != 0 || _state->IsCursorInUILastFrame;
     public void Begin(byte layer)
         => Begin(_system->DefaultStyle, layer);
 
@@ -359,8 +358,14 @@ public unsafe struct UIContext
             Type = UIElementType.None,
         };
         AddWidget(widget);
+        if (!clickThrough)
+        {
+            _system->State.IsCursorInUI = IsOver(offset, size);
+        }
     }
 
+    public void Label(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text)
+        => Label(in offset, in size, text, Color.White);
     public void Label(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, in Color color)
     {
         if (!_assetsManager.IsLoaded(_style->Font.Asset))
