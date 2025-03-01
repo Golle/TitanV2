@@ -60,13 +60,13 @@ internal unsafe partial struct D3D12FullScreenRenderer
         var pixelShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.Shaders.SimplePixelShader);
         var vertexShaderHandle = assetsManager.LoadImmediately<ShaderAsset>(EngineAssetsRegistry.Shaders.SimpleVertexShader);
 
-        var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Textures.BookTexture);
-        data->Texture = assetsManager.Get(assetHandle).Handle;
+        //var assetHandle = assetsManager.LoadImmediately<TextureAsset>(EngineAssetsRegistry.Textures.BookTexture);
+        //data->Texture = assetsManager.Get(assetHandle).Handle;
 
-        var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.Meshes.Book);
+        //var meshHandle = assetsManager.LoadImmediately<MeshAsset>(EngineAssetsRegistry.Meshes.Book);
 
-        data->Mesh = meshHandle;
-        ref readonly var mesh = ref assetsManager.Get(meshHandle);
+        //data->Mesh = meshHandle;
+        //ref readonly var mesh = ref assetsManager.Get(meshHandle);
         //data->VertexBuffer = resourceManager.Access(mesh.VertexBuffer)->Resource;
         //data->IndexBuffer = resourceManager.Access(mesh.IndexBuffer)->Resource;
         //data->Count = mesh.IndexCount;
