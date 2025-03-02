@@ -72,7 +72,7 @@ internal unsafe partial struct MeshSystem
         var vertexCount = (uint)(vertexMemorySize / sizeof(Vertex));
         var indexCount = (uint)(indexMemorySize / sizeof(uint));
 
-        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
+        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true, rawAccess: true));
         system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
 
         if (system->StaticVertexBuffer.IsInvalid)

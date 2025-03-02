@@ -30,12 +30,14 @@ public record struct CreateBufferArgs(uint Count, int Stride, BufferType Type, T
 {
     public bool CpuVisible { get; init; }
     public bool ShaderVisible { get; init; }
+    public bool RawAccess { get; init; }
 
-    public static unsafe CreateBufferArgs Create<T>(uint count, BufferType type, TitanBuffer initialData = default, bool cpuVisible = false, bool shaderVisible = false) where T : unmanaged
+    public static unsafe CreateBufferArgs Create<T>(uint count, BufferType type, TitanBuffer initialData = default, bool cpuVisible = false, bool shaderVisible = false, bool rawAccess = false) where T : unmanaged
         => new(count, sizeof(T), type, initialData)
         {
             CpuVisible = cpuVisible,
-            ShaderVisible = shaderVisible
+            ShaderVisible = shaderVisible, 
+            RawAccess = rawAccess
         };
 }
 
@@ -290,7 +292,15 @@ public unsafe partial struct D3D12ResourceManager
                 case BufferType.Structured:
                 case BufferType.Index:
                 case BufferType.Vertex:
-                    _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, buffer->Count, buffer->Stride);
+                    var count = args.RawAccess ? buffer->Count / 4 : buffer->Count;
+                    var stride = args.RawAccess ? 0 : buffer->Stride;
+                    var format = args.RawAccess
+                        ? DXGI_FORMAT.DXGI_FORMAT_R32_TYPELESS
+                        : DXGI_FORMAT.DXGI_FORMAT_UNKNOWN;
+                    var srvFlags = args.RawAccess
+                        ? D3D12_BUFFER_SRV_FLAGS.D3D12_BUFFER_SRV_FLAG_RAW
+                        : D3D12_BUFFER_SRV_FLAGS.D3D12_BUFFER_SRV_FLAG_NONE;
+                    _device->CreateShaderResourceView1(buffer->Resource, buffer->SRV.CPU, count,stride, format, srvFlags);
                     break;
             }
         }
