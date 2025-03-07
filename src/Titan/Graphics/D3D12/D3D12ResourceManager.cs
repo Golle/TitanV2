@@ -827,7 +827,16 @@ public unsafe partial struct D3D12ResourceManager
                 DepthEnable = 1,
                 DepthWriteMask = D3D12_DEPTH_WRITE_MASK.D3D12_DEPTH_WRITE_MASK_ALL,
                 DepthFunc = D3D12_COMPARISON_FUNC.D3D12_COMPARISON_FUNC_LESS,
-                StencilEnable = args.Depth.StencilEnabled ? 1 : 0
+                StencilEnable = args.Depth.StencilEnabled ? 1 : 0,
+                StencilReadMask = 0xff,
+                StencilWriteMask = 0xff,
+                FrontFace =
+                {
+                    StencilFailOp =  D3D12_STENCIL_OP.D3D12_STENCIL_OP_KEEP,
+                    StencilDepthFailOp = D3D12_STENCIL_OP.D3D12_STENCIL_OP_KEEP,
+                    StencilFunc = D3D12_COMPARISON_FUNC.D3D12_COMPARISON_FUNC_ALWAYS,
+                    StencilPassOp = D3D12_STENCIL_OP.D3D12_STENCIL_OP_REPLACE
+                }
             };
             psoStream = psoStream
                 .DepthStencil(depthStencilDesc)
