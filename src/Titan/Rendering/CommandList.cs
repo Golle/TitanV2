@@ -251,6 +251,10 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         => commandList->ClearDepthStencilView(depthStencilView, flags, depth, stencil, numberOfRects, rects);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetStencilRef(uint stencilRef) 
+        => commandList->OMSetStencilRef(stencilRef);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(Texture* depthBuffer, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
     {
         Debug.Assert(depthBuffer != null);
