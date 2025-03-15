@@ -34,7 +34,7 @@ float3 CalculateBlinnPhongLighting(in LightInstanceData light, float3 position, 
     // return ambient + diffuse + specular;
 
 }
-float3 ApplyLighting(LightInstanceData light, float3 normal, float3 albedoColor)
+float3 ApplyLighting(LightInstanceData light, float3 normal, float3 albedoColor, float ao)
 {
     // Normalize the normal
     normal = normalize(normal);
@@ -46,23 +46,28 @@ float3 ApplyLighting(LightInstanceData light, float3 normal, float3 albedoColor)
     // Add ambient lighting (always affects the scene)
     // float3 ambientLight = GetAmbientLight();
     float3 ambientLight = GetAmbientLight();
-
+    directLight *= ao;
+    ambientLight *= ao;
+    
     // Final color
     return albedoColor * (directLight + ambientLight);
 }
 
 // Converts world position to shadow map UV + depth
-float SampleShadow(LightInstanceData light, Texture2D shadowMap, float3 worldPos)
+float SampleShadow(LightInstanceData light, Texture2D shadowMap, float3 worldPos, float3 normal)
 {
     // Transform world position into light space
     float4 shadowCoord = mul(float4(worldPos, 1.0), light.LightViewProj);
     shadowCoord.xyz /= shadowCoord.w; // Perspective divide
-
-    float ShadowBias =0.001f;
-    
     float2 shadowUV = shadowCoord.xy * 0.5 + 0.5;
     shadowUV.y = 1.0 - shadowUV.y;
-    float shadowDepth = shadowCoord.z - ShadowBias; // Apply bias to reduce artifacts
+
+
+    // float ShadowBias =0.0001f;
+    float constantBias = 0.0001f;  // Small base bias
+    float slopeBias = 0.00046f;      // Scales with surface angle
+    float bias = constantBias + slopeBias * abs(dot(normal, light.Direction)); 
+    float shadowDepth = shadowCoord.z - bias; // Apply bias to reduce artifacts
 
 // return shadowUV;
     // Check if the position is outside the shadow map range
@@ -113,6 +118,7 @@ float4 main(LightsVertexOutput input): SV_TARGET0
     Texture2D gNormal = GetInputTexture(NormalIndex);
     Texture2D gSpecular = GetInputTexture(SpecularIndex);
     Texture2D shadowMap = GetInputTexture(ShadowMapIndex);
+    Texture2D ambientOcclusion = GetInputTexture(AmbientOcclusionIndex);
 
     float3 specular = gSpecular.Sample(PointSampler, input.Texture).xyz;
     float3 position = gPosition.Sample(PointSampler, input.Texture).xyz;
@@ -132,8 +138,11 @@ float4 main(LightsVertexOutput input): SV_TARGET0
             lighting = CalculateLighting(light, position, normal, albedoColor);
             break;
         case 2:
-            lighting = ApplyLighting(light, normal, albedoColor);
-            float shadowFactor = SampleShadow(light, shadowMap, position);
+
+            float ao = ambientOcclusion.Sample(PointSampler, input.Texture).r;
+            ao = lerp(1.0, ao, 0.6);  // 0.6 = adjust influence (lower = weaker effect)
+            lighting = ApplyLighting(light, normal, albedoColor, ao);
+            float shadowFactor = SampleShadow(light, shadowMap, position, normal);
 
             float minLight = 0.15f; 
             lighting = lerp(lighting * shadowFactor, lighting, minLight);

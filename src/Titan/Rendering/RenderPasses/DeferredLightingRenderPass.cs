@@ -78,12 +78,18 @@ internal unsafe partial struct DeferredLightingRenderPass
                 BuiltInRenderTargets.GBufferPosition,
                 BuiltInRenderTargets.GBufferAlbedo,
                 BuiltInRenderTargets.GBufferNormal,
-                BuiltInRenderTargets.GBufferSpecular
+                BuiltInRenderTargets.GBufferSpecular,
+                BuiltInRenderTargets.AmbientOcclusion
             ],
             DepthBuffer = BuiltInDepthsBuffers.ShadowMapDepthBuffer,
             DepthBufferMode = DepthBufferMode.Read,
-            PixelShader = ShaderDeferredLightingPixel,
-            VertexShader = ShaderDeferredLightingVertex,
+            Shaders = [
+                new()
+                {
+                    PixelShader = ShaderDeferredLightingPixel,
+                    VertexShader = ShaderDeferredLightingVertex
+                }
+            ],
             ClearFunction = &ClearFunction
         });
 
@@ -163,7 +169,7 @@ internal unsafe partial struct DeferredLightingRenderPass
                 IntensityOrRadius = light.Radius,
                 Position = transform.Position,
                 LightType = (int)light.LightType,
-                LightViewProj =  light.LightViewProj
+                LightViewProj = light.LightViewProj
             };
         }
     }

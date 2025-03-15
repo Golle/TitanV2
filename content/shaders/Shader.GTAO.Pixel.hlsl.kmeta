@@ -1,0 +1,15 @@
+{
+  "$type": "ShaderMetadata",
+  "entryPoint": "main",
+  "shaderType": "Pixel",
+  "shaderVersion": "Version_6_5",
+  "id": "e29b612d-3007-41e4-bbae-d27fafc43288",
+  "name": "ShaderGTAOPixel",
+  "fileSize": 139,
+  "dependsOn": [],
+  "skip": false,
+  "license": null,
+  "creator": null,
+  "link": null,
+  "comment": null
+}

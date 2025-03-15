@@ -19,7 +19,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
     public readonly struct Textures
     {
         public static ref readonly Titan.Assets.AssetDescriptor Box => ref _assets[0];
-        public static ref readonly Titan.Assets.AssetDescriptor TitanLogo => ref _assets[22];
+        public static ref readonly Titan.Assets.AssetDescriptor TitanLogo => ref _assets[23];
     }
     
     public readonly struct Audios
@@ -35,7 +35,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
     {
         public static ref readonly Titan.Assets.AssetDescriptor CutiveMonoRegular => ref _assets[6];
         public static ref readonly Titan.Assets.AssetDescriptor RobotoMonoRegular => ref _assets[8];
-        public static ref readonly Titan.Assets.AssetDescriptor SyneMonoRegular => ref _assets[21];
+        public static ref readonly Titan.Assets.AssetDescriptor SyneMonoRegular => ref _assets[22];
     }
     
     public readonly struct Sprites
@@ -167,8 +167,9 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
         public static ref readonly Titan.Assets.AssetDescriptor ShaderFullscreenVertex => ref _assets[16];
         public static ref readonly Titan.Assets.AssetDescriptor ShaderGBufferPixel => ref _assets[17];
         public static ref readonly Titan.Assets.AssetDescriptor ShaderGBufferVertex => ref _assets[18];
-        public static ref readonly Titan.Assets.AssetDescriptor SimplePixelShader => ref _assets[19];
-        public static ref readonly Titan.Assets.AssetDescriptor SimpleVertexShader => ref _assets[20];
+        public static ref readonly Titan.Assets.AssetDescriptor ShaderGTAOPixel => ref _assets[19];
+        public static ref readonly Titan.Assets.AssetDescriptor SimplePixelShader => ref _assets[20];
+        public static ref readonly Titan.Assets.AssetDescriptor SimpleVertexShader => ref _assets[21];
     }
     
     static EngineAssetsRegistry()
@@ -495,7 +496,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 5276,
+                Length = 5316,
                 Offset = 4662484,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Pixel.hlsl"),
@@ -519,7 +520,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2060,
-                Offset = 4667760,
+                Offset = 4667800,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl.kbin")
@@ -542,7 +543,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3000,
-                Offset = 4669820,
+                Offset = 4669860,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl.kbin")
@@ -565,7 +566,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1784,
-                Offset = 4672820,
+                Offset = 4672860,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl.kbin")
@@ -588,7 +589,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3368,
-                Offset = 4674604,
+                Offset = 4674644,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl.kbin")
@@ -611,7 +612,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 4872,
-                Offset = 4677972,
+                Offset = 4678012,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl.kbin")
@@ -633,11 +634,11 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 2796,
-                Offset = 4682844,
+                Length = 1640,
+                Offset = 4682884,
 #if !RELEASE
-            AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl"),
-            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl.kbin")
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GTAO.Pixel.hlsl"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GTAO.Pixel.hlsl.kbin")
 #else
             AssetPath = Titan.Core.Strings.StringRef.Empty,
             BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
@@ -656,8 +657,31 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
+                Length = 2796,
+                Offset = 4684524,
+#if !RELEASE
+            AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl"),
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl.kbin")
+#else
+            AssetPath = Titan.Core.Strings.StringRef.Empty,
+            BinaryAssetPath = Titan.Core.Strings.StringRef.Empty
+#endif
+            },
+            Dependencies = new(0, 0),
+            Shader = new()
+            {
+                Type = Titan.Rendering.Resources.ShaderType.Pixel
+            }
+        };
+        _assets[21] = new Titan.Assets.AssetDescriptor
+        {
+            Id = Titan.Assets.AssetId.GetNext(),
+            RegistryId = Id,
+            Type = Titan.Assets.AssetType.Shader,
+            File = 
+            { 
                 Length = 3084,
-                Offset = 4685640,
+                Offset = 4687320,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl.kbin")
@@ -672,7 +696,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
                 Type = Titan.Rendering.Resources.ShaderType.Vertex
             }
         };
-        _assets[21] = new Titan.Assets.AssetDescriptor
+        _assets[22] = new Titan.Assets.AssetDescriptor
         {
             Id = Titan.Assets.AssetId.GetNext(),
             RegistryId = Id,
@@ -680,7 +704,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 90139,
-                Offset = 4688724,
+                Offset = 4690404,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf.kbin")
@@ -699,7 +723,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
                 Height = 50
             }
         };
-        _assets[22] = new Titan.Assets.AssetDescriptor
+        _assets[23] = new Titan.Assets.AssetDescriptor
         {
             Id = Titan.Assets.AssetId.GetNext(),
             RegistryId = Id,
@@ -707,7 +731,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 113920,
-                Offset = 4778863,
+                Offset = 4780543,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png.kbin")
@@ -727,7 +751,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             }
         };
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(23)]
+    [System.Runtime.CompilerServices.InlineArrayAttribute(24)]
     private struct __ASSETS__
     {
         private Titan.Assets.AssetDescriptor _ref;

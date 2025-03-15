@@ -7,7 +7,8 @@
 #define AlbedoIndex 1
 #define NormalIndex 2
 #define SpecularIndex 3
-#define ShadowMapIndex 4
+#define AmbientOcclusionIndex 4
+#define ShadowMapIndex 5
 
 
 struct LightsVertexOutput 

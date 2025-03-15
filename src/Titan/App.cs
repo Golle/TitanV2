@@ -17,14 +17,15 @@ public enum ApplicationType
 public enum BuiltInRendererFlags
 {
     GBuffer = 1 << 0,
-    DeferredLighting = 1 << 1,
-    UIRenderer = 1 << 2,
-    DebugRenderer = 1 << 3,
+    AmbientOcclusion = 1 << 1,
+    DeferredLighting = 1 << 2,
+    UIRenderer = 1 << 3,
+    DebugRenderer = 1 << 4,
 
 #if DEBUG
-    Default = GBuffer | DeferredLighting | UIRenderer | DebugRenderer
+    Default = GBuffer | AmbientOcclusion | DeferredLighting | UIRenderer | DebugRenderer
 #else
-    Default = GBuffer | DeferredLighting | UIRenderer
+    Default = GBuffer | AmbientOcclusion | DeferredLighting | UIRenderer
 #endif
 }
 
