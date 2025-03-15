@@ -104,7 +104,7 @@ namespace Titan.Sandbox
         [System(SystemStage.Init)]
         public static void LoadResources(ref EntityTestSystem system, AssetsManager assetsManager)
         {
-            system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
+            //system.BookMesh = assetsManager.LoadMesh(EngineAssetsRegistry.Meshes.Book);
             //system.BookMaterials = assetsManager.LoadMaterial(EngineAssetsRegistry.Materials.MagicBookOBJ.Asset);
             //system.BookTexture = assetsManager.LoadTexture(Textures.BookTexture);
         }
@@ -244,7 +244,7 @@ namespace Titan.Sandbox
 
             UICheckboxState.Create(_checkboxStates);
 
-            _music = assetsManager.Load<AudioAsset>(Audios.BackgroundMusic);
+            //_music = assetsManager.Load<AudioAsset>(Audios.BackgroundMusic);
             _uiEffects[0] = assetsManager.Load<AudioAsset>(Audios.Click1);
             _uiEffects[1] = assetsManager.Load<AudioAsset>(Audios.Click2);
             _uiEffects[2] = assetsManager.Load<AudioAsset>(Audios.Click3);
