@@ -4,7 +4,6 @@ using Titan.Assets;
 using Titan.Core;
 using Titan.Core.Logging;
 using Titan.Core.Maths;
-using Titan.Rendering.Resources;
 using Titan.Systems;
 using Titan.UI;
 using Titan.UI.Resources;
