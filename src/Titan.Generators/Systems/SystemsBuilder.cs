@@ -19,6 +19,8 @@ internal enum ArgumentKind
     EntityManager,
     ReadOnlyComponent,
     MutableComponent,
+    ReadOnlyStorage,
+    MutableStorage,
     EntityCollection,
     AssetsManager,
     AudioManager,
@@ -220,6 +222,8 @@ internal static class SystemsBuilder
                 ArgumentKind.UIManager => TitanTypes.UIManager,
                 ArgumentKind.MaterialsManager => TitanTypes.MaterialsManager,
                 ArgumentKind.MeshManager => TitanTypes.MeshManager,
+                ArgumentKind.MutableStorage => $"{TitanTypes.MutableStorage}<{parameter.Type}>",
+                ArgumentKind.ReadOnlyStorage => $"{TitanTypes.ReadOnlyStorage}<{parameter.Type}>",
                 ArgumentKind.EntityCollection or ArgumentKind.MutableComponent or ArgumentKind.ReadOnlyComponent
                     => null,
                 _ => throw new NotImplementedException($"The kind {parameter.Kind} has not been implemented.")
@@ -283,9 +287,14 @@ internal static class SystemsBuilder
                 ArgumentKind.Managed
                     => $"{ArgumentName}.GetService<{parameter.Type}>()",
 
+                ArgumentKind.MutableStorage
+                    => $"{ArgumentName}.CreateMutableStorage<{parameter.Type}>()",
+
+                ArgumentKind.ReadOnlyStorage
+                    => $"{ArgumentName}.CreateReadOnlyStorage<{parameter.Type}>()",
+
                 _ => null
             };
-
 
             if (line is not null)
             {

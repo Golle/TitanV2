@@ -7,9 +7,9 @@ namespace Titan.Core.Memory;
 
 public static unsafe class MemoryUtils
 {
-    public const uint KiloByte = 1024;
-    public const uint MegaByte = KiloByte * KiloByte;
-    public const uint GigaByte = MegaByte * KiloByte;
+    public const ulong KiloByte = 1024;
+    public const ulong MegaByte = KiloByte * KiloByte;
+    public const ulong GigaByte = MegaByte * KiloByte;
 
     private const uint OneKiloByte = 1024u;
 
@@ -179,6 +179,10 @@ public static unsafe class MemoryUtils
         => (uint)Align((nuint)size, alignment);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint Align(ulong size, uint alignment)
+        => (uint)Align((nuint)size, alignment);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint AlignNotPowerOf2(uint size, uint alignment)
         => (size + alignment - 1) / alignment * alignment;
 
@@ -196,6 +200,13 @@ public static unsafe class MemoryUtils
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint AlignToUpper(uint size, uint alignment)
         => (uint)AlignToUpper((nuint)size, alignment);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint AlignToUpper(ulong size, uint alignment)
+    {
+        var alignedMemory = Align(size, alignment);
+        return alignedMemory < size ? alignedMemory + alignment : alignedMemory;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static nuint AlignToUpper(nuint size, uint alignment)

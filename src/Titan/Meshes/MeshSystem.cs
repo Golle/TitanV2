@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,6 +23,10 @@ public struct MeshData
     public uint VertexStartLocation;
     public byte SubMeshCount;
     public Inline8<SubMeshData> SubMeshes;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ReadOnlySpan<SubMeshData> GetSubmeshes()
+        => SubMeshes.AsReadOnlySpan()[..SubMeshCount];
 }
 
 public struct SubMeshData
@@ -67,7 +72,7 @@ internal unsafe partial struct MeshSystem
         var vertexCount = (uint)(vertexMemorySize / sizeof(Vertex));
         var indexCount = (uint)(indexMemorySize / sizeof(uint));
 
-        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
+        system->StaticVertexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<Vertex>(vertexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true, rawAccess: true));
         system->StaticIndexBuffer = resourceManager.CreateBuffer(CreateBufferArgs.Create<uint>(indexCount, BufferType.Vertex, cpuVisible: false, shaderVisible: true));
 
         if (system->StaticVertexBuffer.IsInvalid)

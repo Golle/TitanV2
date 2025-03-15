@@ -9,10 +9,14 @@ namespace Titan.Application;
 
 public static class GameTime
 {
+    public static long StartTimestamp { get; internal set; }
     public static long LastTimestamp { get; internal set; }
     public static float DeltaTimeSeconds => (float)DeltaTime.TotalSeconds;
     public static float DeltaTimeMillis => (float)DeltaTime.TotalMilliseconds;
     public static TimeSpan DeltaTime { get; internal set; }
+
+    public static float TotalTimeSeconds => (float)TotalTime.TotalSeconds;
+    public static TimeSpan TotalTime { get; internal set; }
 }
 
 /// <summary>
@@ -44,7 +48,9 @@ public partial struct EngineState
         Active = true;
         FrameCount = 0;
         FrameIndex = 0;
-        GameTime.LastTimestamp = Stopwatch.GetTimestamp();
+        GameTime.TotalTime = TimeSpan.Zero;
+        GameTime.StartTimestamp = GameTime.LastTimestamp = Stopwatch.GetTimestamp();
+
     }
 
     [System(SystemStage.First, SystemExecutionType.Inline)]
@@ -61,6 +67,7 @@ public partial struct EngineState
         var current = Stopwatch.GetTimestamp();
         GameTime.DeltaTime = Stopwatch.GetElapsedTime(GameTime.LastTimestamp, current);
         GameTime.LastTimestamp = current;
+        GameTime.TotalTime = Stopwatch.GetElapsedTime(GameTime.StartTimestamp, current);
 
         WindowHeight = window.Height;
         WindowWidth = window.Width;

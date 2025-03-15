@@ -27,6 +27,7 @@ internal struct LightInstanceData
     public float IntensityOrRadius;
     public int LightType;
     public unsafe fixed float Padding[1];
+    public Matrix4x4 LightViewProj;
 }
 
 [UnmanagedResource]
@@ -77,12 +78,18 @@ internal unsafe partial struct DeferredLightingRenderPass
                 BuiltInRenderTargets.GBufferPosition,
                 BuiltInRenderTargets.GBufferAlbedo,
                 BuiltInRenderTargets.GBufferNormal,
-                BuiltInRenderTargets.GBufferSpecular
+                BuiltInRenderTargets.GBufferSpecular,
+                BuiltInRenderTargets.AmbientOcclusion
             ],
             DepthBuffer = BuiltInDepthsBuffers.ShadowMapDepthBuffer,
             DepthBufferMode = DepthBufferMode.Read,
-            PixelShader = ShaderDeferredLightingPixel,
-            VertexShader = ShaderDeferredLightingVertex,
+            Shaders = [
+                new()
+                {
+                    PixelShader = ShaderDeferredLightingPixel,
+                    VertexShader = ShaderDeferredLightingVertex
+                }
+            ],
             ClearFunction = &ClearFunction
         });
 
@@ -153,6 +160,7 @@ internal unsafe partial struct DeferredLightingRenderPass
                 continue;
             }
 
+            //Logger.Trace($"{light.LightViewProj}");
             ref readonly var transform = ref transforms[i];
             stagingBuffer[index++] = new()
             {
@@ -160,7 +168,8 @@ internal unsafe partial struct DeferredLightingRenderPass
                 Direction = light.Direction,
                 IntensityOrRadius = light.Radius,
                 Position = transform.Position,
-                LightType = (int)light.LightType
+                LightType = (int)light.LightType,
+                LightViewProj = light.LightViewProj
             };
         }
     }

@@ -7,6 +7,8 @@
 #define AlbedoIndex 1
 #define NormalIndex 2
 #define SpecularIndex 3
+#define AmbientOcclusionIndex 4
+#define ShadowMapIndex 5
 
 
 struct LightsVertexOutput 
@@ -25,6 +27,7 @@ struct LightInstanceData
     float IntensityOrRadius;
     int type;
     float _padding;
+    float4x4 LightViewProj;
 };
 
 

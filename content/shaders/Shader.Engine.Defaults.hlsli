@@ -12,10 +12,12 @@ ByteAddressBuffer IndexBufferTable[] : register(t0, space14);
 
 SamplerState PointSampler : register(s0, space10);
 SamplerState LinearSampler : register(s1, space10);
+SamplerComparisonState  ShadowMapSampler : register(s2, space10);
 
 struct InputTextures
 {
     int4 Indicies;
+    int4 Indicies2;
 };
 
 struct FrameData 
@@ -25,7 +27,8 @@ struct FrameData
     float3 CameraPosition;
     uint WindowWidth;
     uint WindowHeight;
-    float3 _padding;
+    float Time;
+    float2 _padding;
 };
 
 ConstantBuffer<InputTextures> Inputs : register(b0, space10);
@@ -33,9 +36,13 @@ ConstantBuffer<FrameData> FrameDataBuffer:  register(b0, space11);
 
 Texture2D GetInputTexture(uint index)
 {
+    if(index > 3){
+        int textureIndex =  Inputs.Indicies2[index-4];
+        return Textures[textureIndex];
+    }
     // We only support 4 textures at the moment.
     int textureIndex =  Inputs.Indicies[index];
-    return Textures[textureIndex];
+        return Textures[textureIndex];
 }
 
 float3 GetCameraPosition()

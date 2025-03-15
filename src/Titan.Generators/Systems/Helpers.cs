@@ -149,6 +149,16 @@ internal static class Helpers
                     var eventType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();
                     builder.Add(new SystemParameter(eventType, ArgumentKind.EventReader, ModifierType.Value));
                 }
+                else if (typeName.StartsWith(TitanTypes.ReadOnlyStorage))
+                {
+                    var componentType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();
+                    builder.Add(new SystemParameter(componentType, ArgumentKind.ReadOnlyStorage, ModifierType.Value));
+                }
+                else if (typeName.StartsWith(TitanTypes.MutableStorage))
+                {
+                    var componentType = ((INamedTypeSymbol)type).TypeArguments[0].ToDisplayString();
+                    builder.Add(new SystemParameter(componentType, ArgumentKind.MutableStorage, ModifierType.Value));
+                }
 
                 else
                 {

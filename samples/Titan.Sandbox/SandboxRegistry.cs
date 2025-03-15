@@ -132,7 +132,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 375640,
+                Length = 375644,
                 Offset = 524288,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.obj"),
@@ -159,7 +159,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 67108864,
-                Offset = 899928,
+                Offset = 899932,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\book_texture.png.kbin")
@@ -186,7 +186,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 16384,
-                Offset = 68008792,
+                Offset = 68008796,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"materials\albedo_1.aseprite"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"materials\albedo_1.aseprite.kbin")
@@ -213,7 +213,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 262175,
-                Offset = 68025176,
+                Offset = 68025180,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.aseprite"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\debug-ui.style.aseprite.kbin")
@@ -245,7 +245,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 17,
-                Offset = 68287351,
+                Offset = 68287355,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.mtl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"testmodels\Book\magic_book_OBJ.mtl.kbin")
@@ -268,7 +268,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 34,
-                Offset = 68287368,
+                Offset = 68287372,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLarge_forest.mtl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLarge_forest.mtl.kbin")
@@ -290,8 +290,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Mesh,
             File = 
             { 
-                Length = 37616,
-                Offset = 68287402,
+                Length = 37624,
+                Offset = 68287406,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.obj.kbin")
@@ -317,7 +317,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 34,
-                Offset = 68325018,
+                Offset = 68325030,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.mtl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"models\tileLow_teamRed.mtl.kbin")
@@ -340,7 +340,7 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 65662,
-                Offset = 68325052,
+                Offset = 68325064,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"ui\ui_style_orange.aseprite.kbin")

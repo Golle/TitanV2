@@ -48,7 +48,7 @@ internal unsafe partial struct D3D12Device
     }
 
 
-    public readonly ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type)
+    public readonly ID3D12CommandQueue* CreateCommandQueue(D3D12_COMMAND_LIST_TYPE type, string? debugName = null)
     {
         var device = Device.Get();
         D3D12_COMMAND_QUEUE_DESC desc = new()
@@ -66,10 +66,14 @@ internal unsafe partial struct D3D12Device
             return null;
         }
 
+        if (debugName != null)
+        {
+            D3D12Helpers.SetName(queue, debugName);
+        }
         return queue;
     }
 
-    public readonly ID3D12GraphicsCommandList4* CreateGraphicsCommandList(D3D12_COMMAND_LIST_TYPE type, string? name = null)
+    public readonly ID3D12GraphicsCommandList4* CreateCommandList(D3D12_COMMAND_LIST_TYPE type, string? name = null)
     {
         ID3D12GraphicsCommandList4* commandList;
         var hr = Device.Get()->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAGS.D3D12_COMMAND_LIST_FLAG_NONE, ID3D12GraphicsCommandList4.Guid, (void**)&commandList);
@@ -167,19 +171,19 @@ internal unsafe partial struct D3D12Device
         Device.Get()->CreateShaderResourceView(resource, &desc, handle);
     }
 
-    public readonly void CreateShaderResourceView1(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle, uint numberOfVertices, uint stride)
+    public readonly void CreateShaderResourceView1(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle, uint numberOfElements, uint stride, DXGI_FORMAT format = DXGI_FORMAT.DXGI_FORMAT_UNKNOWN, D3D12_BUFFER_SRV_FLAGS flags = D3D12_BUFFER_SRV_FLAGS.D3D12_BUFFER_SRV_FLAG_NONE)
     {
         Logger.Warning<D3D12Device>($"The method {nameof(CreateShaderResourceView)} only supports texture2d without mips, not really a good solution.");
         D3D12_SHADER_RESOURCE_VIEW_DESC desc = new()
         {
-            Format = DXGI_FORMAT.DXGI_FORMAT_UNKNOWN,
+            Format = format,
             Shader4ComponentMapping = D3D12Constants.D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
             ViewDimension = D3D12_SRV_DIMENSION.D3D12_SRV_DIMENSION_BUFFER,
             Buffer = new()
             {
                 FirstElement = 0,
-                Flags = D3D12_BUFFER_SRV_FLAGS.D3D12_BUFFER_SRV_FLAG_NONE,
-                NumElements = numberOfVertices,
+                Flags = flags,
+                NumElements = numberOfElements,
                 StructureByteStride = stride
             }
         };

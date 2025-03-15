@@ -49,7 +49,33 @@ public struct Camera
     public float Yaw;
     public float Roll;
 
-    public static Camera Create(int width, int height, float nearPlane = 0.1f, float farPlane = 1000f, float fieldOfView = MathF.PI / 4)
+
+    public static Camera CreateOrhorgraphic(int width, int height, float nearPlane = 0.1f, float farPlane = 1000f)
+    {
+        var camera = new Camera
+        {
+            Id = Interlocked.Increment(ref _nextId),
+            Position = Vector3.Zero,
+            Target = DefaultForward,
+            Up = DefaultUp,
+            Forward = -DefaultForward,
+            Right = DefaultRight,
+            FieldOfView = 0,
+            NearPlane = nearPlane,
+            FarPlane = farPlane,
+            WorldMatrix = Matrix4x4.Identity,
+            AspectRatio = width / (float)height
+        };
+
+        camera.ProjectionMatrix = Matrix4x4.CreateOrthographic(width, height, nearPlane, farPlane);
+        camera.ViewMatrix = Matrix4x4.CreateLookAt(camera.Position, camera.Target, camera.Up);
+        camera.ViewProjectionMatrix = camera.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix;
+        var inverseResult = Matrix4x4.Invert(camera.ViewProjectionMatrix, out camera.InverseViewProjectionMatrix);
+        Debug.Assert(inverseResult);
+        return camera;
+
+    }
+    public static Camera Create(int width, int height, float nearPlane = 0.1f, float farPlane = 1000f, float fieldOfView = MathF.PI / 4f)
     {
         var camera = new Camera
         {
@@ -87,8 +113,8 @@ public struct Camera
         Position += distance.Y * Up;
     }
 
-    public void SetTarget(in Vector3 direction) 
-        =>Forward = Target = Vector3.Normalize(direction);
+    public void SetTarget(in Vector3 direction)
+        => Forward = Target = Vector3.Normalize(direction);
 
     public void SetRotation(float yaw, float pitch, float roll)
     {

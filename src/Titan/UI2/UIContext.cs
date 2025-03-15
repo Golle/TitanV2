@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Titan.Assets;
 using Titan.Core;
-using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Core.Memory;
 using Titan.Input;
@@ -111,7 +110,7 @@ public struct UIButtonStyle
 public unsafe struct UIContext
 {
     private readonly AssetsManager _assetsManager;
-    private InputState* _inputState;
+    private readonly InputState* _inputState;
     private readonly UISystem2* _system;
     private readonly UIState* _state;
     private byte _contextId; // this should be used to uniquely identify a context.
@@ -133,8 +132,9 @@ public unsafe struct UIContext
         _system = system;
         _state = &_system->State;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool CursorInUI() => _state->HighlightedId != 0;
+    public bool CursorInUI() => _state->HighlightedId != 0 || _state->IsCursorInUILastFrame;
     public void Begin(byte layer)
         => Begin(_system->DefaultStyle, layer);
 
@@ -251,6 +251,22 @@ public unsafe struct UIContext
 
     }
 
+    public void Image(in Vector2 offset, in SizeF size, int textureId)
+    {
+
+        AddWidget(new UIWidget
+        {
+            Color = Color.White,
+            Id = _nextId++,
+            Offset = offset,
+            Size = size,
+            TextureCoordinates = new TextureCoordinate(default, Vector2.One),
+            Type = UIElementType.Sprite,
+            TextureId = textureId
+        });
+
+    }
+
     public void TextBox(int id, in Vector2 offset, in SizeF size, Span<char> text, ref int count)
         => TextBox(id, in offset, in size, text, ref count, _style->Textbox);
 
@@ -342,8 +358,14 @@ public unsafe struct UIContext
             Type = UIElementType.None,
         };
         AddWidget(widget);
+        if (!clickThrough)
+        {
+            _system->State.IsCursorInUI = IsOver(offset, size);
+        }
     }
 
+    public void Label(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text)
+        => Label(in offset, in size, text, Color.White);
     public void Label(in Vector2 offset, in SizeF size, ReadOnlySpan<char> text, in Color color)
     {
         if (!_assetsManager.IsLoaded(_style->Font.Asset))
@@ -490,6 +512,12 @@ public unsafe struct UIContext
         => Checkbox(id, in offset, in size, color, ref state, _style->Checkbox);
 
     public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref UICheckboxState2 state, in UICheckboxStyle2 style)
+        => Checkbox(id, in offset, in size, in color, ref state.Checked, in style);
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref bool isChecked)
+        => Checkbox(id, in offset, in size, in color, ref isChecked, _style->Checkbox);
+
+    public void Checkbox(int id, in Vector2 offset, in SizeF size, in Color color, ref bool isChecked, in UICheckboxStyle2 style)
     {
         if (!_assetsManager.IsLoaded(style.Asset))
         {
@@ -512,7 +540,7 @@ public unsafe struct UIContext
 
             if (IsActive(id) && ButtonReleased)
             {
-                state.Checked = !state.Checked;
+                isChecked = !isChecked;
             }
 
             AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.SelectedIndex));
@@ -523,7 +551,7 @@ public unsafe struct UIContext
         }
 
 
-        if (state.Checked)
+        if (isChecked)
         {
             AddWidget(UIWidget.Sprite(NextId(), off, checkboxSize, sprite, color, style.CheckmarkIndex));
         }

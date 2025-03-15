@@ -12,10 +12,17 @@ internal sealed class DeferredRenderingModule : IModule
             builder.AddSystemsAndResource<GBufferRenderPass>();
         }
 
+        if (config.BuiltInRendererFlags.HasFlag(BuiltInRendererFlags.AmbientOcclusion))
+        {
+            builder.AddSystemsAndResource<GroundTruthAmbientOcclusionPass>();
+        }
+
         if (config.BuiltInRendererFlags.HasFlag(BuiltInRendererFlags.DeferredLighting))
         {
             builder.AddSystemsAndResource<DeferredLightingRenderPass>();
         }
+
+        
 
         return true;
     }

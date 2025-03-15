@@ -16,10 +16,10 @@ internal unsafe struct VirtualMemory
         _reservedPages = reservedPages;
     }
 
-    public static bool TryCreate(out VirtualMemory memory, PlatformAllocator* allocator, nuint minReserveSize, ulong startAddress = 0)
+    public static bool TryCreate(out VirtualMemory memory, PlatformAllocator* allocator, ulong minReserveSize, ulong startAddress = 0)
     {
         memory = default;
-        var pages = (uint)MemoryUtils.AlignToUpper(minReserveSize, allocator->PageSize) / allocator->PageSize;
+        var pages = MemoryUtils.AlignToUpper(minReserveSize, allocator->PageSize) / allocator->PageSize;
         var memoryBlock = allocator->Reserve((void*)startAddress, pages);
         if (memoryBlock == null)
         {
@@ -31,11 +31,11 @@ internal unsafe struct VirtualMemory
     }
 
 
-    public bool TryReserveBlock(nuint minReserveSize, out VirtualMemoryBlock block)
+    public bool TryReserveBlock(ulong minReserveSize, out VirtualMemoryBlock block)
     {
         block = default;
         var alignedReserveBytes = MemoryUtils.AlignToUpper(minReserveSize, _allocator->PageSize);
-        var pages = (uint)alignedReserveBytes / _allocator->PageSize;
+        var pages = alignedReserveBytes / _allocator->PageSize;
         if (_claimedPages + pages > _reservedPages)
         {
             Logger.Error<VirtualMemory>("Trying to reserve a bigger block than fits the original reservation.");

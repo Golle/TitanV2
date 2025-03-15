@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Titan.ECS.Archetypes;
@@ -32,5 +33,18 @@ internal unsafe struct ArchetypeLayout
             // Increase the offset with the component Size times the number of entities in the chunk.
             offset += componentType.Size * EntitiesPerChunk;
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly int GetOffsetFromId(uint id)
+    {
+        for (var i = 0; i < NumberOfComponents; ++i)
+        {
+            if (Ids[i] == id)
+            {
+                return Offsets[i];
+            }
+        }
+        return -1;
     }
 }

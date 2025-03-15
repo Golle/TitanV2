@@ -24,3 +24,5 @@ public readonly unsafe struct EntityManager
     public void RemoveComponent<T>(in Entity entity) where T : unmanaged, IComponent => _componentSystem->RemoveComponent<T>(entity);
 }
 
+
+

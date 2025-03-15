@@ -21,6 +21,9 @@ internal static class GlobalConfiguration
 #endif
     public const uint CommandBufferCount = 16;
 
+    //NOTE(Jens): We don't use compute shaders at the moment.
+    public const uint ComputeBufferCount = 0;
+
 
     private static Platforms GetPlatform()
     {

@@ -19,6 +19,13 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
         Debug.Assert(texture != null);
         commandList->OMSetRenderTargets(1, &texture->RTV.CPU, 1, null);
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SetPipelineState(PipelineState* pipelineState)
+    {
+        Debug.Assert(pipelineState != null);
+        commandList->SetPipelineState(pipelineState->Resource);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
@@ -192,6 +199,10 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetComputeRootDescriptorTable(uint rootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
+        => commandList->SetComputeRootDescriptorTable(rootParameterIndex, baseDescriptor);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootDescriptorTable(uint rootParameterIndex, D3D12_GPU_DESCRIPTOR_HANDLE baseDescriptor)
         => commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, baseDescriptor);
 
@@ -205,6 +216,16 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootConstantBufferView(uint rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS bufferLocation)
         => commandList->SetGraphicsRootConstantBufferView(rootParameterIndex, bufferLocation);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetComputeRootConstants(uint index, ReadOnlySpan<int> data)
+    {
+        fixed (int* ptr = data)
+        {
+            commandList->SetComputeRoot32BitConstants(index, (uint)data.Length, ptr, 0);
+        }
+    }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetGraphicsRootConstants(uint index, ReadOnlySpan<int> data)
@@ -228,6 +249,10 @@ public readonly unsafe struct CommandList(ID3D12GraphicsCommandList4* commandLis
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)
         => commandList->ClearDepthStencilView(depthStencilView, flags, depth, stencil, numberOfRects, rects);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetStencilRef(uint stencilRef) 
+        => commandList->OMSetStencilRef(stencilRef);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearDepthStencilView(Texture* depthBuffer, D3D12_CLEAR_FLAGS flags, float depth, byte stencil, uint numberOfRects, D3D12_RECT* rects)

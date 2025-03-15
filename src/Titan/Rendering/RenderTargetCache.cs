@@ -55,6 +55,7 @@ internal unsafe partial struct RenderTargetCache
         {
             var format = depthConfig.Format.AsDXGIFormat();
 
+            //TODO(Jens): Implement size check as well.
             if (TryGetCachedResource(depthConfig.Name, format, out var existingHandle))
             {
                 return existingHandle;
@@ -63,8 +64,8 @@ internal unsafe partial struct RenderTargetCache
             var handle = _resourceManager->CreateDepthBuffer(new CreateDepthBufferArgs
             {
                 Format = format,
-                Height = (uint)_window->Height,
-                Width = (uint)_window->Width,
+                Height = (uint)(depthConfig.Height >= 0 ? depthConfig.Height : _window->Height),
+                Width = (uint)(depthConfig.Width >= 0 ? depthConfig.Width : _window->Width),
                 ClearValue = depthConfig.ClearValue,
                 ShaderVisible = depthConfig.ShaderVisible
             });
