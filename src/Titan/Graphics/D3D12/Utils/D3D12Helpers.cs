@@ -1,14 +1,15 @@
 using System.Diagnostics;
 using Titan.Core;
+using Titan.Core.Logging;
 using Titan.Core.Maths;
 using Titan.Platform.Win32.D3D12;
 using Titan.Platform.Win32.DXGI;
-using static Titan.Platform.Win32.Win32Common;
 using static Titan.Platform.Win32.D3D12.D3D12_COMPARISON_FUNC;
 using static Titan.Platform.Win32.D3D12.D3D12_FILTER;
 using static Titan.Platform.Win32.D3D12.D3D12_STATIC_BORDER_COLOR;
 using static Titan.Platform.Win32.D3D12.D3D12_TEXTURE_ADDRESS_MODE;
 using static Titan.Platform.Win32.D3D12.D3D12Constants;
+using static Titan.Platform.Win32.Win32Common;
 
 
 namespace Titan.Graphics.D3D12.Utils;
@@ -111,6 +112,10 @@ public static class D3D12Helpers
         => SetName((ID3D12Resource*)resource, name);
     public static unsafe void SetName(ID3D12Resource* resource, ReadOnlySpan<char> name)
     {
+        if (name.Length == 0)
+        {
+            return;
+        }
         //NOTE(Jens): can we use a common interface for this maybe? or just create overloads?
         fixed (char* namePtr = name)
         {

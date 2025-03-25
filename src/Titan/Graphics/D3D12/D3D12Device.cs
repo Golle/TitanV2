@@ -143,7 +143,6 @@ internal unsafe partial struct D3D12Device
 
     public readonly void CreateConstantBufferView(uint sizeInBytes, D3D12_GPU_VIRTUAL_ADDRESS address, D3D12_CPU_DESCRIPTOR_HANDLE handle)
     {
-
         D3D12_CONSTANT_BUFFER_VIEW_DESC desc = new()
         {
             BufferLocation = address,

@@ -3,6 +3,7 @@ using Titan.Core.Logging;
 using Titan.Platform.Win32;
 using Titan.Platform.Win32.DXGI;
 using Titan.Platform.Win32.WIC;
+using static Titan.Platform.Win32.Win32Common;
 
 namespace Titan.Tools.AssetProcessor.Processors.Textures;
 
@@ -13,7 +14,7 @@ internal unsafe class WicImageReader : IDisposable
     {
         ComPtr<IWICImagingFactory> factory = default;
         var hr = Ole32.CoCreateInstance(CLSID.CLSID_WICImagingFactory2, null, CLSCTX.CLSCTX_INPROC_SERVER, _factory.UUID, (void**)factory.GetAddressOf());
-        if (Win32Common.FAILED(hr) || !factory.IsValid)
+        if (FAILED(hr) || !factory.IsValid)
         {
             throw new Exception($"Failed to create the {nameof(IWICImagingFactory)} instance with HRESULT {hr}");
         }
@@ -29,7 +30,7 @@ internal unsafe class WicImageReader : IDisposable
         fixed (char* pPath = path)
         {
             hr = _factory.Get()->CreateDecoderFromFilename(pPath, null, (uint)GenericRights.GENERIC_READ, WICDecodeOptions.WICDecodeMetadataCacheOnDemand, decoder.GetAddressOf());
-            if (Win32Common.FAILED(hr))
+            if (FAILED(hr))
             {
                 Logger.Error<WicImageReader>($"Failed to create the {nameof(IWICBitmapDecoder)} with HRESULT {hr}");
                 return null;
@@ -38,7 +39,7 @@ internal unsafe class WicImageReader : IDisposable
 
         using ComPtr<IWICBitmapFrameDecode> frameDecode = default;
         hr = decoder.Get()->GetFrame(0, frameDecode.GetAddressOf());
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to get the frame with HRESULT {hr}");
             return null;
@@ -46,7 +47,7 @@ internal unsafe class WicImageReader : IDisposable
 
         Guid pixelFormat;
         hr = frameDecode.Get()->GetPixelFormat(&pixelFormat);
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to get the PixelFormat with HRESULT {hr}");
             return null;
@@ -54,7 +55,7 @@ internal unsafe class WicImageReader : IDisposable
 
         uint height, width;
         hr = frameDecode.Get()->GetSize(&width, &height);
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to get the image size with HRESULT {hr}");
             return null;
@@ -85,7 +86,7 @@ internal unsafe class WicImageReader : IDisposable
         fixed (byte* pBuffer = buffer)
         {
             hr = frameDecode.Get()->CopyPixels(null, alignedStride, imageSize, pBuffer);
-            if (Win32Common.FAILED(hr))
+            if (FAILED(hr))
             {
                 Logger.Error<WicImageReader>($"Failed to CopyPixels with HRESULT {hr}");
                 return null;
@@ -107,14 +108,14 @@ internal unsafe class WicImageReader : IDisposable
 
         using ComPtr<IWICComponentInfo> componentInfo = default;
         var hr = _factory.Get()->CreateComponentInfo(&guid, componentInfo.GetAddressOf());
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to CreateComponentInfo with HRESULT {hr}");
             return false;
         }
         WICComponentType type;
         hr = componentInfo.Get()->GetComponentType(&type);
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to GetComponentType with HRESULT {hr}");
             return false;
@@ -128,7 +129,7 @@ internal unsafe class WicImageReader : IDisposable
         var pixelFormatInfoGuid = typeof(IWICPixelFormatInfo).GUID;
         using ComPtr<IWICPixelFormatInfo> info = default;
         hr = componentInfo.Get()->QueryInterface(&pixelFormatInfoGuid, (void**)info.GetAddressOf());
-        if (Win32Common.FAILED(hr))
+        if (FAILED(hr))
         {
             Logger.Error<WicImageReader>($"Failed to QueryInterface for {nameof(IWICPixelFormatInfo)} with HRESULT {hr}");
             return false;
@@ -137,7 +138,7 @@ internal unsafe class WicImageReader : IDisposable
         fixed (uint* pBitsPerPixel = &bitsPerPixel)
         {
             hr = info.Get()->GetBitsPerPixel(pBitsPerPixel);
-            if (Win32Common.FAILED(hr))
+            if (FAILED(hr))
             {
                 Logger.Error<WicImageReader>($"Failed to GetBitsPerPixel with HRESULT {hr}");
                 return false;

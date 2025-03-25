@@ -9,11 +9,10 @@ namespace Titan.Core;
 /// <param name="messageFormat">The format of the message to print to Trace. This should include  a '{0}'</param>
 public readonly struct MeasureTime<T>(string messageFormat) : IDisposable
 {
-    private readonly Stopwatch _timer = Stopwatch.StartNew();
+    private readonly long _timer = Stopwatch.GetTimestamp();
     public void Dispose()
     {
-        _timer.Stop();
-        
-        Logger.Trace<T>(string.Format(messageFormat, _timer.Elapsed.TotalMilliseconds));
+        var diff = Stopwatch.GetElapsedTime(_timer);
+        Logger.Trace<T>(string.Format(messageFormat, diff.TotalMilliseconds));
     }
 }

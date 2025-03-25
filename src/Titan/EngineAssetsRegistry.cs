@@ -198,7 +198,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
                 Height = 1024,
                 Stride = 4096,
                 BitsPerPixel = 32,
-                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                Format = Titan.RenderingV3.Resources.TextureFormat.BGRA8
             }
         };
         _assets[1] = new Titan.Assets.AssetDescriptor
@@ -366,7 +367,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
                     Height = 256,
                     Stride = 1024,
                     BitsPerPixel = 32,
-                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
+                    DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
+                    Format = Titan.RenderingV3.Resources.TextureFormat.RGBA8
                 }
             }
         };
@@ -496,7 +498,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 5316,
+                Length = 5424,
                 Offset = 4662484,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Pixel.hlsl"),
@@ -520,7 +522,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2060,
-                Offset = 4667800,
+                Offset = 4667908,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.DeferredLighting.Vertex.hlsl.kbin")
@@ -543,7 +545,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3000,
-                Offset = 4669860,
+                Offset = 4669968,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Pixel.hlsl.kbin")
@@ -566,7 +568,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 1784,
-                Offset = 4672860,
+                Offset = 4672968,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.Fullscreen.Vertex.hlsl.kbin")
@@ -589,7 +591,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3368,
-                Offset = 4674644,
+                Offset = 4674752,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Pixel.hlsl.kbin")
@@ -612,7 +614,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 4872,
-                Offset = 4678012,
+                Offset = 4678120,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GBuffer.Vertex.hlsl.kbin")
@@ -634,8 +636,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             Type = Titan.Assets.AssetType.Shader,
             File = 
             { 
-                Length = 1640,
-                Offset = 4682884,
+                Length = 2596,
+                Offset = 4682992,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GTAO.Pixel.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\Shader.GTAO.Pixel.hlsl.kbin")
@@ -658,7 +660,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 2796,
-                Offset = 4684524,
+                Offset = 4685588,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_ps_01.hlsl.kbin")
@@ -681,7 +683,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 3084,
-                Offset = 4687320,
+                Offset = 4688384,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"shaders\simple_vs_01.hlsl.kbin")
@@ -704,7 +706,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 90139,
-                Offset = 4690404,
+                Offset = 4691468,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"fonts\SyneMono-Regular.ttf.kbin")
@@ -731,7 +733,7 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
             File = 
             { 
                 Length = 113920,
-                Offset = 4780543,
+                Offset = 4781607,
 #if !RELEASE
             AssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png"),
             BinaryAssetPath = Titan.Core.Strings.StringRef.Create(@"titan.png.kbin")
@@ -747,7 +749,8 @@ public readonly struct EngineAssetsRegistry : Titan.Assets.IAssetRegistry
                 Height = 89,
                 Stride = 1280,
                 BitsPerPixel = 32,
-                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                Format = Titan.RenderingV3.Resources.TextureFormat.BGRA8
             }
         };
     }

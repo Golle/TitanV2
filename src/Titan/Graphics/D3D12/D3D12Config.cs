@@ -6,11 +6,13 @@ namespace Titan.Graphics.D3D12;
 
 public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, bool VSync, Color ClearColor) : IConfiguration, IDefault<D3D12Config>
 {
-    public const uint DefaultSRVCount = 1024;
-    public const uint DefaultRTVCount = 1024;
-    public const uint DefaultDSVCount = 1024;
-    public const uint DefaultUAVCount = 1024;
-    public const uint DefaultTempSRVCount = 256;
+    public const uint DefaultSRVCount = 512;
+    public const uint DefaultUAVCount = 512;
+    public const uint DefaultRTVCount = 64;
+    public const uint DefaultDSVCount = 64;
+
+    public const uint DefaultTempSRVCount = 64;
+
     public static readonly uint DefaultTempConstantBufferSize = MemoryUtils.MegaBytes(32);
 
     public static readonly uint DefaultVertexBufferSize = MemoryUtils.MegaBytes(256);
@@ -30,11 +32,15 @@ public record D3D12Config(D3D_FEATURE_LEVEL FeatureLevel, bool AllowTearing, boo
 
 
     public GPUMemoryConfig MemoryConfig { get; init; }
+    public GPUMemoryConfig2 MemoryConfig2 { get; init; }
     public ResourceConfig Resources { get; init; }
 
     public static D3D12Config Default => new(D3D_FEATURE_LEVEL.D3D_FEATURE_LEVEL_11_1, false, true, DefaultClearColor)
     {
         MemoryConfig = new(DefaultSRVCount, DefaultRTVCount, DefaultDSVCount, DefaultUAVCount, DefaultTempConstantBufferSize, DefaultTempSRVCount, DefaultVertexBufferSize, DefaultIndexBufferSize),
+        MemoryConfig2 = new(DefaultSRVCount, DefaultDSVCount, DefaultRTVCount, DefaultUAVCount),
         Resources = new(DefaultMaxTextures, DefaultMaxMaterials, DefaultMaxMeshes, DefaultMaxLights, DefaultMaxBuffers, DefaultMaxPipelineStates, DefaultMaxRootSignatures, DefaultMaxShaders)
     };
 }
+
+public record struct GPUMemoryConfig2(uint SRVCount, uint DSVCount, uint RTVCount, uint UAVCount);

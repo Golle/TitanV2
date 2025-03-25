@@ -43,5 +43,6 @@ internal class WICToDXGITranslationTable
     };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static DXGI_FORMAT Translate(in Guid guid) => _table.TryGetValue(guid, out var format) ? format : DXGI_FORMAT_UNKNOWN;
+    public static DXGI_FORMAT Translate(in Guid guid) 
+        => _table.GetValueOrDefault(guid, DXGI_FORMAT_UNKNOWN);
 }

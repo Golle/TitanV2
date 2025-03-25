@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Titan.Platform.Win32.DXGI;
+using Titan.RenderingV3.Resources;
 
 namespace Titan.Assets.Types;
 
@@ -11,4 +12,5 @@ public struct Texture2DDescriptor
     public ushort Stride;
     public ushort BitsPerPixel;
     public DXGI_FORMAT DXGIFormat;
+    public TextureFormat Format;
 }

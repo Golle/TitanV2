@@ -122,7 +122,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Height = 256,
                 Stride = 2048,
                 BitsPerPixel = 32,
-                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                Format = Titan.RenderingV3.Resources.TextureFormat.BGRA8
             }
         };
         _assets[1] = new Titan.Assets.AssetDescriptor
@@ -175,7 +176,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Height = 4096,
                 Stride = 16384,
                 BitsPerPixel = 32,
-                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
+                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                Format = Titan.RenderingV3.Resources.TextureFormat.BGRA8
             }
         };
         _assets[3] = new Titan.Assets.AssetDescriptor
@@ -202,7 +204,8 @@ public readonly struct SandboxRegistry : Titan.Assets.IAssetRegistry
                 Height = 64,
                 Stride = 256,
                 BitsPerPixel = 32,
-                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
+                DXGIFormat = Titan.Platform.Win32.DXGI.DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
+                Format = Titan.RenderingV3.Resources.TextureFormat.RGBA8
             }
         };
         _assets[4] = new Titan.Assets.AssetDescriptor

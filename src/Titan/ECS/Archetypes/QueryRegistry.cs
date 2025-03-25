@@ -32,14 +32,17 @@ internal unsafe partial struct QueryRegistry
         }
         Logger.Trace<QueryRegistry>($"Registered {count} entity queries.");
 
-        _queries = (CachedQuery**)memoryManager.Alloc((uint)(count * sizeof(CachedQuery*)));
-        if (_queries == null)
+        if (count > 0)
         {
-            Logger.Error<QueryRegistry>($"Failed to register the queries. Count = {count}");
-            return false;
-        }
+            _queries = (CachedQuery**)memoryManager.Alloc((uint)(count * sizeof(CachedQuery*)));
+            if (_queries == null)
+            {
+                Logger.Error<QueryRegistry>($"Failed to register the queries. Count = {count}");
+                return false;
+            }
 
-        MemoryUtils.Copy(_queries, queries, (uint)(count * sizeof(CachedQuery*)));
+            MemoryUtils.Copy(_queries, queries, (uint)(count * sizeof(CachedQuery*)));
+        }
 
         _queryCount = count;
         return true;
@@ -93,6 +96,9 @@ internal unsafe partial struct QueryRegistry
     internal static void Shutdown(QueryRegistry* registry, IMemoryManager memoryManager)
     {
         memoryManager.FreeAllocator(registry->_allocator);
-        memoryManager.Free(registry->_queries);
+        if (registry->_queries != null)
+        {
+            memoryManager.Free(registry->_queries);
+        }
     }
 }

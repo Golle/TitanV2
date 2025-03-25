@@ -6,6 +6,7 @@ using Titan.Assets.Types;
 using Titan.Core.Strings;
 using Titan.Platform.Win32.DXGI;
 using Titan.Rendering.Resources;
+using Titan.RenderingV3.Resources;
 using Titan.Tools.AssetProcessor.Metadata;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 
@@ -33,7 +34,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                 {nameof(Texture2DDescriptor.Height)} = {texture.Height},
                 {nameof(Texture2DDescriptor.Stride)} = {texture.Stride},
                 {nameof(Texture2DDescriptor.BitsPerPixel)} = {texture.BitsPerPixel},
-                {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat}
+                {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat},
+                {nameof(Texture2DDescriptor.Format)} = {typeof(TextureFormat).FullName}.{texture.Format}
             }}";
         return CreateBaseDescriptor(assetDescriptor, content, metadata);
     }
@@ -91,7 +93,8 @@ internal class RegistryBuilder(string? @namespace, string name, string binaryFil
                     {nameof(Texture2DDescriptor.Height)} = {texture.Height},
                     {nameof(Texture2DDescriptor.Stride)} = {texture.Stride},
                     {nameof(Texture2DDescriptor.BitsPerPixel)} = {texture.BitsPerPixel},
-                    {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat}
+                    {nameof(Texture2DDescriptor.DXGIFormat)} = {typeof(DXGI_FORMAT).FullName}.{texture.DXGIFormat},
+                    {nameof(Texture2DDescriptor.Format)} = {typeof(TextureFormat).FullName}.{texture.Format}
                 }}
             }}";
 

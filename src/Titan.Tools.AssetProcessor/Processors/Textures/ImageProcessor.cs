@@ -1,8 +1,8 @@
 using System.Buffers;
-using System.Runtime.InteropServices;
 using Titan.Assets.Types;
 using Titan.Core;
-using Titan.Core.Memory;
+using Titan.Core.Logging;
+using Titan.RenderingV3;
 using Titan.Tools.AssetProcessor.Metadata.Types;
 using Titan.UI.Resources;
 
@@ -24,8 +24,6 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             ? AsepriteReader.Read(await File.ReadAllBytesAsync(metadata.ContentFileFullPath))
             : ImageLoader.LoadAndCompress(metadata.ContentFileFullPath, metadata.Compression, context.TempFolderPath);
 
-
-
         //NOTE(Jens): The images I've been testing with are upside down and flipped. 
         if (image == null)
         {
@@ -43,6 +41,7 @@ internal class ImageProcessor : AssetProcessor<ImageMetadata>
             Width = image.Width,
             Height = image.Height,
             DXGIFormat = image.Format,
+            Format = image.Format.AsTextureFormat(),
             BitsPerPixel = (ushort)image.BitsPerPixel,
             Stride = (ushort)image.Stride
         };

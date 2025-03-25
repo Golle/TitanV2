@@ -68,13 +68,13 @@ namespace Titan.Sandbox
     {
         public static bool Build(IAppBuilder builder, AppConfig config)
         {
-            builder
-                //.AddSystems<TheGameLightSystem>()
-                .AddSystemsAndResource<EntityTestSystem>()
-                .AddSystems<TheAudioThing>()
-                .AddSystems<InputStuff>()
-                .AddSystems<UIVersion2>()
-                ;
+            //builder
+            //    //.AddSystems<TheGameLightSystem>()
+            //    .AddSystemsAndResource<EntityTestSystem>()
+            //    .AddSystems<TheAudioThing>()
+            //    .AddSystems<InputStuff>()
+            //    .AddSystems<UIVersion2>()
+            //    ;
 
             return true;
         }

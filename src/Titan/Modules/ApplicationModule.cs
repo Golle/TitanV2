@@ -5,6 +5,7 @@ using Titan.Input;
 using Titan.Materials;
 using Titan.Meshes;
 using Titan.Rendering;
+using Titan.RenderingV3;
 using Titan.UI;
 using Titan.UI2;
 using Titan.Windows;
@@ -20,11 +21,12 @@ public class ApplicationModule : IModule
         {
             builder
                 .AddModule<WindowModule>()
-                .AddModule<RenderingModule>()
-                .AddModule<MaterialsModule>()
-                .AddModule<MeshModule>()
-                .AddModule<UIModule>()
-                .AddModule<UIModule2>()
+                //.AddModule<RenderingModule>()
+                .AddModule<RenderingV3Module>()
+                //.AddModule<MaterialsModule>()
+                //.AddModule<MeshModule>()
+                //.AddModule<UIModule>()
+                //.AddModule<UIModule2>()
                 .AddModule<InputModule>()
                 .AddModule<AudioModule>()
                 ;
